@@ -1,0 +1,26 @@
+{
+  "projects": {
+    "default": "hotwax-digital-commerce-uat",
+    "uat": "hotwax-digital-commerce-uat",
+    "production": "digital-commerce-71eb8"
+  },
+  "targets": {
+    "hotwax-digital-commerce-uat": {
+      "hosting": {
+        "uat": [
+          "hotwax-transfers-uat"
+        ],
+        "dev": [
+          "hotwax-transfers-dev"
+        ]
+      }
+    },
+    "digital-commerce-71eb8": {
+      "hosting": {
+        "prod": [
+          "hotwax-transfers"
+        ]
+      }
+    }
+  }
+}
