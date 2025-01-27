@@ -69,13 +69,7 @@ const actions: ActionTree<UserState, RootState> = {
       commit(types.USER_TOKEN_CHANGED, { newToken: api_key })
       commit(types.USER_INFO_UPDATED, userProfile);
       commit(types.USER_PERMISSIONS_UPDATED, appPermissions);
-      this.dispatch('util/fetchOrganizationPartyId');
       emitter.emit("dismissLoader")
-
-      const productStoreId = router.currentRoute.value.query.productStoreId
-      if(productStoreId) {
-        return `/product-store-details/${productStoreId}`;
-      }
     } catch (err: any) {
       emitter.emit("dismissLoader")
       showToast(translate(err));
@@ -94,8 +88,6 @@ const actions: ActionTree<UserState, RootState> = {
 
     // TODO add any other tasks if need
     commit(types.USER_END_SESSION)
-    this.dispatch("productStore/clearProductStoreState");
-    this.dispatch("util/clearUtilState");
     dispatch("setOmsRedirectionInfo", { url: "", token: "" })
     resetConfig();
     resetPermissions();
