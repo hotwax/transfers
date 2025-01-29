@@ -251,7 +251,7 @@
                 </ion-chip>
               </div>
               <ion-badge color="success">{{ translate("Approved") }}</ion-badge>
-              <ion-button fill="clear">
+              <ion-button slot="end" fill="clear" color="medium" @click="openOrderItemDetailActionsPopover($event)">
                 <ion-icon :icon="ellipsisVerticalOutline" slot="icon-only" />
               </ion-button>
             </div>
@@ -281,7 +281,7 @@
                 </ion-chip>
               </div>
               <ion-badge color="success">{{ translate("Approved") }}</ion-badge>
-              <ion-button fill="clear">
+              <ion-button slot="end" fill="clear" color="medium" @click="openOrderItemDetailActionsPopover($event)">
                 <ion-icon :icon="ellipsisVerticalOutline" slot="icon-only" />
               </ion-button>
             </div>
@@ -294,10 +294,20 @@
 </template>
 
 <script setup lang="ts">
-import { IonBackButton,IonBadge, IonButton, IonCard, IonCardHeader, IonCardTitle, IonChip, IonContent, IonHeader, IonIcon, IonItem, IonLabel, IonList, IonNote, IonPage, IonRadio, IonRadioGroup, IonSelect, IonSelectOption, IonThumbnail, IonTitle, IonToolbar } from "@ionic/vue";
+import { IonBackButton,IonBadge, IonButton, IonCard, IonCardHeader, IonCardTitle, IonChip, IonContent, IonHeader, IonIcon, IonItem, IonLabel, IonList, IonNote, IonPage, IonRadio, IonRadioGroup, IonSelect, IonSelectOption, IonThumbnail, IonTitle, IonToolbar, popoverController } from "@ionic/vue";
 import { translate } from '@hotwax/dxp-components';
 import { ellipsisVerticalOutline, ticketOutline, sunnyOutline, checkmarkDoneOutline, downloadOutline, sendOutline, shirtOutline, informationCircleOutline, closeCircleOutline } from "ionicons/icons";
 import Image from "@/components/Image.vue";
+import OrderItemDetailActionsPopover from '@/components/OrderItemDetailActionsPopover.vue';
+
+async function openOrderItemDetailActionsPopover(event: any){
+  const popover = await popoverController.create({
+    component: OrderItemDetailActionsPopover,
+    event,
+    showBackdrop: false,
+  });
+  await popover.present();
+}
 </script>
 
 <style scoped>

@@ -21,7 +21,7 @@
               <ion-card-title>{{ translate("Assign") }}</ion-card-title>
             </ion-card-header>
             <ion-item>
-              <ion-icon :icon="downloadOutline" slot="start" />
+              <ion-icon :icon="sendOutline" slot="start" />
               <ion-label>{{ translate("Origin") }}</ion-label>
               <ion-button slot="end" fill="outline">
                 <ion-icon slot="start" :icon="addCircleOutline" />
@@ -99,7 +99,7 @@
 
           <div class="list-item ion-padding-vertical">
             <ion-item lines="none" class="item-qty-actions" style="grid-column: span 2;">
-              <ion-button fill="outline" color="medium">{{ translate("Book QOH") }}</ion-button>
+              <ion-button fill="outline" color="medium">{{ translate("Book QoH") }}</ion-button>
               <ion-button fill="outline" color="medium">{{ translate("Book ATP") }}</ion-button>
               <ion-button fill="outline" color="medium">{{ translate("Custom Qty") }}</ion-button>
             </ion-item>
@@ -134,7 +134,7 @@
             <div class="tablet">
               <ion-checkbox />
             </div>
-            <ion-button slot="end" fill="clear" color="medium">
+            <ion-button slot="end" fill="clear" color="medium" @click="openOrderItemActionsPopover($event)">
               <ion-icon :icon="ellipsisVerticalOutline" slot="icon-only" />
             </ion-button>
           </div>
@@ -151,10 +151,20 @@
 </template>
 
 <script setup lang="ts">
-import { IonBackButton, IonButton, IonCard, IonCardHeader, IonCardTitle, IonCheckbox, IonChip, IonContent, IonFab, IonFabButton, IonHeader, IonIcon, IonInput, IonItem, IonLabel, IonPage, IonSelect, IonSelectOption, IonThumbnail, IonTitle, IonToolbar } from '@ionic/vue';
+import { IonBackButton, IonButton, IonCard, IonCardHeader, IonCardTitle, IonCheckbox, IonChip, IonContent, IonFab, IonFabButton, IonHeader, IonIcon, IonInput, IonItem, IonLabel, IonPage, IonSelect, IonSelectOption, IonThumbnail, IonTitle, IonToolbar, popoverController } from '@ionic/vue';
 import { addCircleOutline, checkmarkDoneOutline, cloudUploadOutline, downloadOutline, ellipsisVerticalOutline, listOutline, sendOutline } from 'ionicons/icons';
 import { translate } from '@hotwax/dxp-components'
 import Image from '@/components/Image.vue';
+import OrderItemActionsPopover from '@/components/OrderItemActionsPopover.vue';
+
+async function openOrderItemActionsPopover(event: any){
+  const popover = await popoverController.create({
+    component: OrderItemActionsPopover,
+    event,
+    showBackdrop: false,
+  });
+  await popover.present();
+}
 </script>
 
 <style scoped>
