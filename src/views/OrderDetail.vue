@@ -240,13 +240,13 @@
               </div>
               <div class="tablet ion-text-center">
                 <ion-chip outline>
-                  <ion-icon :icon="sendOutline" />
+                  <ion-icon slot="start" :icon="sendOutline" />
                   <ion-label>{{ "300" }}</ion-label>
                 </ion-chip>
               </div>
               <div class="tablet ion-text-center">
                 <ion-chip outline>
-                  <ion-icon :icon="downloadOutline" />
+                  <ion-icon slot="start" :icon="downloadOutline" />
                   <ion-label>{{ "200" }}</ion-label>
                 </ion-chip>
               </div>
@@ -270,13 +270,13 @@
               </div>
               <div class="tablet ion-text-center">
                 <ion-chip outline>
-                  <ion-icon :icon="sendOutline" />
+                  <ion-icon slot="start" :icon="sendOutline" />
                   <ion-label>{{ "300" }}</ion-label>
                 </ion-chip>
               </div>
               <div class="tablet ion-text-center">
                 <ion-chip outline>
-                  <ion-icon :icon="downloadOutline" />
+                  <ion-icon slot="start" :icon="downloadOutline" />
                   <ion-label>{{ "200" }}</ion-label>
                 </ion-chip>
               </div>

@@ -24,7 +24,7 @@
               <ion-icon :icon="downloadOutline" slot="start" />
               <ion-label>{{ translate("Origin") }}</ion-label>
               <ion-button slot="end" fill="outline">
-                <ion-icon :icon="addCircleOutline" />
+                <ion-icon slot="start" :icon="addCircleOutline" />
                 <ion-label>{{ translate("Assign") }}</ion-label>
               </ion-button>
             </ion-item>
@@ -32,7 +32,7 @@
               <ion-icon :icon="downloadOutline" slot="start" />
               <ion-label>{{ translate("Destination") }}</ion-label>
               <ion-button slot="end" fill="outline">
-                <ion-icon :icon="addCircleOutline" />
+                <ion-icon slot="start" :icon="addCircleOutline" />
                 <ion-label>{{ translate("Assign") }}</ion-label>
               </ion-button>
             </ion-item>
@@ -124,7 +124,7 @@
             </ion-item>
             <div class="tablet">
               <ion-chip outline>
-                <ion-icon :icon="sendOutline" />
+                <ion-icon slot="start" :icon="sendOutline" />
                 <ion-label>{{ "50 QOH" }}</ion-label>
               </ion-chip>
             </div>

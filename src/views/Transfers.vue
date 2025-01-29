@@ -94,11 +94,11 @@
   
                 <div class="tags">
                   <ion-chip outline>
-                    <ion-icon :icon="sendOutline" />
+                    <ion-icon slot="start" :icon="sendOutline" />
                     <ion-label>{{ "Central warehouse" }}</ion-label>
                   </ion-chip>
                   <ion-chip outline>
-                    <ion-icon :icon="downloadOutline" />
+                    <ion-icon slot="start" :icon="downloadOutline" />
                     <ion-label>{{ "Irvine spectrum" }}</ion-label>
                   </ion-chip>
                 </div>
