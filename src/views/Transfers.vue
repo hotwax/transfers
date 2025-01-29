@@ -167,6 +167,7 @@ import { IonBadge, IonButton, IonButtons, IonChip, IonContent, IonFab, IonFabBut
 import { addOutline, documentTextOutline, downloadOutline, filterOutline, sendOutline, swapVerticalOutline } from 'ionicons/icons';
 import { translate } from '@hotwax/dxp-components'
 import router from '@/router';
+import Image from '@/components/Image.vue';
 </script>
 
 <style scoped>

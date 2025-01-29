@@ -154,6 +154,7 @@
 import { IonBackButton, IonButton, IonCard, IonCardHeader, IonCardTitle, IonCheckbox, IonChip, IonContent, IonFab, IonFabButton, IonHeader, IonIcon, IonInput, IonItem, IonLabel, IonPage, IonSelect, IonSelectOption, IonThumbnail, IonTitle, IonToolbar } from '@ionic/vue';
 import { addCircleOutline, checkmarkDoneOutline, cloudUploadOutline, downloadOutline, ellipsisVerticalOutline, listOutline, sendOutline } from 'ionicons/icons';
 import { translate } from '@hotwax/dxp-components'
+import Image from '@/components/Image.vue';
 </script>
 
 <style scoped>

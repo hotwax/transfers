@@ -28,7 +28,7 @@ export default defineComponent({
   data() {
     return {
       resourceUrl: "",
-      imageUrl: ""
+      imageUrl: require("@/assets/images/defaultImage.png")
     }
   },
   methods: {

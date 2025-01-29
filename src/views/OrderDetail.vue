@@ -297,6 +297,7 @@
 import { IonBackButton,IonBadge, IonButton, IonCard, IonCardHeader, IonCardTitle, IonChip, IonContent, IonHeader, IonIcon, IonItem, IonLabel, IonList, IonNote, IonPage, IonRadio, IonRadioGroup, IonSelect, IonSelectOption, IonThumbnail, IonTitle, IonToolbar } from "@ionic/vue";
 import { translate } from '@hotwax/dxp-components';
 import { ellipsisVerticalOutline, ticketOutline, sunnyOutline, checkmarkDoneOutline, downloadOutline, sendOutline, shirtOutline, informationCircleOutline, closeCircleOutline } from "ionicons/icons";
+import Image from "@/components/Image.vue";
 </script>
 
 <style scoped>
