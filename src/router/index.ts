@@ -4,6 +4,8 @@ import store from "@/store"
 import Tabs from "@/views/Tabs.vue"
 import { DxpLogin, useAuthStore } from "@hotwax/dxp-components";
 import { loader } from '@/user-utils';
+import OrderDetail from "@/views/OrderDetail.vue";
+import CreateOrder from "@/views/CreateOrder.vue";
 
 const authGuard = async (to: any, from: any, next: any) => {
   const authStore = useAuthStore()
@@ -28,7 +30,7 @@ const loginGuard = (to: any, from: any, next: any) => {
 const routes: Array<RouteRecordRaw> = [
   {
     path: "/",
-    redirect: "/tabs/settings"
+    redirect: "/tabs/transfers"
   },
   {
     path: "/tabs",
@@ -36,7 +38,12 @@ const routes: Array<RouteRecordRaw> = [
     children: [
       {
         path: "",
-        redirect: "/tabs/settings"
+        redirect: "/tabs/transfers"
+      },
+      {
+        path: "transfers",
+        name: "Transfers",
+        component: () => import("@/views/Transfers.vue")
       },
       {
         path: "settings",
@@ -44,6 +51,18 @@ const routes: Array<RouteRecordRaw> = [
         component: () => import("@/views/Settings.vue")
       }
     ],
+    beforeEnter: authGuard
+  },
+  {
+    path: "/create-order",
+    name: "CreateOrder",
+    component: CreateOrder,
+    beforeEnter: authGuard
+  },
+  {
+    path: "/order-detail",
+    name: "OrderDetail",
+    component: OrderDetail,
     beforeEnter: authGuard
   },
   {

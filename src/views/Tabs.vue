@@ -3,7 +3,11 @@
     <ion-tabs>
       <ion-router-outlet></ion-router-outlet>
       <ion-tab-bar slot="bottom" v-if="showFooter()">
-        <ion-tab-button tab="more" href="/tabs/settings">
+        <ion-tab-button tab="transfers" href="/tabs/transfers">
+          <ion-icon :icon="settingsOutline" />
+          <ion-label>{{ translate("Transfers") }}</ion-label>
+        </ion-tab-button>
+        <ion-tab-button tab="settings" href="/tabs/settings">
           <ion-icon :icon="settingsOutline" />
           <ion-label>{{ translate("Settings") }}</ion-label>
         </ion-tab-button>
@@ -21,7 +25,7 @@ import { useRouter } from "vue-router";
 const router = useRouter();
 
 function showFooter() {
-  if (['/tabs/settings'].includes(router.currentRoute.value.path)) return true
+  if (['/tabs/transfers', '/tabs/settings'].includes(router.currentRoute.value.path)) return true
   return false
 }
 </script>
