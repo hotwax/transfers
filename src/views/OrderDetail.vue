@@ -100,7 +100,7 @@
                   <p class="overline">+20 minutes</p>
                   {{ "<SKU> added" }}
                 </ion-label>
-                <ion-button fill="clear" slot="end">
+                <ion-button fill="clear" slot="end" color="medium">
                   <ion-icon :icon="informationCircleOutline" slot="icon-only" />
                 </ion-button>
               </ion-item>
