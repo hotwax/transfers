@@ -1,5 +1,7 @@
 <template>
   <ion-page>
+    <Filters menu-id="transfers-filter" content-id="filter-content"/>
+
     <ion-header :translucent="true">
       <ion-toolbar>
         <ion-title>{{ translate("Transfer orders") }}</ion-title>
@@ -7,9 +9,9 @@
           <ion-button>
             <ion-icon :icon="downloadOutline" slot="icon-only" />
           </ion-button>
-          <ion-button>
-            <ion-icon :icon="filterOutline" slot="icon-only" />
-          </ion-button>
+          <ion-menu-button menu="transfers-filter" class="mobile-only">
+            <ion-icon :icon="filterOutline" />
+          </ion-menu-button>
         </ion-buttons>
       </ion-toolbar>
     </ion-header>
@@ -22,7 +24,11 @@
 
         <aside class="filters">
           <ion-list>
-            <h2>{{ translate("Location") }}</h2>
+            <ion-item lines="none">
+              <ion-label>
+                <h1>{{ translate("Location") }}</h1>
+              </ion-label>
+            </ion-item>
             <ion-item lines="none">
               <ion-select :label="translate('Product Store')" interface="popover" value="">
                 <ion-select-option value="">Notnaked</ion-select-option>
@@ -39,7 +45,11 @@
               </ion-select>
             </ion-item>
 
-            <h2>{{ translate("Fulfillment") }}</h2>
+            <ion-item lines="none">
+              <ion-label>
+                <h1>{{ translate("Fulfillment") }}</h1>
+              </ion-label>
+            </ion-item>
             <ion-item lines="none">
               <ion-select :label="translate('Method')" interface="popover" value="">
                 <ion-select-option value="">{{ "All" }}</ion-select-option>
@@ -163,11 +173,12 @@
 </template>
 
 <script setup lang="ts">
-import { IonBadge, IonButton, IonButtons, IonChip, IonContent, IonFab, IonFabButton, IonHeader, IonIcon, IonItem, IonLabel, IonList, IonNote, IonPage, IonSearchbar, IonSelect, IonSelectOption, IonThumbnail, IonTitle, IonToolbar } from '@ionic/vue';
+import { IonBadge, IonButton, IonButtons, IonChip, IonContent, IonFab, IonFabButton, IonHeader, IonIcon, IonItem, IonLabel, IonList, IonMenuButton, IonNote, IonPage, IonSearchbar, IonSelect, IonSelectOption, IonThumbnail, IonTitle, IonToolbar } from '@ionic/vue';
 import { addOutline, documentTextOutline, downloadOutline, filterOutline, sendOutline, swapVerticalOutline } from 'ionicons/icons';
 import { translate } from '@hotwax/dxp-components'
 import router from '@/router';
 import Image from '@/components/Image.vue';
+import Filters from "@/components/Filters.vue";
 </script>
 
 <style scoped>

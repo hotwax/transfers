@@ -281,6 +281,7 @@ body {
 .find {
   display: grid;
   grid-template-areas: "search"
+                       "filters"
                        "main";
   align-items: start;
 }
@@ -301,6 +302,9 @@ body {
   grid-area: search;
 }
 
+.mobile-only {
+  display: unset;
+}
 
 @media (min-width: 991px) {
   .find {
@@ -317,6 +321,10 @@ body {
 
   .find > .filters{
     display: unset;
+  }
+
+  .mobile-only {
+    display: none;
   }
 }
 

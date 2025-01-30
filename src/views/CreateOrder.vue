@@ -183,6 +183,9 @@ which results in distorted label text and thus reduced ion-item width */
   grid-column: span 2;
 }
 
+.find > .filters{
+  display: unset;
+}
 
 @media (min-width: 991px) {
   .item-search {
