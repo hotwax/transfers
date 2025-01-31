@@ -7,7 +7,8 @@
   "Assign": "Assign",
   "Book ATP": "Book ATP",
   "Book QoH": "Book QoH",
-  "Built:": "Built: {builtTime}",
+  "Browser TimeZone": "Browser TimeZone",
+  "Built: ": "Built: {builtTime}",
   "Carrier": "Carrier",
   "Change": "Change",
   "Click the backdrop to dismiss.": "Click the backdrop to dismiss.",
@@ -48,6 +49,7 @@
   "Search time zones": "Search time zones",
   "Search transfer orders": "Search transfer orders",
   "Select time zone": "Select time zone",
+  "Selected TimeZone": "Selected TimeZone",
   "Settings": "Settings",
   "Ship Date": "Ship Date",
   "Shipment details": "Shipment details",
@@ -67,5 +69,5 @@
   "Transfers": "Transfers",
   "Upload": "Upload",
   "Username": "Username",
-  "Version:": "Version: {appVersion}"  
+  "Version: ": "Version: {appVersion}"  
 }

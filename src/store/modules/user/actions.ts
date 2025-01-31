@@ -8,9 +8,8 @@ import { translate } from "@/i18n"
 import logger from "@/logger"
 import emitter from "@/event-bus"
 import { Settings } from "luxon"
-import { useAuthStore } from '@hotwax/dxp-components'
-import { resetConfig } from '@/adapter'
-import router from '@/router'
+import { useAuthStore, useUserStore } from '@hotwax/dxp-components'
+import { logout, resetConfig, updateInstanceUrl, updateToken } from '@/adapter'
 import { getServerPermissionsFromRules, prepareAppPermissions, resetPermissions, setPermissions } from "@/authorization"
 
 const actions: ActionTree<UserState, RootState> = {
@@ -20,10 +19,7 @@ const actions: ActionTree<UserState, RootState> = {
   */
   async login ({ commit, dispatch }, payload) {
     try {
-
-      // TODO: implement support for permission check
-
-      const { token, oms, omsRedirectionUrl } = payload;
+      const { token, oms } = payload;
       dispatch("setUserInstanceUrl", oms);
       
       // Getting the permissions list from server
@@ -34,7 +30,7 @@ const actions: ActionTree<UserState, RootState> = {
 
       const serverPermissions: Array<string> = await UserService.getUserPermissions({
         permissionIds: [...new Set(serverPermissionsFromRules)]
-      }, omsRedirectionUrl, token);
+      }, token);
       const appPermissions = prepareAppPermissions(serverPermissions);
 
 
@@ -53,22 +49,17 @@ const actions: ActionTree<UserState, RootState> = {
         }
       }
 
-      emitter.emit("presentLoader", { message: "Logging in...", backdropDismiss: false })
-      const api_key = await UserService.login(token)
-
-      const userProfile = await UserService.getUserProfile(api_key);
+      const userProfile = await UserService.getUserProfile(token);
 
       if (userProfile.timeZone) {
         Settings.defaultZone = userProfile.timeZone;
       }
       
       setPermissions(appPermissions);
-      if(omsRedirectionUrl && token) {
-        dispatch("setOmsRedirectionInfo", { url: omsRedirectionUrl, token })
-      }
-      commit(types.USER_TOKEN_CHANGED, { newToken: api_key })
+      commit(types.USER_TOKEN_CHANGED, { newToken: token })
       commit(types.USER_INFO_UPDATED, userProfile);
       commit(types.USER_PERMISSIONS_UPDATED, appPermissions);
+      updateToken(token)
       emitter.emit("dismissLoader")
     } catch (err: any) {
       emitter.emit("dismissLoader")
@@ -79,48 +70,74 @@ const actions: ActionTree<UserState, RootState> = {
   },
 
   /**
-  * Logout user
-  */
-  async logout({ commit, dispatch }) {
+   * Logout user
+   */
+  async logout ({ commit }, payload) {
+    // store the url on which we need to redirect the user after logout api completes in case of SSO enabled
+    let redirectionUrl = ''
+
     emitter.emit('presentLoader', { message: 'Logging out', backdropDismiss: false })
 
-    const authStore = useAuthStore()
+    // Calling the logout api to flag the user as logged out, only when user is authorised
+    // if the user is already unauthorised then not calling the logout api as it returns 401 again that results in a loop, thus there is no need to call logout api if the user is unauthorised
+    if(!payload?.isUserUnauthorised) {
+      let resp;
 
+      // wrapping the parsing logic in try catch as in some case the logout api makes redirection, and then we are unable to parse the resp and thus the logout process halts
+      try {
+        resp = await logout();
+
+        // Added logic to remove the `//` from the resp as in case of get request we are having the extra characters and in case of post we are having 403
+        resp = JSON.parse(resp.startsWith('//') ? resp.replace('//', '') : resp)
+      } catch(err) {
+        logger.error('Error parsing data', err)
+      }
+
+      if(resp?.logoutAuthType == 'SAML2SSO') {
+        redirectionUrl = resp.logoutUrl
+      }
+    }
+
+    const authStore = useAuthStore()
+    const userStore = useUserStore()
     // TODO add any other tasks if need
     commit(types.USER_END_SESSION)
-    dispatch("setOmsRedirectionInfo", { url: "", token: "" })
     resetConfig();
     resetPermissions();
+
     // reset plugin state on logout
     authStore.$reset()
+    userStore.$reset()
+
+    // If we get any url in logout api resp then we will redirect the user to the url
+    if(redirectionUrl) {
+      window.location.href = redirectionUrl
+    }
 
     emitter.emit('dismissLoader')
+    return redirectionUrl;
   },
 
+
   /**
-  * Update user timeZone
-  */
-  async setUserTimeZone({ state, commit }, payload) {
+   * Update user timeZone
+   */
+  async setUserTimeZone ( { state, commit }, timeZoneId) {
     const current: any = state.current;
-    // TODO: add support to change the user time on server, currently api to update user is not available
-    if(current.timeZone !== payload.tzId) {
-      current.timeZone = payload.tzId;
-      commit(types.USER_INFO_UPDATED, current);
-      Settings.defaultZone = current.timeZone;
-      showToast(translate("Time zone updated successfully"));
-    }
+    current.userTimeZone = timeZoneId;
+    commit(types.USER_INFO_UPDATED, current);
+    Settings.defaultZone = current.userTimeZone;
   },
 
-  setOmsRedirectionInfo({ commit }, payload) {
-    commit(types.USER_OMS_REDIRECTION_INFO_UPDATED, payload)
-  },
-
-  /**
-  * Set User Instance Url
-  */
-  setUserInstanceUrl({ commit }, payload) {
+  // Set User Instance Url
+  setUserInstanceUrl ({ commit }, payload){
     commit(types.USER_INSTANCE_URL_UPDATED, payload)
+    updateInstanceUrl(payload)
   },
+
+  updatePwaState({commit}, payload) {
+    commit(types.USER_PWA_STATE_UPDATED, payload);
+  }
 }
 
 export default actions;
