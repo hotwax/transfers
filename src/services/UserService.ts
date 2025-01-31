@@ -1,77 +1,39 @@
-import api, {client} from "@/api"
+import {api, client} from "@/adapter"
 import store from "@/store";
 import { hasError } from "@/utils";
 
-const login = async (token: string): Promise <any> => {
-  const url = store.getters["user/getBaseUrl"]
-  const baseURL = url.startsWith('http') ? url.includes('/rest/s1/admin') ? url : `${url}/rest/s1/admin/` : `https://${url}.hotwax.io/rest/s1/admin/`;
-  let api_key = ""
-
-  try {
-    const resp = await client({
-      url: "login", 
-      method: "post",
-      baseURL,
-      params: {
-        token
-      },
-      headers: {
-        "Content-Type": "application/json"
-      }
-    }) as any;
-
-    if(!hasError(resp) && (resp.data.api_key || resp.data.token)) {
-      api_key = resp.data.api_key || resp.data.token
-    } else {
-      throw "Sorry, login failed. Please try again";
+const login = async (username: string, password: string): Promise <any> => {
+  return api({
+    url: "login", 
+    method: "post",
+    data: {
+      'USERNAME': username, 
+      'PASSWORD': password
     }
-  } catch(err) {
-    return Promise.reject("Sorry, login failed. Please try again");
-  }
-  return Promise.resolve(api_key)
+  });
 }
 
 const getUserProfile = async (token: any): Promise<any> => {
-  const url = store.getters["user/getBaseUrl"]
-  const baseURL = url.startsWith('http') ? url.includes('/rest/s1/admin') ? url : `${url}/rest/s1/admin/` : `https://${url}.hotwax.io/rest/s1/admin/`;
+  const baseURL = store.getters['user/getBaseUrl'];
   try {
     const resp = await client({
-      url: "user/profile",
-      method: "GET",
+      url: "user-profile",
+      method: "get",
       baseURL,
       headers: {
-        "api_key": token,
-        "Content-Type": "application/json"
+        Authorization:  'Bearer ' + token,
+        'Content-Type': 'application/json'
       }
     });
-    if(hasError(resp)) throw "Error getting user profile";
+    if(hasError(resp)) return Promise.reject("Error getting user profile: " + JSON.stringify(resp.data));
     return Promise.resolve(resp.data)
   } catch(error: any) {
     return Promise.reject(error)
   }
 }
 
-const getAvailableTimeZones = async (): Promise <any>  => {
-  const url = store.getters["user/getBaseUrl"]
-  const baseURL = url.startsWith('http') ? url.includes('/rest/s1/admin') ? url : `${url}/rest/s1/admin/` : `https://${url}.hotwax.io/rest/s1/admin/`;
-  return client({
-    url: "user/getAvailableTimeZones",
-    method: "get",
-    baseURL,
-    cache: true
-  });
-}
-const setUserTimeZone = async (payload: any): Promise <any>  => {
-  return api({
-    url: "setUserTimeZone",
-    method: "post",
-    data: payload
-  });
-}
-
-const getUserPermissions = async (payload: any, url: string, token: any): Promise<any> => {
-  // Currently, making this request in ofbiz
-  const baseURL = url.startsWith('http') ? url.includes('/api') ? url : `${url}/api/` : `https://${url}.hotwax.io/api/`;
+const getUserPermissions = async (payload: any, token: any): Promise<any> => {
+  const baseURL = store.getters['user/getBaseUrl'];
   let serverPermissions = [] as any;
 
   // If the server specific permission list doesn't exist, getting server permissions will be of no use
@@ -160,9 +122,7 @@ const getUserPermissions = async (payload: any, url: string, token: any): Promis
 }
 
 export const UserService = {
-  getAvailableTimeZones,
   getUserProfile,
   getUserPermissions,
   login,
-  setUserTimeZone,
 }

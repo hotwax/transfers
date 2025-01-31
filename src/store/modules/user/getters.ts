@@ -20,13 +20,13 @@ const getters: GetterTree <UserState, RootState> = {
   },
   getBaseUrl(state) {
     const baseURL = state.instanceUrl;
-    return baseURL.startsWith("http") ? baseURL : `https://${baseURL}.hotwax.io/rest/s1/admin/`;
-  },
-  getOmsRedirectionInfo(state) {
-    return state.omsRedirectionInfo;
+    return baseURL.startsWith('http') ? baseURL.includes('/api') ? baseURL : `${baseURL}/api/` : `https://${baseURL}.hotwax.io/api/`;
   },
   getUserPermissions (state) {
     return state.permissions;
   },
+  getPwaState (state) {
+    return state.pwaState;
+  }
 }
 export default getters;

@@ -17,11 +17,12 @@ const mutations: MutationTree <UserState> = {
   [types.USER_INSTANCE_URL_UPDATED] (state, payload) {
     state.instanceUrl = payload;
   },
-  [types.USER_OMS_REDIRECTION_INFO_UPDATED](state, payload) {
-    state.omsRedirectionInfo = payload;
-  },
   [types.USER_PERMISSIONS_UPDATED] (state, payload) {
     state.permissions = payload
+  },
+  [types.USER_PWA_STATE_UPDATED] (state, payload) {
+      state.pwaState.registration = payload.registration;
+      state.pwaState.updateExists = payload.updateExists;
   }
 }
 export default mutations;

@@ -1,18 +1,17 @@
-import { api, askQuery, client, getConfig, getGitBookPage, getProductIdentificationPref, getUserFacilities, initialise, logout, resetConfig, searchQuery, setProductIdentificationPref, updateInstanceUrl, updateToken } from '@hotwax/oms-api'
+import { api, client, getAvailableTimeZones, getConfig, getUserFacilities, hasError, initialise, logout, resetConfig, setUserLocale, updateInstanceUrl, updateToken, setUserTimeZone } from '@hotwax/oms-api'
 
 export {
   api,
-  askQuery,
   client,
   getConfig,
-  getGitBookPage,
-  getProductIdentificationPref,
+  getAvailableTimeZones,
   getUserFacilities,
+  hasError,
   initialise,
   logout,
   resetConfig,
-  searchQuery,
-  setProductIdentificationPref,
+  setUserLocale,
   updateInstanceUrl,
-  updateToken
+  updateToken,
+  setUserTimeZone
 }

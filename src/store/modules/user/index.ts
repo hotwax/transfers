@@ -11,11 +11,11 @@ const userModule: Module<UserState, RootState> = {
     token: "",
     current: null,
     instanceUrl: "",
-    omsRedirectionInfo: {
-      url: "",
-      token: ""
-    },
-    permissions: []
+    permissions: [],
+    pwaState: {
+      updateExists: false,
+      registration: null,
+    }
   },
   getters,
   actions,
