@@ -37,6 +37,7 @@
 
       <section>
         <DxpOmsInstanceNavigator />
+        <DxpProductStoreSelector @updateEComStore="updateEComStore" />
       </section>
 
       <hr />
@@ -44,6 +45,7 @@
       <DxpAppVersionInfo />
 
       <section>
+        <DxpProductIdentifier />
         <DxpTimeZoneSwitcher @timeZoneUpdated="timeZoneUpdated" />
       </section>
     </ion-content>
@@ -54,9 +56,10 @@
 import { IonAvatar, IonButton, IonCard, IonCardHeader, IonCardSubtitle, IonCardTitle, IonContent, IonHeader, IonIcon, IonItem, IonMenuButton, IonPage, IonTitle, IonToolbar } from "@ionic/vue";
 import { computed, onMounted, ref } from "vue";
 import { useStore } from "vuex";
-import Image from "@/components/Image.vue"
-import { translate } from "@/i18n"
-import { openOutline } from "ionicons/icons"
+import Image from "@/components/Image.vue";
+import { openOutline } from "ionicons/icons";
+import { translate, useProductIdentificationStore } from "@hotwax/dxp-components";
+import logger from "@/logger";
 
 const store = useStore()
 const appVersion = ref("")
@@ -80,6 +83,11 @@ function logout() {
 
 async function timeZoneUpdated(tzId: string) {
   await store.dispatch("user/setUserTimeZone", tzId)
+}
+
+async function updateEComStore(selectedProductStore: any) {
+  await useProductIdentificationStore().getIdentificationPref(selectedProductStore.productStoreId)
+    .catch((error) => logger.error(error));
 }
 
 function goToLaunchpad() {

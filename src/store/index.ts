@@ -5,7 +5,10 @@ import actions from "./actions"
 import RootState from "./RootState"
 import createPersistedState from "vuex-persistedstate";
 import userModule from "./modules/user";
+import orderModule from "./modules/order"
+import productModule from "./modules/product"
 import { setPermissions } from "@/authorization"
+import utilModule from "./modules/util"
 
 // TODO check how to register it from the components only
 // Handle same module registering multiple time on page refresh
@@ -14,7 +17,7 @@ import { setPermissions } from "@/authorization"
 const state: any = {}
 
 const persistState = createPersistedState({
-  paths: ["user"],
+  paths: ["user", "product.cached"],
   fetchBeforeUse: true
 })
 
@@ -26,7 +29,10 @@ const store = createStore<RootState>({
   getters,
   plugins: [ persistState ],
   modules: {
-    "user": userModule
+    "user": userModule,
+    "order": orderModule,
+    "product": productModule,
+    "util": utilModule
   },
 })
 

@@ -11,7 +11,7 @@
       <div class="find">
         <section class="search">
           <ion-item>
-            <ion-input :label="translate('Transfer name')" placeholder="Placeholder" />
+            <ion-input :label="translate('Transfer name')" placeholder="Placeholder" v-model="currentOrder.name" />
           </ion-item>
         </section>
 
@@ -21,9 +21,21 @@
               <ion-card-title>{{ translate("Assign") }}</ion-card-title>
             </ion-card-header>
             <ion-item>
+              <ion-icon :icon="storefrontOutline" slot="start" />
+              <ion-select value="" :label="translate('Product Store')" interface="popover" v-model="currentOrder.productStoreId" @ionChange="productStoreUpdated()">
+                <ion-select-option v-for="store in stores" :value="store.productStoreId" :key="store.productStoreId">{{ store.storeName ? store.storeName : store.productStoreId }}</ion-select-option>
+              </ion-select>
+            </ion-item>
+            <ion-item>
               <ion-icon :icon="sendOutline" slot="start" />
               <ion-label>{{ translate("Origin") }}</ion-label>
-              <ion-button slot="end" fill="outline">
+              <template v-if="currentOrder.originFacilityId" slot="end">
+                <ion-label slot="end">{{ getFacilityName(currentOrder.originFacilityId) }}</ion-label>
+                <ion-button slot="end" fill="clear" @click="openSelectFacilityModal('originFacilityId')">
+                  <ion-icon :icon="pencilOutline" slot="icon-only" />
+                </ion-button>
+              </template>
+              <ion-button v-else slot="end" fill="outline" @click="openSelectFacilityModal('originFacilityId')">
                 <ion-icon slot="start" :icon="addCircleOutline" />
                 <ion-label>{{ translate("Assign") }}</ion-label>
               </ion-button>
@@ -31,7 +43,13 @@
             <ion-item lines="none">
               <ion-icon :icon="downloadOutline" slot="start" />
               <ion-label>{{ translate("Destination") }}</ion-label>
-              <ion-button slot="end" fill="outline">
+              <template v-if="currentOrder.destinationFacilityId" slot="end">
+                <ion-label slot="end">{{ getFacilityName(currentOrder.destinationFacilityId) }}</ion-label>
+                <ion-button slot="end" fill="clear" @click="openSelectFacilityModal('destinationFacilityId')">
+                  <ion-icon :icon="pencilOutline" slot="icon-only" />
+                </ion-button>
+              </template>
+              <ion-button v-else slot="end" fill="outline" @click="openSelectFacilityModal('destinationFacilityId')">
                 <ion-icon slot="start" :icon="addCircleOutline" />
                 <ion-label>{{ translate("Assign") }}</ion-label>
               </ion-button>
@@ -43,14 +61,18 @@
               <ion-card-title>{{ translate("Shipping Method") }}</ion-card-title>
             </ion-card-header>
             <ion-item>
-              <ion-select :label="translate('Method')" value="">
-                <ion-select-option value="">{{ "Next Day Shipping" }}</ion-select-option>
+              <ion-select :label="translate('Carrier')" v-model="currentOrder.carrierPartyId" interface="popover">
+                <ion-select-option :value="carrierPartyId" v-for="(carrierPartyId, index) in Object.keys(shipmentMethodsByCarrier)" :key="index">{{ carrierPartyId }}</ion-select-option>
               </ion-select>
             </ion-item>
             <ion-item lines="none">
-              <ion-select :label="translate('Carrier')" value="">
-                <ion-select-option value="">{{ "Forza" }}</ion-select-option>
+              <ion-select :label="translate('Method')" v-model="currentOrder.shipmentMethodTypeId" v-if="getCarrierShipmentMethods()?.length" interface="popover">
+                <ion-select-option :value="shipmentMethod.shipmentMethodTypeId" v-for="(shipmentMethod, index) in getCarrierShipmentMethods()" :key="index">{{ shipmentMethod.description ? shipmentMethod.description : shipmentMethod.shipmentMethodTypeId }}</ion-select-option>
               </ion-select>
+              <template v-else>
+                <ion-icon :icon="informationCircleOutline" slot="start" />
+                <ion-label>{{ "No shipment methods found" }}</ion-label>
+              </template>
             </ion-item>
           </ion-card>
 
@@ -60,11 +82,11 @@
             </ion-card-header>
             <ion-item>
               <ion-label>{{ translate("Ship Date") }}</ion-label>
-              <ion-button slot="end" class="date-time-button">{{ "3rd March 2024" }}</ion-button>
+              <ion-button slot="end" class="date-time-button" @click="openDateTimeModal('shipDate')">{{ currentOrder.shipDate ? formatDateTime(currentOrder.shipDate) : translate("Select Date") }}</ion-button>
             </ion-item>
             <ion-item>
               <ion-label>{{ translate("Delivery Date") }}</ion-label>
-            <ion-button slot="end" class="date-time-button">{{ "3rd March 2024" }}</ion-button>
+              <ion-button slot="end" class="date-time-button" @click="openDateTimeModal('deliveryDate')">{{ currentOrder.deliveryDate ? formatDateTime(currentOrder.deliveryDate) : translate("Select Date") }}</ion-button>
             </ion-item>
           </ion-card>
 
@@ -75,24 +97,42 @@
           </ion-item>
         </aside>
 
+        <ion-modal class="date-time-modal" :is-open="dateTimeModalOpen" @didDismiss="closeDateTimeModal">
+          <ion-content force-overscroll="false">
+            <ion-datetime 
+              :value="currentOrder[selectedDateFilter]"
+              show-clear-button
+              show-default-buttons
+              presentation="date"
+              :min="currentOrder.shipDate"
+              :max="currentOrder.deliveryDate" 
+              @ionChange="updateDateTimeFilter($event.detail.value)"
+            />
+          </ion-content>
+        </ion-modal>
+
         <main>
           <div class="item-search">
             <ion-item>
               <ion-icon slot="start" :icon="listOutline"/>
-              <ion-input :label="translate('Add product')" label-placement="floating" :clear-input="true" />
+              <ion-input :label="translate('Add product')" label-placement="floating" :clear-input="true" v-model="queryString" :placeholder="translate('Searching on SKU')" @keyup.enter="addProductToCount()" />
             </ion-item>
-            <ion-item lines="none">
+            <ion-item lines="none" v-if="isSearchingProduct">
+              <ion-spinner color="secondary" name="crescent"></ion-spinner>
+            </ion-item>
+            <ion-item lines="none" v-else-if="searchedProduct.productId">
               <ion-thumbnail slot="start">
-                <Image src=""/>
+                <Image :src="getProduct(searchedProduct.productId).mainImageUrl"/>
               </ion-thumbnail>
               <ion-label>
                 <p class="overline">{{ translate("Search result") }}</p>
-                {{ "Product name" }}
+                {{ searchedProduct.internalName || searchedProduct.sku || searchedProduct.productId }}
               </ion-label>
-              <ion-button slot="end" fill="clear">
-                <ion-icon slot="icon-only" :icon="addCircleOutline"/>
+              <ion-button slot="end" fill="clear" @click="addProductToCount" :color="isProductAvailableInCycleCount() ? 'success' : 'primary'">
+                <ion-icon slot="icon-only" :icon="isProductAvailableInCycleCount() ? checkmarkCircle : addCircleOutline"/>
               </ion-button>
             </ion-item>
+            <p v-else-if="queryString">{{ translate("No product found") }}</p>
           </div>
 
           <hr />
@@ -112,29 +152,29 @@
             </ion-button>
           </div>
 
-          <div class="list-item">
+          <div class="list-item" v-for="(item, index) in currentOrder.items" :key="index">
             <ion-item lines="none">
               <ion-thumbnail slot="start">
-                <Image src="" />
+                <Image :src="getProduct(item.productId)?.mainImageUrl" />
               </ion-thumbnail>
               <ion-label>
-                {{ "Primary Identifier" }}
-                <p>{{ "Secondary Identifier" }}</p>
+                {{ getProductIdentificationValue(productIdentificationStore.getProductIdentificationPref.primaryId, getProduct(item.productId)) || getProduct(item.productId).productName }}
+                <p>{{ getProductIdentificationValue(productIdentificationStore.getProductIdentificationPref.secondaryId, getProduct(item.productId)) }}</p>
               </ion-label>
             </ion-item>
             <div class="tablet">
               <ion-chip outline>
                 <ion-icon slot="start" :icon="sendOutline" />
-                <ion-label>{{ "50 QOH" }}</ion-label>
+                <ion-label>{{ item.qoh }} {{ translate("QOH") }}</ion-label>
               </ion-chip>
             </div>
             <ion-item>
-              <ion-input placeholder="Qty" />
+              <ion-input type="number" placeholder="Qty" v-model="item.quantity" />
             </ion-item>
             <div class="tablet">
-              <ion-checkbox />
+              <ion-checkbox v-model="item.isChecked" />
             </div>
-            <ion-button slot="end" fill="clear" color="medium" @click="openOrderItemActionsPopover($event)">
+            <ion-button slot="end" fill="clear" color="medium" @click="openOrderItemActionsPopover($event, item)">
               <ion-icon :icon="ellipsisVerticalOutline" slot="icon-only" />
             </ion-button>
           </div>
@@ -142,7 +182,7 @@
       </div>
 
       <ion-fab vertical="bottom" horizontal="end" slot="fixed">
-        <ion-fab-button>
+        <ion-fab-button @click="createOrder()">
           <ion-icon :icon="checkmarkDoneOutline" />
         </ion-fab-button>
       </ion-fab>
@@ -151,19 +191,289 @@
 </template>
 
 <script setup lang="ts">
-import { IonBackButton, IonButton, IonCard, IonCardHeader, IonCardTitle, IonCheckbox, IonChip, IonContent, IonFab, IonFabButton, IonHeader, IonIcon, IonInput, IonItem, IonLabel, IonPage, IonSelect, IonSelectOption, IonThumbnail, IonTitle, IonToolbar, popoverController } from '@ionic/vue';
-import { addCircleOutline, checkmarkDoneOutline, cloudUploadOutline, downloadOutline, ellipsisVerticalOutline, listOutline, sendOutline } from 'ionicons/icons';
-import { translate } from '@hotwax/dxp-components'
+import { IonBackButton, IonButton, IonCard, IonCardHeader, IonCardTitle, IonCheckbox, IonChip, IonContent, IonDatetime, IonFab, IonFabButton, IonHeader, IonIcon, IonInput, IonItem, IonLabel, IonModal, IonPage, IonSelect, IonSelectOption, IonThumbnail, IonTitle, IonToolbar, onIonViewWillEnter, modalController, popoverController } from '@ionic/vue';
+import { addCircleOutline, checkmarkCircle, checkmarkDoneOutline, cloudUploadOutline, downloadOutline, ellipsisVerticalOutline, informationCircleOutline, listOutline, pencilOutline, search, sendOutline, storefrontOutline } from 'ionicons/icons';
+import { getProductIdentificationValue, translate, useProductIdentificationStore, useUserStore } from '@hotwax/dxp-components'
 import Image from '@/components/Image.vue';
 import OrderItemActionsPopover from '@/components/OrderItemActionsPopover.vue';
+import { computed, ref, watch } from "vue";
+import { getDateWithOrdinalSuffix, hasError, showToast } from '@/utils';
+import { ProductService } from '@/services/ProductService';
+import logger from '@/logger';
+import { useStore } from 'vuex';
+import { UserService } from '@/services/UserService';
+import SelectFacilityModal from '@/components/SelectFacilityModal.vue';
+import { UtilService } from '@/services/UtilService';
+import { OrderService } from '@/services/OrderService';
+import router from '@/router';
+import { DateTime } from 'luxon';
 
-async function openOrderItemActionsPopover(event: any){
+const store = useStore();
+const productIdentificationStore = useProductIdentificationStore();
+
+let timeoutId = ref();
+const isSearchingProduct = ref(false);
+const searchedProduct = ref({}) as any;
+const queryString = ref("");
+const stores = ref([]) as any;
+const facilities = ref([]) as any;
+const dateTimeModalOpen = ref(false);
+const selectedDateFilter = ref("");
+const currentOrder = ref({
+  name: "",
+  productStoreId: "",
+  originFacilityId: "",
+  destinationFacilityId: "",
+  carrierPartyId: "",
+  shipmentMethodTypeId: "", 
+  items: []
+}) as any;
+
+const getProduct = computed(() => store.getters["product/getProduct"])
+const shipmentMethodsByCarrier = computed(() => store.getters["util/getShipmentMethodsByCarrier"])
+
+// Implemented watcher to display the search spinner correctly. Mainly the watcher is needed to not make the findProduct call always and to create the debounce effect.
+// Previously we were using the `debounce` property of ion-input but it was updating the searchedString and making other related effects after the debounce effect thus the spinner is also displayed after the debounce
+// effect is completed.
+watch(queryString, (value) => {
+  const searchedString = value.trim()
+
+  if(searchedString?.length) {
+    isSearchingProduct.value = true
+  } else {
+    searchedProduct.value = {}
+    isSearchingProduct.value = false
+  }
+
+  if(timeoutId.value) {
+    clearTimeout(timeoutId.value)
+  }
+
+  // Storing the setTimeoutId in a variable as watcher is invoked multiple times creating multiple setTimeout instance those are all called, but we only need to call the function once.
+  timeoutId.value = setTimeout(() => {
+    if(searchedString?.length) findProduct()
+  }, 1000)
+
+}, { deep: true })
+
+onIonViewWillEnter(async () => {
+  stores.value = useUserStore().eComStores
+  if(stores.value?.length) currentOrder.value.productStoreId = stores.value[0]?.productStoreId
+  await fetchFacilitiesByCurrentStore();
+  currentOrder.value.originFacilityId = facilities.value[0]?.facilityId
+  store.dispatch("util/fetchStoreCarrierAndMethods", currentOrder.value.productStoreId);
+})
+
+function getFacilityName(facilityId: any) {
+  return facilities.value.find((facility: any) => facility.facilityId === facilityId)?.facilityName
+}
+
+async function openSelectFacilityModal(facilityType: any) {
+  const addressModal = await modalController.create({
+    component: SelectFacilityModal,
+    componentProps: { selectedFacilityId: currentOrder.value[facilityType], facilities: facilities.value }
+  })
+
+  addressModal.onDidDismiss().then(async(result: any) => {
+    if(result.data?.selectedFacilityId) {
+      currentOrder.value[facilityType] = result.data.selectedFacilityId
+    }
+  })
+
+  addressModal.present()
+}
+
+function getCarrierShipmentMethods() {
+  return currentOrder.value.carrierPartyId && shipmentMethodsByCarrier.value[currentOrder.value.carrierPartyId]
+}
+
+async function addProductToCount() {
+  // If product is not found in the searched string then do not make the api call
+  // check is only required to handle the case wshen user presses the enter key on the input and we do not have any result in the searchedProduct
+  if (!searchedProduct.value.productId ||!queryString.value) return;
+  if (isProductAvailableInCycleCount()) return;
+
+  let newProduct = { 
+    productId: searchedProduct.value.productId,
+    sku: searchedProduct.value.sku,
+    quantity: 0,
+    isChecked: false,
+    unitPrice: searchedProduct.value.BASE_PRICE_PURCHASE_USD_STORE_GROUP_price
+  } as any;
+
+  const stock = await fetchStock(newProduct.productId);
+  if(stock?.quantityOnHandTotal || stock?.quantityOnHandTotal === 0) {
+    newProduct = { ...newProduct, qoh: stock.quantityOnHandTotal, atp: stock.availableToPromiseTotal }
+  }
+
+  currentOrder.value.items.push(newProduct);
+}
+
+async function fetchStock(productId: string) {
+  try {
+    const resp: any = await UtilService.getInventoryAvailableByFacility({
+      productId,
+      facilityId: currentOrder.value.originFacilityId
+    });
+
+    if(!hasError(resp)) {
+      return resp.data;
+    } else {
+      throw resp.data;
+    }
+  } catch (err) {
+    logger.error(err)
+    return null;
+  }
+}
+
+async function productStoreUpdated() {
+  await fetchFacilitiesByCurrentStore();
+  currentOrder.value.originFacilityId = facilities.value[0]?.facilityId;
+  currentOrder.value.destinationFacilityId = "";
+  store.dispatch("util/fetchStoreCarrierAndMethods", currentOrder.value.productStoreId);
+}
+
+function isProductAvailableInCycleCount() {
+  return currentOrder.value.items.some((item: any) => item.productId === searchedProduct.value.productId)
+}
+
+async function fetchFacilitiesByCurrentStore() {
+  let availableFacilities = [];
+
+  try {
+    const resp = await UserService.fetchFacilitiesByCurrentStore({
+      inputFields: {
+        productStoreId: currentOrder.value.productStoreId,
+        facilityTypeId: "VIRTUAL_FACILITY",
+        facilityTypeId_op: "notEqual",
+        parentFacilityTypeId: "VIRTUAL_FACILITY",
+        parentFacilityTypeId_op: "notEqual"
+      },
+      fieldList: ["facilityId", "facilityName"],
+      viewSize: 200,
+      entityName: "FacilityAndProductStore"
+    })
+
+    if(!hasError(resp)) {
+      availableFacilities = resp.data.docs
+    } else {
+      throw resp.data;
+    }
+  } catch(error: any) {
+    logger.error(error);
+  }
+  facilities.value = availableFacilities
+}
+
+async function findProduct() {
+  if(!queryString.value.trim()) {
+    showToast(translate("Enter a valid product sku"));
+    return;
+  }
+
+  isSearchingProduct.value = true;
+  try {
+    const resp = await ProductService.fetchProducts({
+      "filters": ['isVirtual: false', `sku: ${queryString.value}`], // Made exact searching as when using fuzzy searching the products are not searched as expected
+      "viewSize": 1 // as we only need a single record
+    })
+    if (!hasError(resp) && resp.data.response?.docs?.length) {
+      searchedProduct.value = resp.data.response.docs[0];
+      store.dispatch("product/addProductToCached", searchedProduct.value)      
+    } else {
+      throw resp.data
+    }
+  } catch(err) {
+    searchedProduct.value = {}
+    logger.error("Product not found", err)
+  }
+
+  isSearchingProduct.value = false
+}
+
+async function openOrderItemActionsPopover(event: any, selectedItem: any){
   const popover = await popoverController.create({
     component: OrderItemActionsPopover,
+    componentProps: { item: selectedItem },
     event,
     showBackdrop: false,
   });
+
+  popover.onDidDismiss().then((result: any) => {
+    const action = result.data?.action
+    let newQty = selectedItem.quantity;
+
+    if(action === "bookQOH" || action === "bookATP") newQty = (action === "bookQOH") ? selectedItem.qoh : selectedItem.atp
+
+    if(action === "remove") {
+      currentOrder.value.items = currentOrder.value.items.filter((item: any) => selectedItem.productId !== item.productId)
+    } else {
+      selectedItem.quantity = newQty
+    }
+  })
+
   await popover.present();
+}
+
+async function createOrder() {
+  const order = {
+    orderName: currentOrder.value.name,
+    orderTypeId: "TRANSFER_ORDER",
+    customerId: "COMPANY",
+    statusId: "ORDER_CREATED",
+    productStoreId: currentOrder.value.productStoreId,
+    shipGroup: [{
+      shipGroupSeqId: "00001",
+      facilityId: currentOrder.value.originFacilityId,
+      orderFacilityId: currentOrder.value.destinationFacilityId,
+      carrierPartyId: currentOrder.value.carrierPartyId,
+      shipmentMethodTypeId: currentOrder.value.shipmentMethodTypeId,
+      estimatedShipDate: currentOrder.value.shipDate?.toMillis(),
+      estimatedDeliveryDate: currentOrder.value.deliveryDate?.toMillis(),
+      items: currentOrder.value.items.map((item: any) => {
+        return {
+          productId: item.productId,
+          sku: item.sku,
+          status: "ITEM_CREATED",
+          quantity: Number(item.quantity),
+          unitPrice: item.unitPrice
+        }
+      })
+    }]
+  }
+
+  try {
+    const resp = await OrderService.CreateOrder({ order })
+    if(!hasError(resp)) {
+      router.push(`/order-detail/${resp.data.orderId}`)
+    } else {
+      throw resp.data;
+    }
+  } catch(error: any) {
+    logger.error(error)
+  }
+  
+}
+
+
+function formatDateTime(date: any) {
+  const dateTime = DateTime.fromISO(date);
+  return getDateWithOrdinalSuffix(dateTime.toMillis());
+}
+
+function updateDateTimeFilter(value: any) {
+  currentOrder.value[selectedDateFilter.value] = value;
+}
+
+function closeDateTimeModal() {
+  dateTimeModalOpen.value = false;
+  selectedDateFilter.value = "";
+}
+
+function openDateTimeModal(type: any) {
+  dateTimeModalOpen.value = true;
+  selectedDateFilter.value = type;
 }
 </script>
 
@@ -185,6 +495,12 @@ which results in distorted label text and thus reduced ion-item width */
 
 .find > .filters{
   display: unset;
+}
+
+.date-time-modal {
+  --width: 320px;
+  --height: 400px;
+  --border-radius: 8px;
 }
 
 @media (min-width: 991px) {

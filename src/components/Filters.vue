@@ -56,5 +56,5 @@
 
 <script setup lang="ts">
 import { IonContent,IonHeader, IonItem, IonLabel, IonList, IonMenu, IonSelect, IonSelectOption, IonTitle, IonToolbar } from "@ionic/vue";
-import { translate } from '@/i18n'
+import { translate } from "@hotwax/dxp-components";
 </script>

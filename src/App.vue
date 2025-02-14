@@ -10,8 +10,9 @@ import { IonApp, IonRouterOutlet, loadingController } from "@ionic/vue";
 import emitter from "@/event-bus"
 import { Settings } from 'luxon'
 import store from "./store";
-import { translate } from "@/i18n"
 import { initialise, resetConfig } from '@/adapter'
+import { translate, useProductIdentificationStore, useUserStore } from "@hotwax/dxp-components";
+import logger from '@/logger';
 
 const userProfile = computed(() => store.getters["user/getUserProfile"])
 const userToken = computed(() => store.getters["user/getUserToken"])
@@ -69,6 +70,11 @@ onMounted(async () => {
   if (userProfile.value) {
     // Luxon timezone should be set with the user's selected timezone
     userProfile.value.timeZone && (Settings.defaultZone = userProfile.value.timeZone);
+  }
+  if(userToken.value) {
+    const currentEComStore : any = useUserStore().getCurrentEComStore;
+    await useProductIdentificationStore().getIdentificationPref(currentEComStore.productStoreId)
+      .catch((error) => logger.error(error));
   }
 })
 

@@ -20,5 +20,5 @@
 
 <script setup lang="ts">
 import { IonContent, IonItem, IonList, IonListHeader } from "@ionic/vue"
-import { translate } from "@/i18n"
+import { translate } from "@hotwax/dxp-components";
 </script>

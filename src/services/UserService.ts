@@ -121,7 +121,16 @@ const getUserPermissions = async (payload: any, token: any): Promise<any> => {
     }
 }
 
+const fetchFacilitiesByCurrentStore = (payload: any): Promise <any> => {
+  return api({
+    url: "/performFind",
+    method: "POST",
+    data: payload
+  });
+}
+
 export const UserService = {
+  fetchFacilitiesByCurrentStore,
   getUserProfile,
   getUserPermissions,
   login,

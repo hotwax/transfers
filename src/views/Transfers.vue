@@ -16,10 +16,10 @@
       </ion-toolbar>
     </ion-header>
 
-    <ion-content id="filter-content">
+    <ion-content id="filter-content" ref="contentRef" :scroll-events="true" @ionScroll="enableScrolling()">
       <div class="find">
         <section class="search">
-          <ion-searchbar :placeholder="translate('Search transfer orders')" />
+          <ion-searchbar :placeholder="translate('Search transfer orders')" v-model="queryString" @keyup.enter="queryString = $event.target.value; updateAppliedFilters($event.target.value, 'queryString')" />
         </section>
 
         <aside class="filters">
@@ -30,39 +30,45 @@
               </ion-label>
             </ion-item>
             <ion-item lines="none">
-              <ion-select :label="translate('Product Store')" interface="popover" value="">
-                <ion-select-option value="">Notnaked</ion-select-option>
+              <ion-select :label="translate('Product Store')" interface="popover" :value="query.productStore" @ionChange="updateAppliedFilters($event['detail'].value, 'productStore')">
+                <ion-select-option value="">{{ translate("All") }}</ion-select-option>
+                <ion-select-option v-for="store in productStoreOptions" :key="store" :value="store">{{ store }}</ion-select-option>
               </ion-select>
             </ion-item>
             <ion-item lines="none">
-              <ion-select :label="translate('Origin')" interface="popover" value="">
-                <ion-select-option value="">California Warehouse</ion-select-option>
+              <ion-select :label="translate('Origin')" interface="popover" :value="query.originFacility" @ionChange="updateAppliedFilters($event['detail'].value, 'originFacility')">
+                <ion-select-option value="">{{ translate("All") }}</ion-select-option>
+                <ion-select-option v-for="facility in originFacilityOptions" :key="facility" :value="facility">{{ facility }}</ion-select-option>
               </ion-select>
             </ion-item>
             <ion-item lines="none">
-              <ion-select :label="translate('Destination')" interface="popover" value="">
-                <ion-select-option value="">Irvine Spectrum</ion-select-option>
+              <ion-select :label="translate('Destination')" interface="popover" :value="query.destinationFacility" @ionChange="updateAppliedFilters($event['detail'].value, 'destinationFacility')">
+                <ion-select-option value="">{{ translate("All") }}</ion-select-option>
+                <ion-select-option v-for="facility in destinationFacilityOptions" :key="facility" :value="facility">{{ facility }}</ion-select-option>
               </ion-select>
             </ion-item>
-
+            
             <ion-item lines="none">
               <ion-label>
                 <h1>{{ translate("Fulfillment") }}</h1>
               </ion-label>
             </ion-item>
             <ion-item lines="none">
-              <ion-select :label="translate('Method')" interface="popover" value="">
-                <ion-select-option value="">{{ "All" }}</ion-select-option>
+              <ion-select :label="translate('Method')" interface="popover" :value="query.shipmentMethodTypeId" @ionChange="updateAppliedFilters($event['detail'].value, 'shipmentMethodTypeId')">
+                <ion-select-option value="">{{ translate("All") }}</ion-select-option>
+                <ion-select-option v-for="method in shipmentMethodOptions" :key="method" :value="method">{{ method }}</ion-select-option>
               </ion-select>
             </ion-item>
             <ion-item lines="none">
-              <ion-select :label="translate('Carrier')" interface="popover" value="">
-                <ion-select-option value="">{{ "All" }}</ion-select-option>
+              <ion-select :label="translate('Carrier')" interface="popover" :value="query.carrierPartyId" @ionChange="updateAppliedFilters($event['detail'].value, 'carrierPartyId')">
+                <ion-select-option value="">{{ translate("All") }}</ion-select-option>
+                <ion-select-option v-for="carrier in carrierOptions" :key="carrier" :value="carrier">{{ carrier }}</ion-select-option>
               </ion-select>
             </ion-item>
             <ion-item lines="none">
-              <ion-select :label="translate('Status')" interface="popover" value="">
-                <ion-select-option value="">{{ "All" }}</ion-select-option>
+              <ion-select :label="translate('Status')" interface="popover" :value="query.status" @ionChange="updateAppliedFilters($event['detail'].value, 'status')">
+                <ion-select-option value="">{{ translate("All") }}</ion-select-option>
+                <ion-select-option v-for="status in orderStatuses" :key="status" :value="status">{{ status }}</ion-select-option>
               </ion-select>
             </ion-item>
           </ion-list>
@@ -72,11 +78,11 @@
           <section class="sort">
             <ion-item lines="none">
               <ion-icon slot="start" :icon="documentTextOutline" />
-              <ion-select :label="translate('Group by')" interface="popover" value="">
-                <ion-select-option value="">{{ "Order item" }}</ion-select-option>
-                <ion-select-option value="">{{ "Destination" }}</ion-select-option>
+              <ion-select :label="translate('Group by')" interface="popover" :value="query.groupBy" @ionChange="updateAppliedFilters($event['detail'].value, 'groupBy')">
+                <ion-select-option value="orderId">{{ "Order item" }}</ion-select-option>
+                <ion-select-option value="orderFacilityName">{{ "Destination" }}</ion-select-option>
                 <ion-select-option value="">{{ "Destination and product" }}</ion-select-option>
-                <ion-select-option value="">{{ "Origin" }}</ion-select-option>
+                <ion-select-option value="facilityName">{{ "Origin" }}</ion-select-option>
                 <ion-select-option value="">{{ "Origin and product" }}</ion-select-option>
               </ion-select>
             </ion-item>
@@ -90,76 +96,80 @@
 
           <hr />
 
-          <div>
-            <div @click="router.push('/order-detail')">
+          <div v-if="query.groupBy === 'orderId'">
+            <div v-for="(order, index) in ordersList.orders" :key="index" @click="router.push(`/order-detail/${order.orderId}`)">
               <section class="section-header">
                 <div class="primary-info">
                   <ion-item lines="none">
                     <ion-label>
-                      <strong>{{ "Order Name" }}</strong>
-                      <p>{{ "Order Internal Id" }}</p>
+                      <strong>{{ order.orderName }}</strong>
+                      <p>{{ order.orderId }}</p>
                     </ion-label>
                   </ion-item>
                 </div>
   
                 <div class="tags">
                   <ion-chip outline>
-                    <ion-icon slot="start" :icon="sendOutline" />
-                    <ion-label>{{ "Central warehouse" }}</ion-label>
+                    <ion-icon :icon="sendOutline" />
+                    <ion-label>{{ order.originFacilityName }}</ion-label>
                   </ion-chip>
                   <ion-chip outline>
-                    <ion-icon slot="start" :icon="downloadOutline" />
-                    <ion-label>{{ "Irvine spectrum" }}</ion-label>
+                    <ion-icon :icon="downloadOutline" />
+                    <ion-label>{{ order.destinationFacilityName }}</ion-label>
                   </ion-chip>
                 </div>
   
                 <div class="metadata">
-                  <ion-note>{{ translate("Created on") }} {{ "7 Jan 2024" }}</ion-note>
-                  <ion-badge color="success">{{ translate("Approved") }}</ion-badge>
+                  <ion-note>{{ translate("Created on") }} {{ formatUtcDate(order.orderDate, "dd LLL yyyy") }}</ion-note>
+                  <ion-badge :color="getColorByDesc(order.orderStatusDesc) || getColorByDesc('default')">{{ order.orderStatusDesc }}</ion-badge>
                 </div>
               </section>
   
               <section>
-                <div class="list-item">
+                <div class="list-item" v-for="(item, index) in order.doclist.docs" :key="index">
                   <ion-item lines="none">
                     <ion-thumbnail slot="start">
-                      <Image src="" />
+                      <Image :src="getProduct(item.productId)?.mainImageUrl" />
                     </ion-thumbnail>
                     <ion-label class="ion-text-wrap">
-                      {{ "Primary identifier" }}
-                      <p class="overline">{{ "Secondary identifier" }}</p>
+                      {{ getProductIdentificationValue(productIdentificationStore.getProductIdentificationPref.primaryId, getProduct(item.productId)) || getProduct(item.productId).productName }}
+                      <p>{{ getProductIdentificationValue(productIdentificationStore.getProductIdentificationPref.secondaryId, getProduct(item.productId)) }}</p>
                     </ion-label>
                   </ion-item>
 
                   <div class="tablet ion-text-center">
                     <ion-label>
-                      {{ "200" }}
+                      {{ item.quantity }}
                       <p>{{ translate("ordered") }}</p>
                     </ion-label>
                   </div>
 
                   <div class="tablet ion-text-center">
                     <ion-label>
-                      {{ "170" }}
+                      {{ "-" }}
                       <p>{{ translate("shipped") }}</p>
                     </ion-label>
                   </div>
 
                   <div class="tablet ion-text-center">
                     <ion-label>
-                      {{ "150" }}
+                      {{ "-" }}
                       <p>{{ translate("received") }}</p>
                     </ion-label>
                   </div>
 
                   <ion-item lines="none">
-                    <ion-badge slot="end" color="success">{{ translate("Approved") }}</ion-badge>
+                    <ion-badge slot="end" :color="getColorByDesc(item.orderItemStatusDesc) || getColorByDesc('default')">{{ item.orderItemStatusDesc }}</ion-badge>
                   </ion-item>
                 </div>
               </section>
               <hr />
             </div>
           </div>
+
+          <ion-infinite-scroll @ionInfinite="loadMoreOrders($event)" threshold="100px" v-show="isScrollable" ref="infiniteScrollRef">
+            <ion-infinite-scroll-content loading-spinner="crescent" :loading-text="translate('Loading')"/>
+          </ion-infinite-scroll>
         </main>
       </div>
 
@@ -173,12 +183,71 @@
 </template>
 
 <script setup lang="ts">
-import { IonBadge, IonButton, IonButtons, IonChip, IonContent, IonFab, IonFabButton, IonHeader, IonIcon, IonItem, IonLabel, IonList, IonMenuButton, IonNote, IonPage, IonSearchbar, IonSelect, IonSelectOption, IonThumbnail, IonTitle, IonToolbar } from '@ionic/vue';
+import { IonBadge, IonButton, IonButtons, IonChip, IonContent, IonFab, IonFabButton, IonHeader, IonIcon, IonInfiniteScroll, IonInfiniteScrollContent, IonItem, IonLabel, IonList, IonMenuButton, IonNote, IonPage, IonSearchbar, IonSelect, IonSelectOption, IonThumbnail, IonTitle, IonToolbar, onIonViewWillEnter } from '@ionic/vue';
 import { addOutline, documentTextOutline, downloadOutline, filterOutline, sendOutline, swapVerticalOutline } from 'ionicons/icons';
-import { translate } from '@hotwax/dxp-components'
+import { getProductIdentificationValue, translate, useProductIdentificationStore } from '@hotwax/dxp-components'
 import router from '@/router';
 import Image from '@/components/Image.vue';
 import Filters from "@/components/Filters.vue";
+import { useStore } from 'vuex';
+import { computed, ref } from "vue";
+import { formatUtcDate, getColorByDesc } from "@/utils"
+
+const productIdentificationStore = useProductIdentificationStore();
+const store = useStore();
+
+const queryString = ref("");
+const isLoading = ref(false);
+const isScrollingEnabled = ref(false);
+const contentRef = ref({}) as any
+const infiniteScrollRef = ref({}) as any
+
+const ordersList = computed(() => store.getters["order/getOrders"])
+const productStoreOptions = computed(() => store.getters["order/getProductStoreOptions"])
+const originFacilityOptions = computed(() => store.getters["order/getOriginFacilityOptions"])
+const destinationFacilityOptions = computed(() => store.getters["order/getDestinationFacilityOptions"])
+const orderStatuses = computed(() => store.getters["order/getOrderStatuses"])
+const query = computed(() => store.getters["order/getQuery"])
+const shipmentMethodOptions = computed(() => store.getters["order/getShipmentMethodOptions"])
+const carrierOptions = computed(() => store.getters["order/getCarrierOptions"])
+const getProduct = computed(() => store.getters["product/getProduct"])
+const isScrollable = computed(() => store.getters["order/isScrollable"])
+
+onIonViewWillEnter(async () => {
+  await store.dispatch('order/findOrders', { fetchFacets: true })
+})
+
+async function updateAppliedFilters(value: string | boolean, filterName: string) {
+  await store.dispatch('order/updateAppliedFilters', { value, filterName })
+}
+
+
+async function loadMoreOrders(event: any) {
+  // Added this check here as if added on infinite-scroll component the Loading content does not gets displayed
+  if(!(isScrollingEnabled.value && isScrollable.value)) {
+    await event.target.complete();
+  }
+  isLoading.value = true
+  await store.dispatch('order/findOrders', {
+    viewSize: undefined,
+    viewIndex: Math.ceil(ordersList.value.orders.length / 10).toString()
+  }).then(async () => {
+    await event.target.complete();
+  })
+  isLoading.value = false
+}
+
+function enableScrolling() {
+  const parentElement = contentRef.value.$el
+  const scrollEl = parentElement.shadowRoot.querySelector("main[part='scroll']")
+  let scrollHeight = scrollEl.scrollHeight, infiniteHeight = infiniteScrollRef?.value?.$el?.offsetHeight, scrollTop = scrollEl.scrollTop, threshold = 100, height = scrollEl.offsetHeight
+  const distanceFromInfinite = scrollHeight - infiniteHeight - scrollTop - threshold - height
+  if(distanceFromInfinite < 0) {
+    isScrollingEnabled.value = false;
+  } else {
+    isScrollingEnabled.value = true;
+  }
+}
 </script>
 
 <style scoped>
