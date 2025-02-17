@@ -26,6 +26,7 @@ initialise({
   instanceUrl: instanceUrl.value,
   cacheMaxAge: maxAge,
   events: {
+    unauthorised,
     responseError: () => {
       setTimeout(() => dismissLoader(), 100);
     },
@@ -34,6 +35,13 @@ initialise({
     }
   }
 })
+
+async function unauthorised() {
+  // Mark the user as unauthorised, this will help in not making the logout api call in actions
+  store.dispatch("user/logout", { isUserUnauthorised: true });
+  const redirectUrl = window.location.origin + '/login';
+  window.location.href = `${process.env.VUE_APP_LOGIN_URL}?redirectUrl=${redirectUrl}`;
+}
 
 async function presentLoader(options = { message: "Click the backdrop to dismiss.", backdropDismiss: true }) {
   // When having a custom message remove already existing loader, if not removed it takes into account the already existing loader

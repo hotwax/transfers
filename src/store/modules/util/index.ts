@@ -10,7 +10,8 @@ const utilModule: Module<UtilState, RootState> = {
   state: {
     statusDesc: {},
     shipmentMethodTypeDesc: {},
-    shipmentMethodsByCarrier: {}
+    shipmentMethodsByCarrier: {},
+    carrierDesc: {}
   },
   getters,
   actions,

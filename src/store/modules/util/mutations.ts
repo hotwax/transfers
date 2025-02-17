@@ -12,5 +12,8 @@ const mutations: MutationTree <UtilState> = {
   [types.UTIL_SHPMNT_MTHD_BY_CARRIER_UPDATED] (state, payload) {
     state.shipmentMethodsByCarrier = payload
   },
+  [types.UTIL_CARRIER_DESC_UPDATED] (state, payload) {
+    state.carrierDesc = payload
+  },
 }
 export default mutations;

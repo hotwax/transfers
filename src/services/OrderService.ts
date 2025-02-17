@@ -9,7 +9,7 @@ const findOrder = async (payload: any): Promise<any> => {
   });
 }
 
-const CreateOrder = async (payload: any): Promise<any> => {
+const createOrder = async (payload: any): Promise<any> => {
   return api({
     url: "service/createSalesOrder",
     method: "post",
@@ -168,8 +168,16 @@ const fetchShipmentTrackingDetails = async (shipmentIds: any): Promise<any> => {
   return shipmentRouteSegs
 }
 
+const updateOrderItem = async (payload: any): Promise<any> => {
+  return api({
+    url: "service/changeOrderItemStatus",
+    method: "post",
+    data: payload
+  });
+}
+
 export const OrderService = {
-  CreateOrder,
+  createOrder,
   fetchFacilityAddresses,
   fetchOrderHeader,
   fetchOrderItems,
@@ -177,4 +185,5 @@ export const OrderService = {
   fetchShipmentItems,
   fetchShipmentTrackingDetails,
   findOrder,
+  updateOrderItem
 }

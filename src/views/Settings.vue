@@ -62,14 +62,8 @@ import { translate, useProductIdentificationStore } from "@hotwax/dxp-components
 import logger from "@/logger";
 
 const store = useStore()
-const appVersion = ref("")
-const appInfo = (process.env.VUE_APP_VERSION_INFO ? JSON.parse(process.env.VUE_APP_VERSION_INFO) : {}) as any
 
 const userProfile = computed(() => store.getters["user/getUserProfile"])
-
-onMounted(() => {
-  appVersion.value = appInfo.branch ? (appInfo.branch + "-" + appInfo.revision) : appInfo.tag;
-})
 
 function logout() {
   store.dispatch('user/logout', { isUserUnauthorised: false }).then((redirectionUrl: string) => {

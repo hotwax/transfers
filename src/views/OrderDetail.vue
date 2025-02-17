@@ -41,7 +41,7 @@
               </ion-item>
               <ion-item>
                 <ion-select :label="translate('Carrier')" v-model="currentOrder.carrierPartyId" interface="popover">
-                  <ion-select-option :value="carrierPartyId" v-for="(carrierPartyId, index) in Object.keys(shipmentMethodsByCarrier)" :key="index">{{ carrierPartyId }}</ion-select-option>
+                  <ion-select-option :value="carrierPartyId" v-for="(carrierPartyId, index) in Object.keys(shipmentMethodsByCarrier)" :key="index">{{ getCarrierDesc(carrierPartyId) }}</ion-select-option>
                 </ion-select>
               </ion-item>
               <ion-item lines="none">
@@ -253,7 +253,7 @@
                     </ion-chip>
                   </div>
                   <ion-badge color="success">{{ getStatusDesc(item.statusId) ? getStatusDesc(item.statusId) : item.statusId }}</ion-badge>
-                  <ion-button slot="end" fill="clear" color="medium" @click="openOrderItemDetailActionsPopover($event)">
+                  <ion-button slot="end" fill="clear" color="medium" @click="openOrderItemDetailActionsPopover($event, item)">
                     <ion-icon :icon="ellipsisVerticalOutline" slot="icon-only" />
                   </ion-button>
                 </div>
@@ -285,6 +285,7 @@ const currentOrder = computed(() => store.getters["order/getCurrent"])
 const getStatusDesc = computed(() => store.getters["util/getStatusDesc"])
 const shipmentMethodsByCarrier = computed(() => store.getters["util/getShipmentMethodsByCarrier"])
 const getProduct = computed(() => store.getters["product/getProduct"])
+const getCarrierDesc = computed(() => store.getters["util/getCarrierDesc"])
 
 const isFetchingOrderDetail = ref(false);
 const selectedShipmentId = ref("");
@@ -292,10 +293,12 @@ const itemsByParentProductId = ref({}) as any;
 const parentProductNamesById = ref({}) as any;
 
 onIonViewWillEnter(async () => {
+  
   isFetchingOrderDetail.value = true;
   await store.dispatch("order/fetchOrderDetails", props.orderId)
   if(currentOrder.value.statusId !== "ORDER_CREATED") await store.dispatch("order/fetchOrderShipments", props.orderId)
   generateItemsListByParent();
+  await store.dispatch("util/fetchCarriersDetail");
   isFetchingOrderDetail.value = false;
 })
 
@@ -334,12 +337,18 @@ function getCarrierShipmentMethods() {
   return currentOrder.value.carrierPartyId && shipmentMethodsByCarrier.value[currentOrder.value.carrierPartyId]
 }
 
-async function openOrderItemDetailActionsPopover(event: any){
+async function openOrderItemDetailActionsPopover(event: any, item: any){
   const popover = await popoverController.create({
     component: OrderItemDetailActionsPopover,
+    componentProps: { item },
     event,
     showBackdrop: false,
   });
+
+  popover.onDidDismiss().then((result) => {
+    if(result.data?.isItemUpdated) generateItemsListByParent()
+  })
+
   await popover.present();
 }
 </script>

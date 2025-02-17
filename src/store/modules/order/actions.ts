@@ -136,7 +136,6 @@ const actions: ActionTree<OrderState, RootState> = {
         const statusIds = orderDetail?.items.map((item: any) => item.statusId)
         await this.dispatch('util/fetchStatusDesc', statusIds)
 
-
         const productIds = [...new Set(orderDetail.items.map((item:any) => item.productId))];
         const batchSize = 250;
         const productIdBatches = [];
@@ -206,6 +205,10 @@ const actions: ActionTree<OrderState, RootState> = {
       logger.error(error);
     }
     commit(types.ORDER_CURRENT_UPDATED, {...state.current, shipments});
+  },
+  
+  async updateCurrent ({ commit }, payload) {
+    commit(types.ORDER_CURRENT_UPDATED, payload);
   }
 }
 

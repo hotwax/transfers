@@ -1,6 +1,7 @@
 import { toastController } from "@ionic/vue";
 import { DateTime } from "luxon";
 import store from "@/store";
+import Papa from 'papaparse'
 
 const dateOrdinalSuffix = {
   1: 'st',
@@ -42,6 +43,23 @@ function getDateWithOrdinalSuffix(time: any) {
   return `${dateTime.day}${suffix} ${dateTime.toFormat("MMM yyyy")}`;
 }
 
+const parseCsv = async (file: File, options?: any) => {
+  return new Promise ((resolve, reject) => {
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: function (results: any) {
+        if (results.errors.length) {
+          reject(results.error)
+        } else {
+          resolve(results.data)
+        }
+      },
+      ...options
+    });
+  })
+}
+
 const getColorByDesc = (desc: string) => ({
   "Approved": "primary",
   "Authorized": "medium",
@@ -59,4 +77,4 @@ const getColorByDesc = (desc: string) => ({
   "default": "medium"
 } as any)[desc]
 
-export { formatUtcDate, getColorByDesc, getDateWithOrdinalSuffix, hasError, showToast }
+export { formatUtcDate, getColorByDesc, getDateWithOrdinalSuffix, hasError, parseCsv, showToast }

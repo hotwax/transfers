@@ -129,6 +129,34 @@ const actions: ActionTree<UtilState, RootState> = {
     }
     commit(types.UTIL_SHPMNT_MTHD_BY_CARRIER_UPDATED, shipmentMethodsByCarrier)
   },
+
+  async fetchCarriersDetail ({ commit, state }) {
+    if(Object.keys(state.carrierDesc)?.length) return;
+    const carrierDesc = {} as any;
+
+    try {
+      const resp = await UtilService.fetchCarriers({
+        "entityName": "PartyRoleAndPartyDetail",
+        "inputFields": {
+          "roleTypeId": "CARRIER"
+        },
+        "fieldList": ["partyId", "partyTypeId", "roleTypeId", "firstName", "lastName", "groupName"],
+        "distinct": "Y",
+        "noConditionFind": "Y"
+      });
+
+      if (!hasError(resp)) {
+        resp.data.docs.map((carrier: any) => {
+          carrierDesc[carrier.partyId] = carrier.partyTypeId === "PERSON" ? `${carrier.firstName} ${carrier.lastName}` : carrier.groupName
+        })
+      } else {
+        throw resp.data;
+      }
+    } catch (err: any) {
+      logger.error("error", err);
+    }
+    commit(types.UTIL_CARRIER_DESC_UPDATED, carrierDesc)
+  },
 }
 
 export default actions;

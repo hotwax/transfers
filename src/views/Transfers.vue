@@ -88,15 +88,20 @@
             </ion-item>
             <ion-item lines="none">
               <ion-icon slot="start" :icon="swapVerticalOutline" />
-              <ion-select :label="translate('Sort by')" interface="popover" value="">
-                <ion-select-option value="">{{ "Created date" }}</ion-select-option>
+              <ion-select :label="translate('Sort')" interface="popover" :value="query.sort"  @ionChange="updateAppliedFilters($event['detail'].value, 'sort')">
+                <ion-select-option value="orderDate desc">{{ translate("Newest to oldest") }}</ion-select-option>
+                <ion-select-option value="orderDate asc">{{ translate("Oldest to newest") }}</ion-select-option>
               </ion-select>
             </ion-item>
           </section>
 
           <hr />
 
-          <div v-if="query.groupBy === 'orderId'">
+          <div class="empty-state" v-if="isFetchingOrders">
+            <ion-spinner name="crescent" />
+            <p>{{ translate("Loading") }}</p>
+          </div>
+          <template v-else-if="query.groupBy === 'orderId'">
             <div v-for="(order, index) in ordersList.orders" :key="index" @click="router.push(`/order-detail/${order.orderId}`)">
               <section class="section-header">
                 <div class="primary-info">
@@ -165,7 +170,86 @@
               </section>
               <hr />
             </div>
-          </div>
+          </template>
+          <template v-else-if="query.groupBy === 'facilityName' || query.groupBy === 'orderFacilityName'">
+            <div v-for="(order, index) in ordersList.orders" :key="index">
+              <section class="list-item">
+                <ion-item lines="none">
+                  <ion-icon slot="start" :icon="query.groupBy === 'facilityName' ? sendOutline : downloadOutline" />
+                  <ion-label>
+                    <strong>{{ order.groupValue }}</strong>
+                    <p>{{ query.groupBy === 'facilityName' ? order.originFacilityId : order.destinationFacilityId }}</p>
+                  </ion-label>
+                </ion-item>
+                
+                <div class="tablet ion-text-center">
+                  <ion-label>
+                    {{ "-" }}
+                    <p>{{ translate("ordered") }}</p>
+                  </ion-label>
+                </div>
+                
+                <div></div>
+                <div class="tablet ion-text-center">
+                  <ion-label>
+                    {{ "-" }}
+                    <p>{{ translate("shipped") }}</p>
+                  </ion-label>
+                </div>
+                <div></div>
+
+                <div class="tablet ion-text-center ion-padding-end">
+                  <ion-label>
+                    {{ "-" }}
+                    <p>{{ translate("received") }}</p>
+                  </ion-label>
+                </div>
+              </section>
+  
+              <section>
+                <div class="list-item" v-for="(item, index) in order.doclist.docs" :key="index" @click="router.push(`/order-detail/${item.orderId}`)">
+                  <ion-item lines="none">
+                    <ion-label class="ion-text-wrap">
+                      {{ item.orderName }}
+                      <p>{{ item.orderId }}</p>
+                    </ion-label>
+                  </ion-item>
+
+                  <ion-chip outline>
+                    <ion-icon :icon="query.groupBy === 'facilityName' ? downloadOutline : sendOutline" />
+                    <ion-label>{{ query.groupBy === "facilityName" ? item.orderFacilityName : item.facilityName }}</ion-label>
+                  </ion-chip>
+
+                  <div class="tablet ion-text-center">
+                    <ion-label>
+                      {{ item.quantity }}
+                      <p>{{ translate("ordered") }}</p>
+                    </ion-label>
+                  </div>
+
+                  <div class="tablet ion-text-center">
+                    <ion-label>
+                      {{ "-" }}
+                      <p>{{ translate("shipped") }}</p>
+                    </ion-label>
+                  </div>
+
+                  <div class="tablet ion-text-center">
+                    <ion-label>
+                      {{ "-" }}
+                      <p>{{ translate("received") }}</p>
+                    </ion-label>
+                  </div>
+
+                  <div class="metadata ion-padding-end">
+                    <ion-note>{{ translate("Created on") }} {{ formatUtcDate(item.orderDate, "dd LLL yyyy") }}</ion-note>
+                    <ion-badge slot="end" :color="getColorByDesc(item.orderItemStatusDesc) || getColorByDesc('default')">{{ item.orderItemStatusDesc }}</ion-badge>
+                  </div>
+                </div>
+              </section>
+              <hr />
+            </div>
+          </template>
 
           <ion-infinite-scroll @ionInfinite="loadMoreOrders($event)" threshold="100px" v-show="isScrollable" ref="infiniteScrollRef">
             <ion-infinite-scroll-content loading-spinner="crescent" :loading-text="translate('Loading')"/>
@@ -184,7 +268,7 @@
 
 <script setup lang="ts">
 import { IonBadge, IonButton, IonButtons, IonChip, IonContent, IonFab, IonFabButton, IonHeader, IonIcon, IonInfiniteScroll, IonInfiniteScrollContent, IonItem, IonLabel, IonList, IonMenuButton, IonNote, IonPage, IonSearchbar, IonSelect, IonSelectOption, IonThumbnail, IonTitle, IonToolbar, onIonViewWillEnter } from '@ionic/vue';
-import { addOutline, documentTextOutline, downloadOutline, filterOutline, sendOutline, swapVerticalOutline } from 'ionicons/icons';
+import { addOutline, documentTextOutline, download, downloadOutline, filterOutline, sendOutline, swapVerticalOutline } from 'ionicons/icons';
 import { getProductIdentificationValue, translate, useProductIdentificationStore } from '@hotwax/dxp-components'
 import router from '@/router';
 import Image from '@/components/Image.vue';
@@ -201,6 +285,7 @@ const isLoading = ref(false);
 const isScrollingEnabled = ref(false);
 const contentRef = ref({}) as any
 const infiniteScrollRef = ref({}) as any
+const isFetchingOrders = ref(false);
 
 const ordersList = computed(() => store.getters["order/getOrders"])
 const productStoreOptions = computed(() => store.getters["order/getProductStoreOptions"])
@@ -214,13 +299,16 @@ const getProduct = computed(() => store.getters["product/getProduct"])
 const isScrollable = computed(() => store.getters["order/isScrollable"])
 
 onIonViewWillEnter(async () => {
+  isFetchingOrders.value = true;
   await store.dispatch('order/findOrders', { fetchFacets: true })
+  isFetchingOrders.value = false;
 })
 
 async function updateAppliedFilters(value: string | boolean, filterName: string) {
+  isFetchingOrders.value = true
   await store.dispatch('order/updateAppliedFilters', { value, filterName })
+  isFetchingOrders.value = false
 }
-
 
 async function loadMoreOrders(event: any) {
   // Added this check here as if added on infinite-scroll component the Loading content does not gets displayed
@@ -286,7 +374,7 @@ main > div{
 
 .list-item {
   --columns-tablet: 4;
-  --columns-desktop: 5;
+  --columns-desktop: 6;
 }
 
 /* Added width property as after updating to ionic7 min-width is getting applied on ion-label inside ion-item

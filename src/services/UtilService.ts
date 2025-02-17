@@ -25,7 +25,6 @@ const fetchStoreCarrierAndMethods = async (query: any): Promise <any>  => {
   });
 }
 
-
 const fetchFacilityContactDetails = async (facilityIds: Array<string>): Promise<any> => {
   let resp;
   const addresses = {} as any;
@@ -69,7 +68,17 @@ const getInventoryAvailableByFacility = async (query: any): Promise <any> => {
   });
 }
 
+const fetchCarriers = async (query: any): Promise <any>  => {
+  return api({
+    url: "performFind",
+    method: "get",
+    params: query
+  });
+}
+
+
 export const UtilService = {
+  fetchCarriers,
   fetchFacilityContactDetails,
   fetchShipmentMethodTypeDesc,
   fetchStatusDesc,

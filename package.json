@@ -21,6 +21,7 @@
     "@ionic/core": "^7.6.0",
     "@ionic/vue": "^7.6.0",
     "@ionic/vue-router": "^7.6.0",
+    "@types/papaparse": "^5.3.1",
     "axios": "^0.21.1",
     "axios-cache-adapter": "^2.7.3",
     "boon-js": "^2.0.3",
@@ -37,6 +38,7 @@
   "devDependencies": {
     "@capacitor/cli": "^2.4.7",
     "@types/luxon": "^2.0.9",
+    "@types/papaparse": "5.3.1",
     "@typescript-eslint/eslint-plugin": "~5.26.0",
     "@typescript-eslint/parser": "~5.26.0",
     "@vue/cli-plugin-babel": "~5.0.8",
@@ -50,6 +52,7 @@
     "@vue/test-utils": "^2.0.0-0",
     "cypress": "^8.3.0",
     "eslint": "^7.32.0",
+    "papaparse": "^5.3.1",
     "eslint-plugin-vue": "^8.0.3",
     "typescript": "~4.7.4"
   }

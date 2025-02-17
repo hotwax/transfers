@@ -12,5 +12,8 @@ const getters: GetterTree <UtilState, RootState> = {
   getShipmentMethodsByCarrier (state) {
     return state.shipmentMethodsByCarrier
   },
+  getCarrierDesc: (state) => (partyId: string) => {
+    return state.carrierDesc[partyId] ? state.carrierDesc[partyId] : partyId
+  },
 }
 export default getters;
