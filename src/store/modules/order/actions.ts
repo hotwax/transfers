@@ -13,7 +13,7 @@ import store from "@/store"
 const actions: ActionTree<OrderState, RootState> = {
   async findOrders({ commit, state }, params) {
     let resp, orderCount, itemCount;
-    let stateOrders = JSON.parse(JSON.stringify(state.list.orders));
+    let cachedOrders = JSON.parse(JSON.stringify(state.list.orders));
     const shipmentMethodTypeIds: Array<string> = []
 
     const query = prepareOrderQuery({ ...(state.query), ...params })
@@ -21,22 +21,24 @@ const actions: ActionTree<OrderState, RootState> = {
       resp = await OrderService.findOrder(query)
       if (!hasError(resp) && resp.data?.grouped[state.query.groupBy]?.groups?.length) {
         const orders = resp.data.grouped[state.query.groupBy]?.groups.map((order: any) => {
-          order.orderId = order.doclist.docs[0].orderId
-          order.customer = {
-            name: order.doclist.docs[0].customerPartyName,
-            emailId: order.doclist.docs[0].customerEmailId,
-            phoneNumber: order.doclist.docs[0].customerPhoneNumber
-          },
-          order.orderName = order.doclist.docs[0].orderName
-          order.orderDate = order.doclist.docs[0].orderDate
-          order.orderStatusId = order.doclist.docs[0].orderStatusId
-          order.orderStatusDesc = order.doclist.docs[0].orderStatusDesc
-          order.originFacilityId = order.doclist.docs[0].facilityId
-          order.originFacilityName = order.doclist.docs[0].facilityName
-          order.destinationFacilityId = order.doclist.docs[0].orderFacilityId
-          order.destinationFacilityName = order.doclist.docs[0].orderFacilityName
+          const orderItem = order.doclist.docs[0];
 
-          order.doclist.docs[0].shipmentMethodTypeId && shipmentMethodTypeIds.push(order.doclist.docs[0].shipmentMethodTypeId)
+          order.orderId = orderItem.orderId
+          order.customer = {
+            name: orderItem.customerPartyName,
+            emailId: orderItem.customerEmailId,
+            phoneNumber: orderItem.customerPhoneNumber
+          },
+          order.orderName = orderItem.orderName
+          order.orderDate = orderItem.orderDate
+          order.orderStatusId = orderItem.orderStatusId
+          order.orderStatusDesc = orderItem.orderStatusDesc
+          order.originFacilityId = orderItem.facilityId
+          order.originFacilityName = orderItem.facilityName
+          order.destinationFacilityId = orderItem.orderFacilityId
+          order.destinationFacilityName = orderItem.orderFacilityName
+
+          order.doclist.docs[0].shipmentMethodTypeId && shipmentMethodTypeIds.push(orderItem.shipmentMethodTypeId)
           return order
         })
 
@@ -91,8 +93,8 @@ const actions: ActionTree<OrderState, RootState> = {
           order["totalReceived"] = totalReceived
         })
 
-        if (query.json.params.start && query.json.params.start > 0) stateOrders = stateOrders.concat(orders)
-        else stateOrders = orders
+        if (query.json.params.start && query.json.params.start > 0) cachedOrders = cachedOrders.concat(orders)
+        else cachedOrders = orders
         await this.dispatch("product/fetchProducts", { productIds })
         await this.dispatch("util/fetchShipmentMethodTypeDesc", shipmentMethodTypeIds)
       } else {
@@ -103,12 +105,12 @@ const actions: ActionTree<OrderState, RootState> = {
       logger.error(error)
       // If the filters are changed, we are on first index and if we got some error clear the orders
       if(params?.isFilterUpdated && (!params?.viewIndex || params.viewIndex == 0)) {
-        stateOrders = []
+        cachedOrders = []
         orderCount = 0
         itemCount = 0
       }
     }
-    commit(types.ORDER_LIST_UPDATED, { orders: stateOrders, orderCount, itemCount });
+    commit(types.ORDER_LIST_UPDATED, { orders: cachedOrders, orderCount, itemCount });
     return resp;
   },
   

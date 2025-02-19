@@ -18,6 +18,4 @@ const utilModule: Module<UtilState, RootState> = {
   mutations,
 }
 
-// TODO
-// store.registerModule('user', userModule);
 export default utilModule;

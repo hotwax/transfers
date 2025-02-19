@@ -6,9 +6,10 @@
       <ion-toolbar>
         <ion-title>{{ translate("Transfer orders") }}</ion-title>
         <ion-buttons slot="end">
-          <ion-button>
+          <!-- Todo: add support for downloading orders. -->
+          <!-- <ion-button>
             <ion-icon :icon="downloadOutline" slot="icon-only" />
-          </ion-button>
+          </ion-button> -->
           <ion-menu-button menu="transfers-filter" class="mobile-only">
             <ion-icon :icon="filterOutline" />
           </ion-menu-button>

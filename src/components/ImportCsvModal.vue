@@ -25,7 +25,7 @@
         </ion-select>
       </ion-item>
       <ion-item>
-        <ion-select :label="translate('QUantity')" interface="popover" :placeholder="translate('Select')" v-model="selectedQuantityColumn">
+        <ion-select :label="translate('Quantity')" interface="popover" :placeholder="translate('Select')" v-model="selectedQuantityColumn">
           <ion-select-option v-for="column in fileColumns" :key="column">{{ column }}</ion-select-option>
         </ion-select>
       </ion-item>
@@ -71,7 +71,7 @@ const selectedIdentifier = ref('')
 const selectedIdentifierColumn = ref('')
 const selectedQuantityColumn = ref('')
 
-function closeModal(identifierData: any = {}) {
+function closeModal(identifierData = {}) {
   modalController.dismiss({ dismissed: true, identifierData });
 }
 
