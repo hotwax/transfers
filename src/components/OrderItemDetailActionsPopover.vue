@@ -5,7 +5,7 @@
       <ion-item button @click="editOrderedQuantity()">
         {{ translate("Edit ordered qty") }}
       </ion-item>
-      <ion-item button>
+      <ion-item button @click="redirectToFulfillItem()">
         {{ translate("Fulfill") }}
       </ion-item>
       <ion-item button>
@@ -27,7 +27,9 @@ import { OrderService } from "@/services/OrderService";
 import logger from "@/logger";
 import { hasError } from "@/adapter";
 import { showToast } from "@/utils";
+import { useAuthStore } from "@hotwax/dxp-components";
 
+const authStore = useAuthStore()
 const productIdentificationStore = useProductIdentificationStore();
 const props = defineProps(["item"]);
 
@@ -92,6 +94,11 @@ async function updateOrderItem(payload: any) {
     logger.error(error)
   }
   return false;
+}
+
+function redirectToFulfillItem() {
+  window.location.href = `${process.env.VUE_APP_FULFILLMENT_LOGIN_URL}?oms=${authStore.oms}&token=${authStore.token.value}&expirationTime=${authStore.token.expiration}&orderId=${currentOrder.value.orderId}&facilityId=${currentOrder.value.facilityId}`
+  popoverController.dismiss()
 }
 
 async function completeItem() {
