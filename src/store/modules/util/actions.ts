@@ -51,34 +51,26 @@ const actions: ActionTree<UtilState, RootState> = {
 
   async fetchStatusDesc({ commit, state }, statusIds) {
     let statusDesc = JSON.parse(JSON.stringify(state.statusDesc))
-    const cachedStatusIds = Object.keys(statusDesc);
-    const ids = statusIds.filter((statusId: string) => !cachedStatusIds.includes(statusId))
-
-    if(!ids.length) return statusDesc;
+    if(Object.keys(statusDesc)?.length) return;
 
     try {
       const payload = {
         "inputFields": {
-          "statusId": ids,
-          "statusId_op": "in"
+          "statusTypeId": ["ORDER_STATUS", "ORDER_ITEM_STATUS"],
+          "statusTypeId_op": "in"
         },
         "fieldList": ["statusId", "description"],
         "entityName": "StatusItem",
-        "viewSize": ids.length
+        "viewSize": 200
       }
 
       const resp = await UtilService.fetchStatusDesc(payload);
 
       if(!hasError(resp)) {
-        const statusResp = {} as any
+        statusDesc = {}
         resp.data.docs.map((statusItem: any) => {
-          statusResp[statusItem.statusId] = statusItem.description
+          statusDesc[statusItem.statusId] = statusItem.description
         })
-
-        statusDesc = {
-          ...statusDesc,
-          ...statusResp
-        }
 
         commit(types.UTIL_STATUS_UPDATED, statusDesc)
       } else {
@@ -157,6 +149,10 @@ const actions: ActionTree<UtilState, RootState> = {
     }
     commit(types.UTIL_CARRIER_DESC_UPDATED, carrierDesc)
   },
+
+  async clearUtilState ({ commit }) {
+    commit(types.UTIL_CLEARED)
+  }
 }
 
 export default actions;

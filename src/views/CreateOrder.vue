@@ -82,11 +82,11 @@
             </ion-card-header>
             <ion-item>
               <ion-label>{{ translate("Ship Date") }}</ion-label>
-              <ion-button slot="end" class="date-time-button" @click="openDateTimeModal('shipDate')">{{ currentOrder.shipDate ? formatDateTime(currentOrder.shipDate) : translate("Select Date") }}</ion-button>
+              <ion-button slot="end" class="date-time-button" @click="openDateTimeModal('shipDate')">{{ currentOrder.shipDate ? formatDateTime(currentOrder.shipDate) : translate("Select date") }}</ion-button>
             </ion-item>
             <ion-item>
               <ion-label>{{ translate("Delivery Date") }}</ion-label>
-              <ion-button slot="end" class="date-time-button" @click="openDateTimeModal('deliveryDate')">{{ currentOrder.deliveryDate ? formatDateTime(currentOrder.deliveryDate) : translate("Select Date") }}</ion-button>
+              <ion-button slot="end" class="date-time-button" @click="openDateTimeModal('deliveryDate')">{{ currentOrder.deliveryDate ? formatDateTime(currentOrder.deliveryDate) : translate("Select date") }}</ion-button>
             </ion-item>
           </ion-card>
 
@@ -141,13 +141,13 @@
           <template v-if="currentOrder.items?.length">
             <div class="list-item ion-padding-vertical">
               <ion-item lines="none" class="item-qty-actions" style="grid-column: span 2;">
-                <ion-button fill="outline" color="medium">{{ translate("Book QoH") }}</ion-button>
-                <ion-button fill="outline" color="medium">{{ translate("Book ATP") }}</ion-button>
-                <ion-button fill="outline" color="medium">{{ translate("Custom Qty") }}</ion-button>
+                <ion-button fill="outline" color="medium" @click="updateBulkOrderItemQuantity('bookQOH')">{{ translate("Book QoH") }}</ion-button>
+                <ion-button fill="outline" color="medium" @click="updateBulkOrderItemQuantity('bookATP')">{{ translate("Book ATP") }}</ion-button>
+                <ion-button fill="outline" color="medium" @click="updateBulkOrderItemQuantity('customQty')">{{ translate("Custom Qty") }}</ion-button>
               </ion-item>
               <div></div>
               <div class="tablet">
-                <ion-checkbox :modelValue="isEligibleForBulkAction()" />
+                <ion-checkbox :modelValue="isEligibleForBulkAction()" @ionChange="toggleBulkSelection($event.detail.checked)" />
               </div>
               <ion-button slot="end" fill="clear" color="medium" @click="openOrderItemActionsPopover($event, null, true)">
                 <ion-icon :icon="ellipsisVerticalOutline" slot="icon-only" />
@@ -197,23 +197,23 @@
 </template>
 
 <script setup lang="ts">
-import { IonBackButton, IonButton, IonCard, IonCardHeader, IonCardTitle, IonCheckbox, IonChip, IonContent, IonDatetime, IonFab, IonFabButton, IonHeader, IonIcon, IonInput, IonItem, IonLabel, IonModal, IonPage, IonSelect, IonSelectOption, IonSpinner, IonThumbnail, IonTitle, IonToolbar, onIonViewDidEnter, modalController, popoverController } from '@ionic/vue';
-import { addCircleOutline, checkmarkCircle, checkmarkDoneOutline, cloudUploadOutline, downloadOutline, ellipsisVerticalOutline, imageOutline, informationCircleOutline, listOutline, pencilOutline, search, sendOutline, storefrontOutline } from 'ionicons/icons';
+import { IonBackButton, IonButton, IonCard, IonCardHeader, IonCardTitle, IonCheckbox, IonChip, IonContent, IonDatetime, IonFab, IonFabButton, IonHeader, IonIcon, IonInput, IonItem, IonLabel, IonModal, IonPage, IonSelect, IonSelectOption, IonSpinner, IonThumbnail, IonTitle, IonToolbar, onIonViewDidEnter, alertController, modalController, popoverController } from '@ionic/vue';
+import { addCircleOutline, checkmarkCircle, checkmarkDoneOutline, cloudUploadOutline, downloadOutline, ellipsisVerticalOutline, informationCircleOutline, listOutline, pencilOutline, sendOutline, storefrontOutline } from 'ionicons/icons';
 import { getProductIdentificationValue, translate, useProductIdentificationStore, useUserStore } from '@hotwax/dxp-components'
-import Image from '@/components/Image.vue';
-import OrderItemActionsPopover from '@/components/OrderItemActionsPopover.vue';
-import { computed, isRuntimeOnly, ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 import { getDateWithOrdinalSuffix, hasError, parseCsv, showToast } from '@/utils';
-import { ProductService } from '@/services/ProductService';
 import logger from '@/logger';
 import { useStore } from 'vuex';
-import { UserService } from '@/services/UserService';
+import Image from '@/components/Image.vue';
+import OrderItemActionsPopover from '@/components/OrderItemActionsPopover.vue';
 import SelectFacilityModal from '@/components/SelectFacilityModal.vue';
+import ImportCsvModal from '@/components/ImportCsvModal.vue';
+import { ProductService } from '@/services/ProductService';
+import { UserService } from '@/services/UserService';
 import { UtilService } from '@/services/UtilService';
 import { OrderService } from '@/services/OrderService';
 import router from '@/router';
 import { DateTime } from 'luxon';
-import ImportCsvModal from '@/components/ImportCsvModal.vue';
 
 const store = useStore();
 const productIdentificationStore = useProductIdentificationStore();
@@ -272,22 +272,14 @@ watch(queryString, (value) => {
 onIonViewDidEnter(async () => {
   stores.value = useUserStore().eComStores
   if(stores.value?.length) currentOrder.value.productStoreId = stores.value[0]?.productStoreId
-  await fetchFacilitiesByCurrentStore();
+  await Promise.allSettled([fetchFacilitiesByCurrentStore(), store.dispatch("util/fetchStoreCarrierAndMethods", currentOrder.value.productStoreId), store.dispatch("util/fetchCarriersDetail"), await store.dispatch('util/fetchStatusDesc')])
   currentOrder.value.originFacilityId = facilities.value[0]?.facilityId
-  store.dispatch("util/fetchStoreCarrierAndMethods", currentOrder.value.productStoreId);
-  store.dispatch("util/fetchCarriersDetail");
   uploadedFile.value = {}
   content.value = []
 })
 
-function getFacilityName(facilityId: any) {
-  return facilities.value.find((facility: any) => facility.facilityId === facilityId)?.facilityName
-}
-
 async function parse(event: any) {
   let file = event.target.files[0];
-  console.log(file);
-  
   try {
     if (file) { 
       uploadedFile.value = file;
@@ -305,59 +297,63 @@ async function parse(event: any) {
   }
 }
 
-async function openImportCsvModal() {
-  const importCsvModal = await modalController.create({
-    component: ImportCsvModal,
-    componentProps: {
-      fileColumns: fileColumns.value,
-      content: content.value
-    }
-  })
-  // On modal dismiss, if it returns identifierData, add the product to the count by calling addProductToCount()
-  importCsvModal.onDidDismiss().then((result: any) => {
-    console.log(result);
-    
-    if (result?.data?.identifierData && Object.keys(result?.data?.identifierData).length) {
-      findProductFromIdentifier(result.data.identifierData)
-    }
-  })
-  importCsvModal.present();
-}
-
-async function openSelectFacilityModal(facilityType: any) {
-  const addressModal = await modalController.create({
-    component: SelectFacilityModal,
-    componentProps: { selectedFacilityId: currentOrder.value[facilityType], facilities: facilities.value }
-  })
-
-  addressModal.onDidDismiss().then(async(result: any) => {
-    if(result.data?.selectedFacilityId) {
-      currentOrder.value[facilityType] = result.data.selectedFacilityId
-      if(facilityType === "originFacilityId") {
-        const responses = await Promise.allSettled(currentOrder.value.items.map((item: any) => fetchStock(item.productId)))
-        currentOrder.value.items.map((item: any, index: any) => {
-          if(responses[index].status === "fulfilled") {
-           item["qoh"] = responses[index]?.value.quantityOnHandTotal 
-           item["atp"] = responses[index]?.value.availableToPromiseTotal 
-          }
-        })
-      }
-    }
-  })
-
-  addressModal.present()
-}
-
-function isEligibleForBulkAction() {
-  return currentOrder.value.items?.some((item: any) => item.isChecked)
-}
-
-function getCarrierShipmentMethods() {
-  return currentOrder.value.carrierPartyId && shipmentMethodsByCarrier.value[currentOrder.value.carrierPartyId]
-}
-
 async function findProductFromIdentifier(payload: any) {
-  console.log(payload);
+  const productField = payload.productField
+  const quantityField = payload.quantityField
+  const idType = payload.idType
+  const uploadedItemsByIdValue = {} as any;
+  content.value.map((row: any) => {
+    uploadedItemsByIdValue[row[productField]] = row
+  })
+
+  const idValues = Object.keys(uploadedItemsByIdValue);
+  const productIdsAlreadyAddedInList = currentOrder.value.items.map((item: any) => item.productId)
+  const filterString = (idType === 'productId') ? `${idType}: (${idValues.join(' OR ')})` : `goodIdentifications: (${idValues.map((value: any) => `${idType}/${value}`).join(' OR ')})`;
+
+  try {
+    const resp = await ProductService.fetchProducts({
+      "filters": [filterString],
+      "viewSize": idValues.length
+    })
+
+    if(!hasError(resp) && resp.data.response?.docs?.length) {
+      const productsToAdd = resp.data.response.docs
+      store.dispatch("product/addProductToCachedMultiple", { products: productsToAdd })
+      const productsByIdValue = {} as any;
+      productsToAdd.map((product: any) => {
+        if(idType === "SKU") {
+          productsByIdValue[product["sku"]] = product
+        } else {
+          const idValue = getProductIdentificationValue(idType, product)
+          productsByIdValue[idValue] = product
+        }
+      })
+
+      Object.entries(productsByIdValue).map(async ([idValue, product], index) => {
+        if(productIdsAlreadyAddedInList.includes(product.productId)) {
+          if(quantityField) {
+            const item = currentOrder.value.items.find((item: any) => item.productId === product.productId)
+            item.quantity = Number(item.quantity) + Number(uploadedItemsByIdValue[idValue][quantityField] ? uploadedItemsByIdValue[idValue][quantityField] : 0)
+          }
+        } else {
+          const stock = await fetchStock(product.productId);
+          currentOrder.value.items.push({
+            productId: product.productId,
+            sku: product.sku,
+            quantity: uploadedItemsByIdValue[idValue][quantityField] ? uploadedItemsByIdValue[idValue][quantityField] : 0,
+            isChecked: false,
+            unitPrice: product.BASE_PRICE_PURCHASE_USD_STORE_GROUP_price,
+            qoh: stock.quantityOnHandTotal || 0,
+            atp: stock.availableToPromiseTotal || 0
+          })
+        }
+      })
+    } else {
+      throw resp.data;
+    }
+  } catch(error) {
+    logger.error(error)
+  }
 }
 
 async function addProductToCount() {
@@ -382,43 +378,19 @@ async function addProductToCount() {
   currentOrder.value.items.push(newProduct);
 }
 
-async function fetchStock(productId: string) {
-  try {
-    const resp: any = await UtilService.getInventoryAvailableByFacility({
-      productId,
-      facilityId: currentOrder.value.originFacilityId
-    });
-
-    if(!hasError(resp)) {
-      return resp.data;
-    } else {
-      throw resp.data;
-    }
-  } catch (err) {
-    logger.error(err)
-    return null;
-  }
-}
-
 async function productStoreUpdated() {
   await fetchFacilitiesByCurrentStore();
   const isFacilityUpdated = currentOrder.value.originFacilityId !== facilities.value[0]?.facilityId
-  currentOrder.value.originFacilityId = facilities.value[0]?.facilityId;
-  currentOrder.value.destinationFacilityId = "";
   store.dispatch("util/fetchStoreCarrierAndMethods", currentOrder.value.productStoreId);
   if(isFacilityUpdated) {
-    const responses = await Promise.allSettled(currentOrder.value.items.map((item: any) => fetchStock(item.productId)))
-    currentOrder.value.items.map((item: any, index: any) => {
-      if(responses[index].status === "fulfilled") {
-        item["qoh"] = responses[index]?.value.quantityOnHandTotal 
-        item["atp"] = responses[index]?.value.availableToPromiseTotal 
-      }
-    })
+    currentOrder.value.originFacilityId = facilities.value[0]?.facilityId;
+    currentOrder.value.destinationFacilityId = "";
+    refetchAllItemsStock()
   }
 }
 
-function isProductAvailableInCycleCount() {
-  return currentOrder.value.items.some((item: any) => item.productId === searchedProduct.value.productId)
+function getCarrierShipmentMethods() {
+  return currentOrder.value.carrierPartyId && shipmentMethodsByCarrier.value[currentOrder.value.carrierPartyId]
 }
 
 async function fetchFacilitiesByCurrentStore() {
@@ -449,59 +421,44 @@ async function fetchFacilitiesByCurrentStore() {
   facilities.value = availableFacilities
 }
 
-async function findProduct() {
-  if(!queryString.value.trim()) {
-    showToast(translate("Enter a valid product sku"));
-    return;
-  }
-
-  isSearchingProduct.value = true;
-  try {
-    const resp = await ProductService.fetchProducts({
-      "filters": ['isVirtual: false', `sku: ${queryString.value}`], // Made exact searching as when using fuzzy searching the products are not searched as expected
-      "viewSize": 1 // as we only need a single record
-    })
-    if (!hasError(resp) && resp.data.response?.docs?.length) {
-      searchedProduct.value = resp.data.response.docs[0];
-      store.dispatch("product/addProductToCached", searchedProduct.value)      
-    } else {
-      throw resp.data
-    }
-  } catch(err) {
-    searchedProduct.value = {}
-    logger.error("Product not found", err)
-  }
-
-  isSearchingProduct.value = false
+function getFacilityName(facilityId: any) {
+  return facilities.value.find((facility: any) => facility.facilityId === facilityId)?.facilityName
 }
 
-async function openOrderItemActionsPopover(event: any, selectedItem: any, isBulkOperation = false){
-  const popover = await popoverController.create({
-    component: OrderItemActionsPopover,
-    componentProps: { item: selectedItem },
-    event,
-    showBackdrop: false,
-  });
-
-  popover.onDidDismiss().then((result: any) => {
-    const action = result.data?.action
-
-    if(action === "bookQOH" || action === "bookATP") {
-      if(isBulkOperation) {
-        currentOrder.value.items.map((item: any) => {
-          if(item.isChecked) {
-            item.quantity = (action === "boolean") ? item.qoh : item.atp
-          }
-        })
-      } else {
-        selectedItem.quantity = (action === "bookQOH") ? selectedItem.qoh : selectedItem.atp
+async function updateBulkOrderItemQuantity(action: any) {
+  if(action === "bookQOH" || action === "bookATP") {
+    currentOrder.value.items.map((item: any) => {
+      if(item.isChecked) {
+        item.quantity = (action === "boolean") ? item.qoh : item.atp
       }
-    } else if(action === "remove") {
-      currentOrder.value.items = isBulkOperation ? currentOrder.value.items.filter((item: any) => !item.isChecked) : currentOrder.value.items.filter((item: any) => selectedItem.productId !== item.productId)
-    }
-  })
-
-  await popover.present();
+    })
+  } else if(action === "customQty") {
+    const alert = await alertController.create({
+      header: translate("Custom Qty"),
+      buttons: [{
+        text: translate("Cancel"),
+        role: "cancel"
+      }, {
+        text: translate("Save"),
+        handler: async (data: any) => {
+          if(!data?.quantity) return false;
+          const customQty = Number(data.quantity);
+          currentOrder.value.items.map((item: any) => {
+            if(item.isChecked) {
+              item.quantity = customQty
+            }
+          }) 
+        }
+      }],
+      inputs: [{
+        name: "quantity",
+        placeholder: translate("ordered quantity"),
+        min: 0,
+        type: "number"
+      }]
+    })
+    alert.present()
+  }
 }
 
 async function createOrder() {
@@ -559,10 +516,138 @@ async function createOrder() {
     }
   } catch(error: any) {
     logger.error(error)
+    showToast(translate("Failed to create order."))
   }
-  
 }
 
+function toggleBulkSelection(isChecked: any) {
+  currentOrder.value.items.map((item: any) => item.isChecked = isChecked)
+}
+
+function isEligibleForBulkAction() {
+  return currentOrder.value.items?.some((item: any) => item.isChecked)
+}
+
+async function openOrderItemActionsPopover(event: any, selectedItem: any, isBulkOperation = false){
+  const popover = await popoverController.create({
+    component: OrderItemActionsPopover,
+    componentProps: { item: selectedItem },
+    event,
+    showBackdrop: false,
+  });
+
+  popover.onDidDismiss().then((result: any) => {
+    const action = result.data?.action
+
+    if(action === "bookQOH" || action === "bookATP") {
+      if(isBulkOperation) {
+        currentOrder.value.items.map((item: any) => {
+          if(item.isChecked) {
+            item.quantity = (action === "boolean") ? item.qoh : item.atp
+          }
+        })
+      } else {
+        selectedItem.quantity = (action === "bookQOH") ? selectedItem.qoh : selectedItem.atp
+      }
+    } else if(action === "remove") {
+      currentOrder.value.items = isBulkOperation ? currentOrder.value.items.filter((item: any) => !item.isChecked) : currentOrder.value.items.filter((item: any) => selectedItem.productId !== item.productId)
+    }
+  })
+
+  await popover.present();
+}
+
+async function openImportCsvModal() {
+  const importCsvModal = await modalController.create({
+    component: ImportCsvModal,
+    componentProps: {
+      fileColumns: fileColumns.value,
+      content: content.value
+    }
+  })
+  // On modal dismiss, if it returns identifierData, add the product to the count by calling addProductToCount()
+  importCsvModal.onDidDismiss().then((result: any) => {
+    if (result?.data?.identifierData && Object.keys(result?.data?.identifierData).length) {
+      findProductFromIdentifier(result.data.identifierData)
+    }
+  })
+  importCsvModal.present();
+}
+
+async function openSelectFacilityModal(facilityType: any) {
+  const addressModal = await modalController.create({
+    component: SelectFacilityModal,
+    componentProps: { selectedFacilityId: currentOrder.value[facilityType], facilities: facilities.value }
+  })
+
+  addressModal.onDidDismiss().then(async(result: any) => {
+    if(result.data?.selectedFacilityId) {
+      currentOrder.value[facilityType] = result.data.selectedFacilityId
+      if(facilityType === "originFacilityId") {
+        refetchAllItemsStock()
+      }
+    }
+  })
+
+  addressModal.present()
+}
+
+async function refetchAllItemsStock() {
+  const responses = await Promise.allSettled(currentOrder.value.items.map((item: any) => fetchStock(item.productId)))
+  currentOrder.value.items.map((item: any, index: any) => {
+    if(responses[index].status === "fulfilled") {
+      item["qoh"] = responses[index]?.value.quantityOnHandTotal 
+      item["atp"] = responses[index]?.value.availableToPromiseTotal 
+    }
+  })
+}
+
+function isProductAvailableInCycleCount() {
+  return currentOrder.value.items.some((item: any) => item.productId === searchedProduct.value.productId)
+}
+
+async function findProduct() {
+  if(!queryString.value.trim()) {
+    showToast(translate("Enter a valid product sku"));
+    return;
+  }
+
+  isSearchingProduct.value = true;
+  try {
+    const resp = await ProductService.fetchProducts({
+      "filters": ['isVirtual: false', `sku: ${queryString.value}`], // Made exact searching as when using fuzzy searching the products are not searched as expected
+      "viewSize": 1 // as we only need a single record
+    })
+    if (!hasError(resp) && resp.data.response?.docs?.length) {
+      searchedProduct.value = resp.data.response.docs[0];
+      store.dispatch("product/addProductToCached", searchedProduct.value)      
+    } else {
+      throw resp.data
+    }
+  } catch(err) {
+    searchedProduct.value = {}
+    logger.error("Product not found", err)
+  }
+  isSearchingProduct.value = false
+}
+
+async function fetchStock(productId: string) {
+  try {
+    const resp: any = await UtilService.getInventoryAvailableByFacility({
+      productId,
+      facilityId: currentOrder.value.originFacilityId
+    });
+
+    if(!hasError(resp)) {
+      return resp.data;
+    } else {
+      throw resp.data;
+    }
+  } catch (err) {
+    logger.error(err)
+    return null;
+  }
+}
 
 function formatDateTime(date: any) {
   const dateTime = DateTime.fromISO(date);

@@ -43,15 +43,12 @@ const actions: ActionTree<OrderState, RootState> = {
         orderCount = resp.data.grouped[state.query.groupBy]?.ngroups;
         itemCount = resp.data.grouped[state.query.groupBy]?.matches;
 
-        const status = new Set();
         let productIds: any = new Set();
-        const orderItems = [] as any;
+        const orderItemsList = [] as any;
 
         orders.map((order: any) => {
-          status.add(order.orderStatusId)
           order.doclist.docs.map((item: any) => {
-            status.add(item.orderItemStatusId)
-            orderItems.push(item)
+            orderItemsList.push(`${item.orderId}_${item.orderItemSeqId}`)
             if(item.productId) productIds.add(item.productId)
           })
         })
@@ -74,6 +71,25 @@ const actions: ActionTree<OrderState, RootState> = {
           commit(types.ORDER_SHIPMENT_METHODS_OPTIONS_UPDATED, shipmentMethodTypeIds);
           commit(types.ORDER_STATUS_OPTIONS_UPDATED, statuses);
         }
+
+
+        const orderitemStats = await OrderService.fetchOrderItemStats(orderItemsList);
+        orders.map((order: any) => {
+          let totalOrdered = 0, totalShipped = 0, totalReceived = 0;
+          order.doclist.docs.map((item: any) => {
+            if(orderitemStats[`${item.orderId}_${item.orderItemSeqId}`]) {
+              item["shippedQty"] = orderitemStats[`${item.orderId}_${item.orderItemSeqId}`].shippedQty
+              item["receivedQty"] = orderitemStats[`${item.orderId}_${item.orderItemSeqId}`].receivedQty
+            }
+            if(item.quantity) totalOrdered = totalOrdered + item.quantity            
+            if(item.shippedQty) totalShipped = totalShipped + item.shippedQty            
+            if(item.receivedQty) totalReceived = totalReceived + item.receivedQty            
+          })
+
+          order["totalOrdered"] = totalOrdered
+          order["totalShipped"] = totalShipped
+          order["totalReceived"] = totalReceived
+        })
 
         if (query.json.params.start && query.json.params.start > 0) stateOrders = stateOrders.concat(orders)
         else stateOrders = orders
@@ -120,9 +136,22 @@ const actions: ActionTree<OrderState, RootState> = {
       resp = await OrderService.fetchOrderHeader(params);
       if(!hasError(resp)) {
         orderDetail = resp.data.docs[0]
-        const [orderItems,, facilityAddresses] = await Promise.allSettled([OrderService.fetchOrderItems(orderId), this.dispatch('util/fetchStatusDesc', [orderDetail.statusId]), OrderService.fetchFacilityAddresses([orderDetail.facilityId, orderDetail.orderFacilityId]), store.dispatch("util/fetchStoreCarrierAndMethods", orderDetail.productStoreId)])
+        const [orderItems, facilityAddresses] = await Promise.allSettled([OrderService.fetchOrderItems(orderId), OrderService.fetchFacilityAddresses([orderDetail.facilityId, orderDetail.orderFacilityId]), store.dispatch("util/fetchStoreCarrierAndMethods", orderDetail.productStoreId)])
 
-        if(orderItems.status === "fulfilled") orderDetail["items"] = orderItems.value
+        const orderItemsList = [] as any;
+        
+        if(orderItems.status === "fulfilled") {
+          orderDetail["items"] = orderItems.value
+          orderDetail.items.map((item: any) => orderItemsList.push(`${item.orderId}_${item.orderItemSeqId}`));
+          const orderitemStats = await OrderService.fetchOrderItemStats(orderItemsList);
+
+          orderDetail.items.map((item: any) => {
+            if(orderitemStats[`${item.orderId}_${item.orderItemSeqId}`]) {
+              item["shippedQty"] = orderitemStats[`${item.orderId}_${item.orderItemSeqId}`].shippedQty
+              item["receivedQty"] = orderitemStats[`${item.orderId}_${item.orderItemSeqId}`].receivedQty
+            }
+          })
+        }
         if(facilityAddresses.status === "fulfilled" && facilityAddresses.value?.length) {
           facilityAddresses.value.map((address: any) => {
             if(address.facilityId === orderDetail.facilityId) {
@@ -132,9 +161,6 @@ const actions: ActionTree<OrderState, RootState> = {
             }
           })
         }
-
-        const statusIds = orderDetail?.items.map((item: any) => item.statusId)
-        await this.dispatch('util/fetchStatusDesc', statusIds)
 
         const productIds = [...new Set(orderDetail.items.map((item:any) => item.productId))];
         const batchSize = 250;
@@ -209,6 +235,10 @@ const actions: ActionTree<OrderState, RootState> = {
   
   async updateCurrent ({ commit }, payload) {
     commit(types.ORDER_CURRENT_UPDATED, payload);
+  },
+
+  async clearOrderState ({ commit }) {
+    commit(types.ORDER_CLEARED)
   }
 }
 

@@ -19,16 +19,20 @@
             <ion-item lines="none">
               <ion-icon slot="start" :icon="ticketOutline" />
               <ion-label>
-                <h1>{{ currentOrder.orderName }}</h1>
+                <h1>{{ currentOrder.orderName ? currentOrder.orderName : currentOrder.orderId }}</h1>
               </ion-label>
-              <ion-badge slot="end">{{ getStatusDesc(currentOrder.statusId) ? getStatusDesc(currentOrder.statusId) : currentOrder.statusId }}</ion-badge>
+              <ion-badge :color="getColorByDesc(getStatusDesc(currentOrder.statusId)) || getColorByDesc('default')" slot="end">{{ getStatusDesc(currentOrder.statusId) ? getStatusDesc(currentOrder.statusId) : currentOrder.statusId }}</ion-badge>
+              <ion-select v-if="currentOrder.statusId === 'ORDER_CREATED' || currentOrder.statusId === 'ORDER_APPROVED'" slot="end" :value="currentOrder.statusId" selected-text=" " interface="popover" @ionChange="updateOrderStatus($event.detail.value)">
+                <ion-select-option v-if="currentOrder.statusId === 'ORDER_CREATED'" value="ORDER_APPROVED">{{ translate("Approved") }}</ion-select-option>
+                <ion-select-option value="ORDER_CANCELLED">{{ translate("Cancelled") }}</ion-select-option>
+              </ion-select>
             </ion-item>
           </div>
 
           <div class="info">
             <ion-card>
               <ion-card-header>
-                <ion-card-title>{{ currentOrder.originFacility?.facilityName }}</ion-card-title>
+                <ion-card-title>{{ currentOrder.originFacility?.facilityName ? currentOrder.originFacility.facilityName : currentOrder.facilityId }}</ion-card-title>
               </ion-card-header>
               <ion-item lines="none">
                 <ion-icon :icon="sendOutline" slot="start" />
@@ -41,7 +45,7 @@
               </ion-item>
               <ion-item>
                 <ion-select :label="translate('Carrier')" v-model="currentOrder.carrierPartyId" interface="popover">
-                  <ion-select-option :value="carrierPartyId" v-for="(carrierPartyId, index) in Object.keys(shipmentMethodsByCarrier)" :key="index">{{ getCarrierDesc(carrierPartyId) }}</ion-select-option>
+                  <ion-select-option :value="carrierPartyId" v-for="(carrierPartyId, index) in Object.keys(shipmentMethodsByCarrier)" :key="index">{{ getCarrierDesc(carrierPartyId) ? getCarrierDesc(carrierPartyId) : carrierPartyId }}</ion-select-option>
                 </ion-select>
               </ion-item>
               <ion-item lines="none">
@@ -57,7 +61,7 @@
 
             <ion-card>
               <ion-card-header>
-                <ion-card-title>{{ currentOrder.destinationFacility?.facilityName }}</ion-card-title>
+                <ion-card-title>{{ currentOrder.destinationFacility?.facilityName ? currentOrder.destinationFacility.facilityName : currentOrder.orderFacilityId }}</ion-card-title>
               </ion-card-header>
               <ion-item lines="none">
                 <ion-icon :icon="downloadOutline" slot="start" />
@@ -71,48 +75,17 @@
             </ion-card>
           </div>
 
-          <div class="timeline">
+          <div class="timeline" v-if="orderTimeline?.length">
             <ion-list class="desktop-only">
-              <ion-item>
-                <ion-icon :icon="sunnyOutline" slot="start" />
-                <ion-label>
-                  {{ translate("Created") }}
-                </ion-label>
-                <ion-note slot="end">{{ "1:07pm 6th Dec 2024" }}</ion-note>
+              <ion-item lines="none">
+                <h2>{{ translate("Timeline") }}</h2>
               </ion-item>
-              <ion-item>
-                <ion-icon :icon="checkmarkDoneOutline" slot="start" />
+              <ion-item v-for="(status, index) in orderTimeline" :key="index">
                 <ion-label>
-                  <p class="overline">+10 minutes</p>
-                  {{ translate("Approved for fulfillment") }}
+                  <p v-if="status.timeDiff">{{ status.timeDiff }}</p>
+                  {{ getStatusDesc(status.statusId) ? getStatusDesc(status.statusId) : status.statusId }}
                 </ion-label>
-                <ion-note slot="end">{{ "1:07pm 6th Dec 2024" }}</ion-note>
-              </ion-item>
-              <ion-item>
-                <ion-icon :icon="sendOutline" slot="start" />
-                <ion-label>
-                  <p class="overline">+2 hours 6 minutes</p>
-                  {{ "4 items shipped" }}
-                </ion-label>
-                <ion-note slot="end">{{ "1:07pm 6th Dec 2024" }}</ion-note>
-              </ion-item>
-              <ion-item>
-                <ion-icon :icon="downloadOutline" slot="start" />
-                <ion-label>
-                  <p class="overline">+4 days</p>
-                  {{ "4 items received" }}
-                </ion-label>
-                <ion-note slot="end">{{ "1:07pm 6th Dec 2024" }}</ion-note>
-              </ion-item>
-              <ion-item>
-                <ion-icon :icon="shirtOutline" slot="start" />
-                <ion-label>
-                  <p class="overline">+20 minutes</p>
-                  {{ "<SKU> added" }}
-                </ion-label>
-                <ion-button fill="clear" slot="end" color="medium">
-                  <ion-icon :icon="informationCircleOutline" slot="icon-only" />
-                </ion-button>
+                <ion-note slot="end">{{ formatDateTime(status.statusDatetime) }}</ion-note>
               </ion-item>
             </ion-list>
           </div>
@@ -179,88 +152,108 @@
         </section>
 
         <section class="ion-margin-top">
-          <div>
-            <ion-item lines="none">
-              <ion-icon slot="start" :icon="shirtOutline" />
-              <ion-label>
-                <h1>{{ "Items" }}</h1>
-                <p>{{ "Showing items for selected shipment" }}</p>
-              </ion-label>
-              <ion-button size="default" fill="outline" color="medium">
-                {{ translate("Add item to transfer") }}
-              </ion-button>
-            </ion-item>
+          <ion-item lines="none">
+            <ion-icon slot="start" :icon="shirtOutline" />
+            <ion-label>
+              <h1>{{ translate("Items") }}</h1>
+              <p>{{ translate(selectedShipmentId ? "Showing items for selected shipment" : "Showing all order items") }}</p>
+            </ion-label>
+            <ion-button size="default" fill="outline" color="medium">
+              {{ translate("Add item to transfer") }}
+            </ion-button>
+          </ion-item>
 
-            <hr />
+          <hr />
 
-            <template v-for="([parentProductId, items], index) in Object.entries(itemsByParentProductId)" :key="index">
-              <template v-if="items.length">
-                <div class="list-item">
-                  <ion-item lines="none">
-                    <ion-thumbnail slot="start">
-                      <Image :src="getProduct(items[0]?.productId)?.mainImageUrl" />
-                    </ion-thumbnail>
-                    <ion-label class="ion-text-wrap">
-                      {{ parentProductNamesById[parentProductId] }}
-                      <p class="overline">{{ parentProductId }}</p>
-                    </ion-label>
-                  </ion-item>
+          <template v-for="([parentProductId, items], index) in Object.entries(itemsByParentProductId)" :key="index">
+            <template v-if="items.length">
+              <div class="list-item">
+                <ion-item lines="none">
+                  <ion-thumbnail slot="start">
+                    <Image :src="getProduct(items[0].productId)?.mainImageUrl" />
+                  </ion-thumbnail>
+                  <ion-label class="ion-text-wrap">
+                    {{ parentProductInfoById[parentProductId]?.parentProductName }}
+                    <p class="overline">{{ parentProductId }}</p>
+                  </ion-label>
+                </ion-item>
+                <template v-if="selectedShipmentId">
                   <div></div>
+                  <ion-label>
+                    {{ parentProductInfoById[parentProductId]?.totalOrdered || 0 }}
+                    <p>{{ translate(getSelectedShipment()?.shipmentTypeId === "OUT_TRANSFER" ? "shipped" : "received") }}</p>
+                  </ion-label>
+                  <div colspan="2"></div>
+                </template>
+                <template v-else>
                   <div class="tablet ion-text-center">
                     <ion-label>
-                      {{ "-" }}
+                      {{ parentProductInfoById[parentProductId]?.totalOrdered || 0 }}
                       <p>{{ translate("ordered") }}</p>
                     </ion-label>
                   </div>
+                  <div></div>
                   <div class="tablet ion-text-center">
                     <ion-label>
-                      {{ "-" }}
+                      {{ parentProductInfoById[parentProductId]?.totalShipped || 0 }}
                       <p>{{ translate("shipped") }}</p>
                     </ion-label>
                   </div>
-                  <div></div>
-                  <ion-item lines="none" slot="end" class="ion-text-center">
+                  <div class="ion-text-center ion-padding-end">
                     <ion-label>
-                      {{ "-" }}
+                      {{ parentProductInfoById[parentProductId]?.totalReceived || 0 }}
                       <p>{{ translate("received") }}</p>
                     </ion-label>
-                  </ion-item>
-                </div>
-    
-                <div class="list-item" v-for="(item, index) in items" :key="index">
-                  <ion-item lines="none">
-                    <ion-label class="ion-text-wrap">
-                      {{ getProductIdentificationValue(productIdentificationStore.getProductIdentificationPref.primaryId, getProduct(item.productId)) || getProduct(item.productId).productName }}
-                      <p>{{ getProductIdentificationValue(productIdentificationStore.getProductIdentificationPref.secondaryId, getProduct(item.productId)) }}</p>
-                    </ion-label>
-                  </ion-item>
+                  </div>
+                </template>
+              </div>
+
+              <div class="list-item" v-for="(item, index) in items" :key="index">
+                <ion-item lines="none">
+                  <ion-label class="ion-text-wrap">
+                    {{ getProductIdentificationValue(productIdentificationStore.getProductIdentificationPref.primaryId, getProduct(item.productId)) || getProduct(item.productId).productName }}
+                    <p>{{ getProductIdentificationValue(productIdentificationStore.getProductIdentificationPref.secondaryId, getProduct(item.productId)) }}</p>
+                  </ion-label>
+                </ion-item>
+
+                <template v-if="selectedShipmentId">
+                  <div></div>
+                  <div class="tablet ion-text-center">
+                    <ion-chip outline>
+                      <ion-icon :icon="getSelectedShipment()?.shipmentTypeId === 'OUT_TRANSFER' ? sendOutline : downloadOutline" />
+                      <ion-label>{{ item.quantity || 0 }}</ion-label>
+                    </ion-chip>
+                  </div>
+                  <div></div>
+                </template>
+                <template v-else>
                   <div class="tablet ion-text-center">
                     <ion-label>
-                      {{ item.quantity }}
+                      {{ item.quantity || 0 }}
                       <p>{{ translate("ordered") }}</p>
                     </ion-label>
                   </div>
                   <div class="tablet ion-text-center">
                     <ion-chip outline>
-                      <ion-icon slot="start" :icon="sendOutline" />
-                      <ion-label>{{ "-" }}</ion-label>
+                      <ion-icon :icon="sendOutline" />
+                      <ion-label>{{ item.shippedQty || 0 }}</ion-label>
                     </ion-chip>
                   </div>
                   <div class="tablet ion-text-center">
                     <ion-chip outline>
-                      <ion-icon slot="start" :icon="downloadOutline" />
-                      <ion-label>{{ "-" }}</ion-label>
+                      <ion-icon :icon="downloadOutline" />
+                      <ion-label>{{ item.receivedQty || 0 }}</ion-label>
                     </ion-chip>
                   </div>
                   <ion-badge color="success">{{ getStatusDesc(item.statusId) ? getStatusDesc(item.statusId) : item.statusId }}</ion-badge>
-                  <ion-button slot="end" fill="clear" color="medium" @click="openOrderItemDetailActionsPopover($event, item)">
-                    <ion-icon :icon="ellipsisVerticalOutline" slot="icon-only" />
-                  </ion-button>
-                </div>
-              </template>
-              <hr />
+                </template>
+                <ion-button slot="end" fill="clear" color="medium" @click="openOrderItemDetailActionsPopover($event, item)">
+                  <ion-icon :icon="ellipsisVerticalOutline" slot="icon-only" />
+                </ion-button>
+              </div>
             </template>
-          </div>
+            <hr />
+          </template>
         </section>
       </main>
     </ion-content>
@@ -270,12 +263,16 @@
 <script setup lang="ts">
 import { IonBackButton,IonBadge, IonButton, IonCard, IonCardHeader, IonCardTitle, IonChip, IonContent, IonHeader, IonIcon, IonItem, IonLabel, IonList, IonNote, IonPage, IonRadio, IonRadioGroup, IonSelect, IonSelectOption, IonSpinner, IonThumbnail, IonTitle, IonToolbar, onIonViewWillEnter, popoverController } from "@ionic/vue";
 import { getProductIdentificationValue, translate, useProductIdentificationStore } from '@hotwax/dxp-components';
-import { ellipsisVerticalOutline, ticketOutline, sunnyOutline, checkmarkDoneOutline, downloadOutline, sendOutline, shirtOutline, informationCircleOutline, closeCircleOutline } from "ionicons/icons";
+import { ellipsisVerticalOutline, ticketOutline, downloadOutline, sendOutline, shirtOutline, informationCircleOutline, closeCircleOutline } from "ionicons/icons";
 import Image from "@/components/Image.vue";
 import OrderItemDetailActionsPopover from '@/components/OrderItemDetailActionsPopover.vue';
 import { computed, defineProps, ref } from "vue";
 import { useStore } from "vuex";
-import emitter from "@/event-bus";
+import logger from "@/logger";
+import { OrderService } from "@/services/OrderService";
+import { hasError } from "@/adapter";
+import { DateTime } from "luxon";
+import { getColorByDesc } from "@/utils";
 
 const store = useStore();
 const productIdentificationStore = useProductIdentificationStore();
@@ -290,20 +287,35 @@ const getCarrierDesc = computed(() => store.getters["util/getCarrierDesc"])
 const isFetchingOrderDetail = ref(false);
 const selectedShipmentId = ref("");
 const itemsByParentProductId = ref({}) as any;
-const parentProductNamesById = ref({}) as any;
+const parentProductInfoById = ref({}) as any;
+const orderTimeline = ref([]) as any;
 
 onIonViewWillEnter(async () => {
-  
   isFetchingOrderDetail.value = true;
   await store.dispatch("order/fetchOrderDetails", props.orderId)
   if(currentOrder.value.statusId !== "ORDER_CREATED") await store.dispatch("order/fetchOrderShipments", props.orderId)
+  await Promise.allSettled([store.dispatch('util/fetchStatusDesc'), store.dispatch("util/fetchCarriersDetail"), fetchOrderStatusHistoryTimeline()])
   generateItemsListByParent();
-  await store.dispatch("util/fetchCarriersDetail");
   isFetchingOrderDetail.value = false;
 })
 
-function getFilteredShipments(shipmentTypeId: string) {
-  return currentOrder.value.shipments?.filter((shipment: any) => shipment.shipmentTypeId === shipmentTypeId); 
+async function updateOrderStatus(updatedStatusId: string) {
+  try {
+    const resp = await OrderService.updateOrderStatus({
+      orderId: currentOrder.value.orderId,
+      statusId: updatedStatusId
+    })
+
+    if(!hasError(resp)) {
+      const order = JSON.parse(JSON.stringify(currentOrder.value));
+      order.statusId = updatedStatusId
+      store.dispatch("order/updateCurrent", order)
+    } else {
+      throw resp.data
+    }
+  } catch(error) {
+    logger.error(error)
+  }
 }
 
 function generateItemsListByParent() {
@@ -324,9 +336,29 @@ function generateItemsListByParent() {
     } else {
       itemsById[product.groupId] = [item]
     }
-    parentProductNamesById.value[product.groupId] = product.parentProductName
+    parentProductInfoById.value[product.groupId] = { parentProductName: product.parentProductName }
+  })
+
+  Object.entries(itemsById).map(([groupId, items], index) => {
+    let totalOrdered = 0, totalReceived = 0, totalShipped = 0;
+    items.map((item: any) => {
+      if(item.quantity) totalOrdered = totalOrdered + item.quantity
+      if(item.shippedQty) totalShipped = totalShipped + item.shippedQty
+      if(item.receivedQty) totalReceived = totalReceived + item.receivedQty
+
+      parentProductInfoById.value[groupId] = {
+        ...parentProductInfoById.value[groupId],
+        totalOrdered,
+        totalReceived,
+        totalShipped
+      }
+    })
   })
   itemsByParentProductId.value = itemsById
+}
+
+function getFilteredShipments(shipmentTypeId: string) {
+  return currentOrder.value.shipments?.filter((shipment: any) => shipment.shipmentTypeId === shipmentTypeId); 
 }
 
 function getSelectedShipment() {
@@ -350,6 +382,55 @@ async function openOrderItemDetailActionsPopover(event: any, item: any){
   })
 
   await popover.present();
+}
+
+async function fetchOrderStatusHistoryTimeline() {
+  let timeline = [] as any;
+  try {
+    const resp = await OrderService.fetchOrderStatusHistory({
+      inputFields: {
+        orderId: props.orderId,
+        orderItemSeqId_op: "empty"
+      },
+      entityName: "OrderStatus",
+      viewSize: "100",
+      sortBy: 'statusDatetime ASC',
+      fieldList: ["statusId", "statusDatetime"]
+    })
+    if(!hasError(resp) && resp.data.docs?.length) {
+      timeline = resp.data.docs
+
+      timeline.map((status: any, index: number) => {
+        if(index > 0) {
+          status["timeDiff"] = findTimeDiff(timeline[0].statusDatetime, status.statusDatetime)
+        }
+      })
+    } else {
+      throw resp.data;
+    }
+  } catch(error: any) {
+    logger.error(error);
+  }
+  orderTimeline.value = timeline
+}
+
+function findTimeDiff(startTime: any, endTime: any) {
+  if(!endTime || !startTime) {
+    return ""
+  }
+
+  const timeDiff = DateTime.fromMillis(endTime).diff(DateTime.fromMillis(startTime), ["years", "months", "days", "hours", "minutes"]);
+  let diffString = "+ ";
+  if(timeDiff.years) diffString += `${Math.round(timeDiff.years)} years `
+  if(timeDiff.months) diffString += `${Math.round(timeDiff.months)} months `
+  if(timeDiff.days) diffString += `${Math.round(timeDiff.days)} days `
+  if(timeDiff.hours) diffString += `${Math.round(timeDiff.hours)} hours `
+  if(timeDiff.minutes) diffString += `${Math.round(timeDiff.minutes)} minutes`
+  return diffString
+}
+
+function formatDateTime(date: any) {
+  return DateTime.fromMillis(date).toLocaleString({ hour: "numeric", minute: "2-digit", day: "numeric", month: "short", year: "numeric", hourCycle: "h12" })
 }
 </script>
 

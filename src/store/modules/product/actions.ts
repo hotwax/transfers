@@ -46,6 +46,14 @@ const actions: ActionTree<ProductState, RootState> = {
 
   async addProductToCached ( { commit }, payload) {
     commit(types.PRODUCT_ADD_TO_CACHED, payload);
+  },
+
+  async addProductToCachedMultiple ( { commit }, payload) {
+    commit(types.PRODUCT_ADD_TO_CACHED_MULTIPLE, payload);
+  },
+
+  async clearProductState ({ commit }) {
+    commit(types.PRODUCT_CLEARED)
   }
 }
 

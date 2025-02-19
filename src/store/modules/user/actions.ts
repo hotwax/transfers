@@ -10,6 +10,7 @@ import { Settings } from "luxon"
 import { translate, useAuthStore, useUserStore, useProductIdentificationStore } from '@hotwax/dxp-components'
 import { logout, resetConfig, updateInstanceUrl, updateToken } from '@/adapter'
 import { getServerPermissionsFromRules, prepareAppPermissions, resetPermissions, setPermissions } from "@/authorization"
+import store from "@/store"
 
 const actions: ActionTree<UserState, RootState> = {
 
@@ -109,6 +110,9 @@ const actions: ActionTree<UserState, RootState> = {
     const userStore = useUserStore()
     // TODO add any other tasks if need
     commit(types.USER_END_SESSION)
+    await this.dispatch("order/clearOrderState")
+    await this.dispatch("product/clearProductState")
+    await this.dispatch("util/clearUtilState")
     resetConfig();
     resetPermissions();
 

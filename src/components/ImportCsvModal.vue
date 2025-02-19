@@ -64,7 +64,6 @@ import { closeOutline, saveOutline } from "ionicons/icons";
 import { translate } from "@hotwax/dxp-components";
 import { showToast } from "@/utils";
 
-
 const props = defineProps(["fileColumns", "content", "countId"])
 const productIdentifications = ["productId", "SKU", "UPCA", "SHOPIFY_PROD_SKU", "SHOPIFY_PROD_ID"]
 

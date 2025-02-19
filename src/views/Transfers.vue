@@ -79,16 +79,16 @@
             <ion-item lines="none">
               <ion-icon slot="start" :icon="documentTextOutline" />
               <ion-select :label="translate('Group by')" interface="popover" :value="query.groupBy" @ionChange="updateAppliedFilters($event['detail'].value, 'groupBy')">
-                <ion-select-option value="orderId">{{ "Order item" }}</ion-select-option>
-                <ion-select-option value="orderFacilityName">{{ "Destination" }}</ion-select-option>
-                <ion-select-option value="">{{ "Destination and product" }}</ion-select-option>
-                <ion-select-option value="facilityName">{{ "Origin" }}</ion-select-option>
-                <ion-select-option value="">{{ "Origin and product" }}</ion-select-option>
+                <ion-select-option value="orderId">{{ translate("Order item") }}</ion-select-option>
+                <ion-select-option value="orderFacilityName">{{ translate("Destination") }}</ion-select-option>
+                <ion-select-option value="destinationFacilityProductId">{{ translate("Destination and product") }}</ion-select-option>
+                <ion-select-option value="facilityName">{{ translate("Origin") }}</ion-select-option>
+                <ion-select-option value="originFacilityProductId">{{ translate("Origin and product") }}</ion-select-option>
               </ion-select>
             </ion-item>
             <ion-item lines="none">
               <ion-icon slot="start" :icon="swapVerticalOutline" />
-              <ion-select :label="translate('Sort')" interface="popover" :value="query.sort"  @ionChange="updateAppliedFilters($event['detail'].value, 'sort')">
+              <ion-select :label="translate('Sort by')" interface="popover" :value="query.sort"  @ionChange="updateAppliedFilters($event['detail'].value, 'sort')">
                 <ion-select-option value="orderDate desc">{{ translate("Newest to oldest") }}</ion-select-option>
                 <ion-select-option value="orderDate asc">{{ translate("Oldest to newest") }}</ion-select-option>
               </ion-select>
@@ -112,7 +112,6 @@
                     </ion-label>
                   </ion-item>
                 </div>
-  
                 <div class="tags">
                   <ion-chip outline>
                     <ion-icon :icon="sendOutline" />
@@ -123,7 +122,6 @@
                     <ion-label>{{ order.destinationFacilityName }}</ion-label>
                   </ion-chip>
                 </div>
-  
                 <div class="metadata">
                   <ion-note>{{ translate("Created on") }} {{ formatUtcDate(order.orderDate, "dd LLL yyyy") }}</ion-note>
                   <ion-badge :color="getColorByDesc(order.orderStatusDesc) || getColorByDesc('default')">{{ order.orderStatusDesc }}</ion-badge>
@@ -141,28 +139,24 @@
                       <p>{{ getProductIdentificationValue(productIdentificationStore.getProductIdentificationPref.secondaryId, getProduct(item.productId)) }}</p>
                     </ion-label>
                   </ion-item>
-
                   <div class="tablet ion-text-center">
                     <ion-label>
-                      {{ item.quantity }}
+                      {{ item.quantity || "-" }}
                       <p>{{ translate("ordered") }}</p>
                     </ion-label>
                   </div>
-
                   <div class="tablet ion-text-center">
                     <ion-label>
-                      {{ "-" }}
+                      {{ item.shippedQty || "-" }}
                       <p>{{ translate("shipped") }}</p>
                     </ion-label>
                   </div>
-
                   <div class="tablet ion-text-center">
                     <ion-label>
-                      {{ "-" }}
+                      {{ item.receivedQty || "-" }}
                       <p>{{ translate("received") }}</p>
                     </ion-label>
                   </div>
-
                   <ion-item lines="none">
                     <ion-badge slot="end" :color="getColorByDesc(item.orderItemStatusDesc) || getColorByDesc('default')">{{ item.orderItemStatusDesc }}</ion-badge>
                   </ion-item>
@@ -181,31 +175,29 @@
                     <p>{{ query.groupBy === 'facilityName' ? order.originFacilityId : order.destinationFacilityId }}</p>
                   </ion-label>
                 </ion-item>
-                
                 <div class="tablet ion-text-center">
                   <ion-label>
-                    {{ "-" }}
+                    {{ order.totalOrdered || 0 }}
                     <p>{{ translate("ordered") }}</p>
                   </ion-label>
                 </div>
-                
-                <div></div>
                 <div class="tablet ion-text-center">
                   <ion-label>
-                    {{ "-" }}
+                    {{ order.totalShipped || 0 }}
                     <p>{{ translate("shipped") }}</p>
                   </ion-label>
                 </div>
-                <div></div>
-
-                <div class="tablet ion-text-center ion-padding-end">
+                <div class="tablet ion-text-center">
                   <ion-label>
-                    {{ "-" }}
+                    {{ order.totalReceived || 0 }}
                     <p>{{ translate("received") }}</p>
                   </ion-label>
                 </div>
+                <div class="ion-padding-end tablet">
+                  <ion-icon :icon="chevronDownOutline" />
+                </div>
               </section>
-  
+
               <section>
                 <div class="list-item" v-for="(item, index) in order.doclist.docs" :key="index" @click="router.push(`/order-detail/${item.orderId}`)">
                   <ion-item lines="none">
@@ -214,33 +206,28 @@
                       <p>{{ item.orderId }}</p>
                     </ion-label>
                   </ion-item>
-
                   <ion-chip outline>
                     <ion-icon :icon="query.groupBy === 'facilityName' ? downloadOutline : sendOutline" />
                     <ion-label>{{ query.groupBy === "facilityName" ? item.orderFacilityName : item.facilityName }}</ion-label>
                   </ion-chip>
-
                   <div class="tablet ion-text-center">
                     <ion-label>
-                      {{ item.quantity }}
+                      {{ item.quantity || 0 }}
                       <p>{{ translate("ordered") }}</p>
                     </ion-label>
                   </div>
-
                   <div class="tablet ion-text-center">
                     <ion-label>
-                      {{ "-" }}
+                      {{ item.shippedQty || 0 }}
                       <p>{{ translate("shipped") }}</p>
                     </ion-label>
                   </div>
-
                   <div class="tablet ion-text-center">
                     <ion-label>
-                      {{ "-" }}
+                      {{ item.receivedQty || 0 }}
                       <p>{{ translate("received") }}</p>
                     </ion-label>
                   </div>
-
                   <div class="metadata ion-padding-end">
                     <ion-note>{{ translate("Created on") }} {{ formatUtcDate(item.orderDate, "dd LLL yyyy") }}</ion-note>
                     <ion-badge slot="end" :color="getColorByDesc(item.orderItemStatusDesc) || getColorByDesc('default')">{{ item.orderItemStatusDesc }}</ion-badge>
@@ -267,8 +254,8 @@
 </template>
 
 <script setup lang="ts">
-import { IonBadge, IonButton, IonButtons, IonChip, IonContent, IonFab, IonFabButton, IonHeader, IonIcon, IonInfiniteScroll, IonInfiniteScrollContent, IonItem, IonLabel, IonList, IonMenuButton, IonNote, IonPage, IonSearchbar, IonSelect, IonSelectOption, IonThumbnail, IonTitle, IonToolbar, onIonViewWillEnter } from '@ionic/vue';
-import { addOutline, documentTextOutline, download, downloadOutline, filterOutline, sendOutline, swapVerticalOutline } from 'ionicons/icons';
+import { IonBadge, IonButton, IonButtons, IonChip, IonContent, IonFab, IonFabButton, IonHeader, IonIcon, IonInfiniteScroll, IonInfiniteScrollContent, IonItem, IonLabel, IonList, IonMenuButton, IonNote, IonPage, IonSearchbar, IonSelect, IonSelectOption, IonSpinner, IonThumbnail, IonTitle, IonToolbar, onIonViewWillEnter } from '@ionic/vue';
+import { addOutline, chevronDownOutline, documentTextOutline, downloadOutline, filterOutline, sendOutline, swapVerticalOutline } from 'ionicons/icons';
 import { getProductIdentificationValue, translate, useProductIdentificationStore } from '@hotwax/dxp-components'
 import router from '@/router';
 import Image from '@/components/Image.vue';
@@ -281,18 +268,17 @@ const productIdentificationStore = useProductIdentificationStore();
 const store = useStore();
 
 const queryString = ref("");
-const isLoading = ref(false);
+const isFetchingOrders = ref(false);
 const isScrollingEnabled = ref(false);
 const contentRef = ref({}) as any
 const infiniteScrollRef = ref({}) as any
-const isFetchingOrders = ref(false);
 
 const ordersList = computed(() => store.getters["order/getOrders"])
+const query = computed(() => store.getters["order/getQuery"])
 const productStoreOptions = computed(() => store.getters["order/getProductStoreOptions"])
 const originFacilityOptions = computed(() => store.getters["order/getOriginFacilityOptions"])
 const destinationFacilityOptions = computed(() => store.getters["order/getDestinationFacilityOptions"])
 const orderStatuses = computed(() => store.getters["order/getOrderStatuses"])
-const query = computed(() => store.getters["order/getQuery"])
 const shipmentMethodOptions = computed(() => store.getters["order/getShipmentMethodOptions"])
 const carrierOptions = computed(() => store.getters["order/getCarrierOptions"])
 const getProduct = computed(() => store.getters["product/getProduct"])
@@ -301,6 +287,7 @@ const isScrollable = computed(() => store.getters["order/isScrollable"])
 onIonViewWillEnter(async () => {
   isFetchingOrders.value = true;
   await store.dispatch('order/findOrders', { fetchFacets: true })
+  await store.dispatch('util/fetchStatusDesc')
   isFetchingOrders.value = false;
 })
 
@@ -315,14 +302,12 @@ async function loadMoreOrders(event: any) {
   if(!(isScrollingEnabled.value && isScrollable.value)) {
     await event.target.complete();
   }
-  isLoading.value = true
   await store.dispatch('order/findOrders', {
     viewSize: undefined,
     viewIndex: Math.ceil(ordersList.value.orders.length / 10).toString()
   }).then(async () => {
     await event.target.complete();
   })
-  isLoading.value = false
 }
 
 function enableScrolling() {

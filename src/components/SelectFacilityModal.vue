@@ -6,7 +6,7 @@
           <ion-icon slot="icon-only" :icon="closeOutline" />
         </ion-button>
       </ion-buttons>
-      <ion-title>{{ translate("Add operating hours") }}</ion-title>
+      <ion-title>{{ translate("Select facility") }}</ion-title>
     </ion-toolbar>
   </ion-header>
   <ion-content>
@@ -42,13 +42,11 @@ import {
   IonIcon,
   IonItem,
   IonLabel,
-  IonList,
   IonRadio,
   IonRadioGroup,
   IonTitle,
   IonToolbar,
-  modalController,
-  onIonViewDidEnter
+  modalController
 } from "@ionic/vue";
 import { defineProps, onMounted, ref } from "vue";
 import { closeOutline, saveOutline } from "ionicons/icons";

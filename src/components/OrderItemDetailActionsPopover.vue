@@ -35,8 +35,6 @@ const getProduct = computed(() => store.getters["product/getProduct"])
 const currentOrder = computed(() => store.getters["order/getCurrent"])
 
 async function editOrderedQuantity() {
-  console.log(props.item);
-
   const alert = await alertController.create({
     header: translate("Edit ordered qty"),
     buttons: [{
@@ -49,7 +47,7 @@ async function editOrderedQuantity() {
         const quantity = Number(data.quantity);
         if(quantity !== props.item.quantity) {
           const isUpdated = await updateOrderItem({ quantity })
-          showToast(translate(isUpdated ? "Item ordered quantity updated successfully." : "Failed to updated item ordered quantity."))
+          showToast(translate(isUpdated ? "Item ordered quantity updated successfully." : "Failed to update item ordered quantity."))
         }
       }
     }],
@@ -79,7 +77,6 @@ async function updateOrderItem(payload: any) {
         if(item.orderId === props.item.orderId && item.orderItemSeqId === props.item.orderItemSeqId) {
           if(payload.statusId) {
             item.statusId = "ITEM_COMPLETED"
-            store.dispatch('util/fetchStatusDesc', ["ITEM_COMPLETED"])
           } else {
             item.quantity = payload?.quantity
           }
