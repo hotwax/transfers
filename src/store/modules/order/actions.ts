@@ -38,7 +38,7 @@ const actions: ActionTree<OrderState, RootState> = {
           order.destinationFacilityId = orderItem.orderFacilityId
           order.destinationFacilityName = orderItem.orderFacilityName
 
-          order.doclist.docs[0].shipmentMethodTypeId && shipmentMethodTypeIds.push(orderItem.shipmentMethodTypeId)
+          order.shipmentMethodTypeId && shipmentMethodTypeIds.push(orderItem.shipmentMethodTypeId)
           return order
         })
 
@@ -65,7 +65,6 @@ const actions: ActionTree<OrderState, RootState> = {
           const shipmentMethodTypeIds = resp.data.facets?.shipmentMethodTypeIdFacet?.buckets.map((bucket: any) => bucket.val)
           const statuses = resp.data.facets?.orderStatusDescFacet?.buckets.map((bucket: any) => bucket.val)
 
-        //   commit(types.ORDERLOOKUP_CHANNEL_OPTIONS_UPDATED, channels);
           commit(types.ORDER_PRODUCT_STORE_OPTIONS_UPDATED, productStores);
           commit(types.ORDER_ORIGIN_FACILITY_OPTIONS_UPDATED, originFacilities);
           commit(types.ORDER_DESTINATION_FACILITY_OPTIONS_UPDATED, destinationFacilities);

@@ -41,7 +41,7 @@ const fetchOrderItems = async (orderId: string): Promise<any> => {
           },
           "fieldList": ["orderId", "orderItemSeqId", "statusId", "shipGroupSeqId", "productId", "productName", "internalName", "quantity"],
           "viewIndex": viewIndex,
-          "viewSize": 250,  // maximum records we could have
+          "viewSize": 250,
           "distinct": "Y",
           "noConditionFind": "Y"
         }
@@ -84,7 +84,7 @@ const fetchOrderItemStats = async (orderItemsList: any): Promise<any> => {
         orderItemSeqId: orderItemSeqIds,
         orderItemSeqId_op: "in"
       },
-      viewSize: 250, // maximum view size
+      viewSize: 250,
       entityName: 'ShippedItemQuantitySum',
       fieldList: ['orderId', 'orderItemSeqId', 'shippedQuantity']
     }
@@ -96,7 +96,7 @@ const fetchOrderItemStats = async (orderItemsList: any): Promise<any> => {
         orderItemSeqId: orderItemSeqIds,
         orderItemSeqId_op: "in"
       },
-      viewSize: 250, // maximum view size
+      viewSize: 250,
       entityName: 'ReceivedItemQuantitySum',
       fieldList: ['orderId', 'orderItemSeqId', 'receivedQuantity']
     }

@@ -201,7 +201,7 @@ import { IonBackButton, IonButton, IonCard, IonCardHeader, IonCardTitle, IonChec
 import { addCircleOutline, checkmarkCircle, checkmarkDoneOutline, cloudUploadOutline, downloadOutline, ellipsisVerticalOutline, informationCircleOutline, listOutline, pencilOutline, sendOutline, storefrontOutline } from 'ionicons/icons';
 import { getProductIdentificationValue, translate, useProductIdentificationStore, useUserStore } from '@hotwax/dxp-components'
 import { computed, ref, watch } from "vue";
-import { getDateWithOrdinalSuffix, hasError, parseCsv, showToast } from '@/utils';
+import { getDateWithOrdinalSuffix, parseCsv, showToast } from '@/utils';
 import logger from '@/logger';
 import { useStore } from 'vuex';
 import Image from '@/components/Image.vue';
@@ -214,6 +214,7 @@ import { UtilService } from '@/services/UtilService';
 import { OrderService } from '@/services/OrderService';
 import router from '@/router';
 import { DateTime } from 'luxon';
+import { hasError } from "@/adapter";
 
 const store = useStore();
 const productIdentificationStore = useProductIdentificationStore();
@@ -357,8 +358,6 @@ async function findProductFromIdentifier(payload: any) {
 }
 
 async function addProductToCount() {
-  // If product is not found in the searched string then do not make the api call
-  // check is only required to handle the case wshen user presses the enter key on the input and we do not have any result in the searchedProduct
   if (!searchedProduct.value.productId ||!queryString.value) return;
   if (isProductAvailableInCycleCount()) return;
 
@@ -565,7 +564,6 @@ async function openImportCsvModal() {
       content: content.value
     }
   })
-  // On modal dismiss, if it returns identifierData, add the product to the count by calling addProductToCount()
   importCsvModal.onDidDismiss().then((result: any) => {
     if (result?.data?.identifierData && Object.keys(result?.data?.identifierData).length) {
       findProductFromIdentifier(result.data.identifierData)
@@ -615,8 +613,8 @@ async function findProduct() {
   isSearchingProduct.value = true;
   try {
     const resp = await ProductService.fetchProducts({
-      "filters": ['isVirtual: false', `sku: ${queryString.value}`], // Made exact searching as when using fuzzy searching the products are not searched as expected
-      "viewSize": 1 // as we only need a single record
+      "filters": ['isVirtual: false', `sku: ${queryString.value}`],
+      "viewSize": 1
     })
     if (!hasError(resp) && resp.data.response?.docs?.length) {
       searchedProduct.value = resp.data.response.docs[0];

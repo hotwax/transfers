@@ -13,13 +13,6 @@ const dateOrdinalSuffix = {
   23: 'rd'
 } as any
 
-// TODO Use separate files for specific utilities
-
-// TODO Remove it when HC APIs are fully REST compliant
-const hasError = (response: any) => {
-  return !!response.data._ERROR_MESSAGE_ || !!response.data._ERROR_MESSAGE_LIST_;
-}
-
 const showToast = async (message: string) => {
   const toast = await toastController
     .create({
@@ -31,8 +24,6 @@ const showToast = async (message: string) => {
 }
 
 const formatUtcDate = (value: any, outFormat: string) => {
-  // TODO Make default format configurable and from environment variables
-  // TODO Fix this setDefault should set the default timezone instead of getting it everytiem and setting the tz
   return DateTime.fromISO(value, { zone: 'utc' }).setZone(store.state.user.current.userTimeZone).toFormat(outFormat ? outFormat : 'MM-dd-yyyy')
 }
 
@@ -77,4 +68,4 @@ const getColorByDesc = (desc: string) => ({
   "default": "medium"
 } as any)[desc]
 
-export { formatUtcDate, getColorByDesc, getDateWithOrdinalSuffix, hasError, parseCsv, showToast }
+export { formatUtcDate, getColorByDesc, getDateWithOrdinalSuffix, parseCsv, showToast }
