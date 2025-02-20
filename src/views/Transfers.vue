@@ -142,19 +142,19 @@
                   </ion-item>
                   <div class="tablet ion-text-center">
                     <ion-label>
-                      {{ item.quantity || "-" }}
+                      {{ item.quantity || 0 }}
                       <p>{{ translate("ordered") }}</p>
                     </ion-label>
                   </div>
                   <div class="tablet ion-text-center">
                     <ion-label>
-                      {{ item.shippedQty || "-" }}
+                      {{ item.shippedQty || 0 }}
                       <p>{{ translate("shipped") }}</p>
                     </ion-label>
                   </div>
                   <div class="tablet ion-text-center">
                     <ion-label>
-                      {{ item.receivedQty || "-" }}
+                      {{ item.receivedQty || 0 }}
                       <p>{{ translate("received") }}</p>
                     </ion-label>
                   </div>
@@ -238,6 +238,84 @@
               <hr />
             </div>
           </template>
+          <template v-else>
+            <div v-for="(order, index) in ordersList.orders" :key="index">
+              <section class="list-item">
+                <ion-item lines="none">
+                  <ion-thumbnail slot="start">
+                    <Image :src="getProduct(order.productId)?.mainImageUrl" />
+                  </ion-thumbnail>
+                  <ion-label>
+                    <strong>{{ getProductIdentificationValue(productIdentificationStore.getProductIdentificationPref.primaryId, getProduct(order.productId)) || getProduct(order.productId).productName }}</strong>
+                    <p>{{ getProductIdentificationValue(productIdentificationStore.getProductIdentificationPref.secondaryId, getProduct(order.productId)) }}</p>
+                  </ion-label>
+                </ion-item>
+                <ion-chip outline>
+                  <ion-icon :icon="query.groupBy === 'originFacilityProductId' ? sendOutline : downloadOutline" />
+                  <ion-label>{{ query.groupBy === "originFacilityProductId" ? order.originFacilityName : order.destinationFacilityName }}</ion-label>
+                </ion-chip>
+                <div class="tablet ion-text-center">
+                  <ion-label>
+                    {{ order.totalOrdered || 0 }}
+                    <p>{{ translate("ordered") }}</p>
+                  </ion-label>
+                </div>
+                <div class="tablet ion-text-center">
+                  <ion-label>
+                    {{ order.totalShipped || 0 }}
+                    <p>{{ translate("shipped") }}</p>
+                  </ion-label>
+                </div>
+                <div class="tablet ion-text-center">
+                  <ion-label>
+                    {{ order.totalReceived || 0 }}
+                    <p>{{ translate("received") }}</p>
+                  </ion-label>
+                </div>
+                <div class="ion-padding-end tablet">
+                  <ion-icon :icon="chevronDownOutline" />
+                </div>
+              </section>
+
+              <section>
+                <div class="list-item" v-for="(item, index) in order.doclist.docs" :key="index" @click="router.push(`/order-detail/${item.orderId}`)">
+                  <ion-item lines="none">
+                    <ion-label class="ion-text-wrap">
+                      {{ item.orderName }}
+                      <p>{{ item.orderId }}</p>
+                    </ion-label>
+                  </ion-item>
+                  <ion-chip outline>
+                    <ion-icon :icon="query.groupBy === 'originFacilityProductId' ? downloadOutline : sendOutline" />
+                    <ion-label>{{ query.groupBy === "originFacilityProductId" ? item.orderFacilityName : item.facilityName }}</ion-label>
+                  </ion-chip>
+                  <div class="tablet ion-text-center">
+                    <ion-label>
+                      {{ item.quantity || 0 }}
+                      <p>{{ translate("ordered") }}</p>
+                    </ion-label>
+                  </div>
+                  <div class="tablet ion-text-center">
+                    <ion-label>
+                      {{ item.shippedQty || 0 }}
+                      <p>{{ translate("shipped") }}</p>
+                    </ion-label>
+                  </div>
+                  <div class="tablet ion-text-center">
+                    <ion-label>
+                      {{ item.receivedQty || 0 }}
+                      <p>{{ translate("received") }}</p>
+                    </ion-label>
+                  </div>
+                  <div class="metadata ion-padding-end">
+                    <ion-note>{{ translate("Created on") }} {{ formatUtcDate(item.orderDate, "dd LLL yyyy") }}</ion-note>
+                    <ion-badge slot="end" :color="getColorByDesc(item.orderItemStatusDesc) || getColorByDesc('default')">{{ item.orderItemStatusDesc }}</ion-badge>
+                  </div>
+                </div>
+              </section>
+              <hr />
+            </div>
+          </template>
 
           <ion-infinite-scroll @ionInfinite="loadMoreOrders($event)" threshold="100px" v-show="isScrollable" ref="infiniteScrollRef">
             <ion-infinite-scroll-content loading-spinner="crescent" :loading-text="translate('Loading')"/>
@@ -255,7 +333,7 @@
 </template>
 
 <script setup lang="ts">
-import { IonBadge, IonButton, IonButtons, IonChip, IonContent, IonFab, IonFabButton, IonHeader, IonIcon, IonInfiniteScroll, IonInfiniteScrollContent, IonItem, IonLabel, IonList, IonMenuButton, IonNote, IonPage, IonSearchbar, IonSelect, IonSelectOption, IonSpinner, IonThumbnail, IonTitle, IonToolbar, onIonViewWillEnter } from '@ionic/vue';
+import { IonBadge, IonButtons, IonChip, IonContent, IonFab, IonFabButton, IonHeader, IonIcon, IonInfiniteScroll, IonInfiniteScrollContent, IonItem, IonLabel, IonList, IonMenuButton, IonNote, IonPage, IonSearchbar, IonSelect, IonSelectOption, IonSpinner, IonThumbnail, IonTitle, IonToolbar, onIonViewWillEnter } from '@ionic/vue';
 import { addOutline, chevronDownOutline, documentTextOutline, downloadOutline, filterOutline, sendOutline, swapVerticalOutline } from 'ionicons/icons';
 import { getProductIdentificationValue, translate, useProductIdentificationStore } from '@hotwax/dxp-components'
 import router from '@/router';

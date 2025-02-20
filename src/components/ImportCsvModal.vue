@@ -40,25 +40,7 @@
 </template>
   
 <script setup lang="ts">
-import { 
-  IonButton,
-  IonButtons,
-  IonContent,
-  IonFab,
-  IonFabButton,
-  IonHeader,
-  IonIcon,
-  IonItem,
-  IonList,
-  IonListHeader,
-  IonRadio,
-  IonRadioGroup,
-  IonSelect,
-  IonSelectOption,
-  IonTitle,
-  IonToolbar,
-  modalController
-} from "@ionic/vue";
+import { IonButton, IonButtons, IonContent, IonFab, IonFabButton, IonHeader, IonIcon, IonItem, IonList, IonListHeader, IonSelect, IonSelectOption, IonTitle, IonToolbar,modalController } from "@ionic/vue";
 import { defineProps, ref } from "vue";
 import { closeOutline, saveOutline } from "ionicons/icons";
 import { translate } from "@hotwax/dxp-components";
@@ -102,11 +84,10 @@ function saveImportData() {
 
   closeModal(identifierData);
 }
-
 </script>
     
 <style scoped>
- ion-content {
-    --padding-bottom: 70px;
-  }
+ion-content {
+  --padding-bottom: 70px;
+}
 </style>

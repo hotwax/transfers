@@ -17,14 +17,6 @@ const createOrder = async (payload: any): Promise<any> => {
   });
 }
 
-const fetchOrderHeader = async (params: any): Promise<any> => {
-  return await api({
-    url: "performFind",
-    method: "get",
-    params
-  })
-}
-
 const fetchOrderItems = async (orderId: string): Promise<any> => {
   let viewIndex = 0;
   let orderItems = [] as any, resp;
@@ -35,11 +27,12 @@ const fetchOrderItems = async (orderId: string): Promise<any> => {
         url: "performFind",
         method: "get",
         params : {
-          "entityName": "OrderItemAndProduct",
+          "entityName": "OrderHeaderItemAndShipGroup",
           "inputFields": {
             "orderId": orderId,
+            "orderTypeId": "TRANSFER_ORDER"
           },
-          "fieldList": ["orderId", "orderItemSeqId", "statusId", "shipGroupSeqId", "productId", "productName", "internalName", "quantity"],
+          "fieldList": ["orderId", "orderName", "externalId", "orderTypeId", "statusId", "orderDate", "facilityId", "orderFacilityId", "productStoreId", "carrierPartyId", "shipmentMethodTypeId", "oiStatusId", "orderItemSeqId", "quantity", "productId"],
           "viewIndex": viewIndex,
           "viewSize": 250,
           "distinct": "Y",
@@ -256,6 +249,14 @@ const fetchShipmentTrackingDetails = async (shipmentIds: any): Promise<any> => {
 
 const updateOrderItem = async (payload: any): Promise<any> => {
   return api({
+    url: "service/updateOrderItem",
+    method: "post",
+    data: payload
+  });
+}
+
+const changeOrderItemStatus = async (payload: any): Promise<any> => {
+  return api({
     url: "service/changeOrderItemStatus",
     method: "post",
     data: payload
@@ -271,9 +272,9 @@ const updateOrderStatus = async (payload: any): Promise<any> => {
 }
 
 export const OrderService = {
+  changeOrderItemStatus,
   createOrder,
   fetchFacilityAddresses,
-  fetchOrderHeader,
   fetchOrderItems,
   fetchOrderItemStats,
   fetchOrderStatusHistory,

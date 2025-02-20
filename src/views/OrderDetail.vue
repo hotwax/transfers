@@ -44,12 +44,12 @@
                 </ion-label>
               </ion-item>
               <ion-item>
-                <ion-select :label="translate('Carrier')" v-model="currentOrder.carrierPartyId" interface="popover">
+                <ion-select :label="translate('Carrier')" v-model="currentOrder.carrierPartyId" interface="popover" :placeholder="translate('Select')">
                   <ion-select-option :value="carrierPartyId" v-for="(carrierPartyId, index) in Object.keys(shipmentMethodsByCarrier)" :key="index">{{ getCarrierDesc(carrierPartyId) ? getCarrierDesc(carrierPartyId) : carrierPartyId }}</ion-select-option>
                 </ion-select>
               </ion-item>
               <ion-item lines="none">
-                <ion-select :label="translate('Method')" v-model="currentOrder.shipmentMethodTypeId" v-if="getCarrierShipmentMethods()?.length" interface="popover">
+                <ion-select :label="translate('Method')" v-model="currentOrder.shipmentMethodTypeId" v-if="getCarrierShipmentMethods()?.length" :placeholder="translate('Select')" interface="popover">
                   <ion-select-option :value="shipmentMethod.shipmentMethodTypeId" v-for="(shipmentMethod, index) in getCarrierShipmentMethods()" :key="index">{{ shipmentMethod.description ? shipmentMethod.description : shipmentMethod.shipmentMethodTypeId }}</ion-select-option>
                 </ion-select>
                 <template v-else>
@@ -245,7 +245,7 @@
                       <ion-label>{{ item.receivedQty || 0 }}</ion-label>
                     </ion-chip>
                   </div>
-                  <ion-badge color="success">{{ getStatusDesc(item.statusId) ? getStatusDesc(item.statusId) : item.statusId }}</ion-badge>
+                  <ion-badge :color="getColorByDesc(getStatusDesc(item.oiStatusId)) || getColorByDesc('default')">{{ getStatusDesc(item.oiStatusId) ? getStatusDesc(item.oiStatusId) : item.oiStatusId }}</ion-badge>
                 </template>
                 <ion-button slot="end" fill="clear" color="medium" @click="openOrderItemDetailActionsPopover($event, item)">
                   <ion-icon :icon="ellipsisVerticalOutline" slot="icon-only" />

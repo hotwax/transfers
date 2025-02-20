@@ -1,7 +1,7 @@
 <template>
   <ion-content>
     <ion-list>
-      <ion-list-header>{{ item.productId }}</ion-list-header>
+      <ion-list-header>{{ getProductIdentificationValue(productIdentificationStore.getProductIdentificationPref.primaryId, getProduct(item.productId)) || getProduct(item.productId).productName }}</ion-list-header>
       <ion-item button @click="handleItemAction('bookQOH')">
         {{ translate("Book QoH") }}
       </ion-item>
@@ -17,10 +17,14 @@
 
 <script setup lang="ts">
 import { IonContent, IonItem, IonList, IonListHeader, popoverController } from "@ionic/vue"
-import { translate } from "@hotwax/dxp-components";
-import { defineProps } from "vue";
+import { getProductIdentificationValue, translate, useProductIdentificationStore } from '@hotwax/dxp-components';
+import { computed , defineProps } from "vue";
+import store from "@/store";
 
+const productIdentificationStore = useProductIdentificationStore();
 defineProps(["item"]);
+
+const getProduct = computed(() => store.getters["product/getProduct"])
 
 function handleItemAction(action: any) {
   popoverController.dismiss({ dismissed: true, action })
