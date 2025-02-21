@@ -247,6 +247,39 @@ const fetchShipmentTrackingDetails = async (shipmentIds: any): Promise<any> => {
   return shipmentRouteSegs
 }
 
+const fetchShipmentStatuses = async (shipmentIds: any): Promise<any> => {
+  const statuses = {} as any;
+
+  try {
+    const resp = await api({
+      url: "performFind",
+      method: "get",
+      params: {
+        "entityName": "ShipmentStatus",
+        inputFields : {
+          shipmentId: shipmentIds,
+          shipmentId_op: "in",
+          statusId: ["SHIPMENT_SHIPPED", "PURCH_SHIP_SHIPPED"]
+        },
+        "fieldList": ["shipmentId", "statusId", "statusDate"],
+        "viewSize": 250,
+        "distinct": "Y"
+      }
+    }) as any;
+
+    if (!hasError(resp) && resp.data.count) {
+      resp.data.docs.map((status: any) => {
+        statuses[status.shipmentId] = status.statusDate
+      })
+    } else {
+      throw resp.data;
+    }
+  } catch (error) {
+    logger.error(error);
+  }
+  return statuses
+}
+
 const updateOrderItem = async (payload: any): Promise<any> => {
   return api({
     url: "service/updateOrderItem",
@@ -295,6 +328,7 @@ export const OrderService = {
   fetchOrderItems,
   fetchOrderItemStats,
   fetchOrderStatusHistory,
+  fetchShipmentStatuses,
   fetchShipments,
   fetchShipmentItems,
   fetchShipmentTrackingDetails,

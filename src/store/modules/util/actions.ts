@@ -7,38 +7,24 @@ import { hasError } from '@/adapter'
 import logger from '@/logger'
 
 const actions: ActionTree<UtilState, RootState> = {
-  async fetchShipmentMethodTypeDesc({ commit, state }, shipmentIds) {
-    let shipmentMethodTypeDesc = JSON.parse(JSON.stringify(state.shipmentMethodTypeDesc))
-    const cachedShipmentMethodIds = Object.keys(shipmentMethodTypeDesc);
-    const ids = shipmentIds.filter((shipmentId: string) => !cachedShipmentMethodIds.includes(shipmentId))
-
-    if(!ids.length) return shipmentMethodTypeDesc;
-
+  async fetchShipmentMethodTypeDesc({ commit, state }) {
+    if(Object.keys(state.shipmentMethodTypeDesc)?.length) return;
+    
+    const shipmentMethodTypeDesc = {} as any;
     try {
       const payload = {
-        "inputFields": {
-          "shipmentMethodTypeId": ids,
-          "shipmentMethodTypeId_op": "in"
-        },
         "fieldList": ["shipmentMethodTypeId", "description"],
         "entityName": "ShipmentMethodType",
-        "viewSize": ids.length
+        "viewSize": 200
       }
 
       const resp = await UtilService.fetchShipmentMethodTypeDesc(payload);
 
       if(!hasError(resp)) {
-        const shipmentMethodResp = {} as any
         resp.data.docs.map((shipmentMethodInformation: any) => {
-          shipmentMethodResp[shipmentMethodInformation.shipmentMethodTypeId] = shipmentMethodInformation.description
+          shipmentMethodTypeDesc[shipmentMethodInformation.shipmentMethodTypeId] = shipmentMethodInformation.description
         })
 
-        shipmentMethodTypeDesc = {
-          ...shipmentMethodTypeDesc,
-          ...shipmentMethodResp
-        }
-
-        commit(types.UTIL_SHIPMENT_METHODS_UPDATED, shipmentMethodTypeDesc)
       } else {
         throw resp.data
       }
@@ -46,6 +32,7 @@ const actions: ActionTree<UtilState, RootState> = {
       logger.error('Error fetching shipment description', err)
     }
 
+    commit(types.UTIL_SHIPMENT_METHODS_UPDATED, shipmentMethodTypeDesc)
     return shipmentMethodTypeDesc;
   },
 

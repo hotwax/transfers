@@ -100,7 +100,7 @@ const actions: ActionTree<OrderState, RootState> = {
         if (query.json.params.start && query.json.params.start > 0) cachedOrders = cachedOrders.concat(orders)
         else cachedOrders = orders
         await this.dispatch("product/fetchProducts", { productIds })
-        await this.dispatch("util/fetchShipmentMethodTypeDesc", shipmentMethodTypeIds)
+        await this.dispatch("util/fetchShipmentMethodTypeDesc")
       } else {
         showToast(translate("Failed to fetch orders"));
         throw resp.data;
@@ -201,7 +201,7 @@ const actions: ActionTree<OrderState, RootState> = {
         shipments = resp.data.docs
 
         const shipmentIds = shipments.map((shipment: any) => shipment.shipmentId)
-        const [shipmentItems, shipmentRoutes] = await Promise.allSettled([OrderService.fetchShipmentItems(shipmentIds), OrderService.fetchShipmentTrackingDetails(shipmentIds)]) as any;
+        const [shipmentItems, shipmentRoutes, shipmentStatuses] = await Promise.allSettled([OrderService.fetchShipmentItems(shipmentIds), OrderService.fetchShipmentTrackingDetails(shipmentIds), OrderService.fetchShipmentStatuses(shipmentIds)]) as any;
 
         const productIds = [...new Set(shipmentItems.value.map((item:any) => item.productId))];
         const batchSize = 250;
@@ -225,6 +225,10 @@ const actions: ActionTree<OrderState, RootState> = {
             if(trackingInfo) {
               shipment["trackingCode"] = trackingInfo?.trackingIdNumber
             }
+          }
+
+          if(shipmentStatuses.status === "fulfilled" && shipmentStatuses.value[shipment.shipmentId]) {
+            shipment["shippedDate"] = shipmentStatuses.value[shipment.shipmentId]
           }
         })
       } else {

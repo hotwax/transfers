@@ -133,19 +133,19 @@
               </ion-card-header>
               <ion-item>
                 <ion-label>{{ translate("Shipped date") }}</ion-label>
-                <ion-label slot="end">{{ "-" }}</ion-label>
+                <ion-label slot="end">{{ getSelectedShipment()?.shippedDate ? formatDateTime(getSelectedShipment().shippedDate) : "-" }}</ion-label>
               </ion-item>
               <ion-item>
                 <ion-label>{{ translate("Method") }}</ion-label>
-                <ion-label slot="end">{{ getSelectedShipment()?.shipmentMethodTypeId }}</ion-label>
+                <ion-label slot="end">{{ getSelectedShipment()?.shipmentMethodTypeId ? getShipmentMethodDesc(getSelectedShipment().shipmentMethodTypeId) : "-" }}</ion-label>
               </ion-item>
               <ion-item>
                 <ion-label>{{ translate("Carrier") }}</ion-label>
-                <ion-label slot="end">{{ getSelectedShipment()?.carrierPartyId }}</ion-label>
+                <ion-label slot="end">{{ getSelectedShipment()?.carrierPartyId ? getCarrierDesc(getSelectedShipment().carrierPartyId) : "-" }}</ion-label>
               </ion-item>
               <ion-item lines="none">
                 <ion-label>{{ translate("Tracking code") }}</ion-label>
-                <ion-label slot="end">{{ getSelectedShipment()?.trackingCode || "-" }}</ion-label>
+                <ion-label slot="end">{{ getSelectedShipment()?.trackingCode ? getSelectedShipment().trackingCode : "-" }}</ion-label>
               </ion-item>
             </ion-card>
           </div>
@@ -285,6 +285,7 @@ const getStatusDesc = computed(() => store.getters["util/getStatusDesc"])
 const shipmentMethodsByCarrier = computed(() => store.getters["util/getShipmentMethodsByCarrier"])
 const getProduct = computed(() => store.getters["product/getProduct"])
 const getCarrierDesc = computed(() => store.getters["util/getCarrierDesc"])
+const getShipmentMethodDesc = computed(() => store.getters["util/getShipmentMethodDesc"])
 
 const isFetchingOrderDetail = ref(false);
 const selectedShipmentId = ref("");
@@ -297,7 +298,7 @@ onIonViewWillEnter(async () => {
   isFetchingOrderDetail.value = true;
   await store.dispatch("order/fetchOrderDetails", props.orderId)
   if(currentOrder.value.statusId !== "ORDER_CREATED") await store.dispatch("order/fetchOrderShipments", props.orderId)
-  await Promise.allSettled([store.dispatch('util/fetchStatusDesc'), store.dispatch("util/fetchCarriersDetail"), fetchOrderStatusHistoryTimeline()])
+  await Promise.allSettled([store.dispatch('util/fetchStatusDesc'), store.dispatch("util/fetchCarriersDetail"), fetchOrderStatusHistoryTimeline(), store.dispatch("util/fetchShipmentMethodTypeDesc")])
   generateItemsListByParent();
   isFetchingOrderDetail.value = false;
   carrierMethods.value = shipmentMethodsByCarrier.value[currentOrder.value.carrierPartyId]
