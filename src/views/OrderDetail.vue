@@ -334,10 +334,7 @@ function generateItemsListByParent() {
   }
 
   itemsList?.map((item: any) => {
-    console.log(item);
     const product = getProduct.value(item.productId)
-    console.log(product);
-    
     if(itemsById[product.groupId]) {
       itemsById[product.groupId].push(item)
     } else {

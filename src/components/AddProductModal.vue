@@ -114,8 +114,6 @@ async function getProducts( vSize?: any, vIndex?: any) {
       } else {
         products.value = fetchProducts;
       }
-
-      console.log(fetchProducts);
       store.dispatch("product/addProductToCachedMultiple", { products: fetchProducts })
     } else {
       throw resp.data;
