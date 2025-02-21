@@ -8,7 +8,7 @@
       <ion-item button @click="redirectToFulfillItem()">
         {{ translate("Fulfill") }}
       </ion-item>
-      <ion-item button>
+      <ion-item button :disabled="getCurrentItemInboundShipment()" @click="redirectToReceiveItem()">
         {{ translate("Receive") }}
       </ion-item>
       <ion-item button lines="none" :disabled="item.oiStatusId !== 'ITEM_APPROVED'" @click="completeItem()">
@@ -89,8 +89,18 @@ async function editOrderedQuantity() {
   alert.present()
 }
 
+function getCurrentItemInboundShipment() {
+  return currentOrder.value.shipments.find((shipment: any) => shipment.orderItemSeqId === props.item.orderItemSeqId && shipment.shipmentTypeId === "IN_TRANSFER")
+}
+
 function redirectToFulfillItem() {
   window.location.href = `${process.env.VUE_APP_FULFILLMENT_LOGIN_URL}?oms=${authStore.oms}&token=${authStore.token.value}&expirationTime=${authStore.token.expiration}&orderId=${currentOrder.value.orderId}&facilityId=${currentOrder.value.facilityId}`
+  popoverController.dismiss()
+}
+
+function redirectToReceiveItem() {
+  const shipment = getCurrentItemInboundShipment()
+  window.location.href = `${process.env.VUE_APP_RECEIVING_LOGIN_URL}?oms=${authStore.oms}&token=${authStore.token.value}&expirationTime=${authStore.token.expiration}&shipmentId=${shipment.shipmentId}&facilityId=${currentOrder.value.facilityId}`
   popoverController.dismiss()
 }
 

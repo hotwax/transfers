@@ -194,7 +194,7 @@ const fetchShipmentItems = async (shipmentIds: any): Promise<any> => {
             shipmentId: shipmentIds,
             shipmentId_op: "in"
           },
-          "fieldList": ["shipmentId", "shipmentItemSeqId", "productId", "quantity", "createdStamp"],
+          "fieldList": ["shipmentId", "shipmentItemSeqId", "productId", "quantity", "orderItemSeqId"],
           "viewIndex": viewIndex,
           "viewSize": 250,
           "distinct": "Y"
