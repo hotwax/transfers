@@ -137,7 +137,7 @@ const actions: ActionTree<OrderState, RootState> = {
       orderId: orderItems[0].orderId,
       orderName: orderItems[0].orderName,
       orderDate: orderItems[0].orderDate,
-      facilityId: orderItems[0].facilityId,
+      facilityId: orderItems[0].oisgFacilityId,
       orderFacilityId: orderItems[0].orderFacilityId,
       productStoreId: orderItems[0].productStoreId,
       carrierPartyId: orderItems[0].carrierPartyId,
@@ -154,6 +154,7 @@ const actions: ActionTree<OrderState, RootState> = {
     const orderItemStats = await OrderService.fetchOrderItemStats(orderItemsList);
 
     orderDetail.items.map((item: any) => {
+      item.facilityId = item.oisgFacilityId
       if(orderItemStats[`${item.orderId}_${item.orderItemSeqId}`]) {
         item["shippedQty"] = orderItemStats[`${item.orderId}_${item.orderItemSeqId}`].shippedQty
         item["receivedQty"] = orderItemStats[`${item.orderId}_${item.orderItemSeqId}`].receivedQty

@@ -22,7 +22,7 @@
                 <h1>{{ currentOrder.orderName ? currentOrder.orderName : currentOrder.orderId }}</h1>
               </ion-label>
               <ion-badge :color="getColorByDesc(getStatusDesc(currentOrder.statusId)) || getColorByDesc('default')" slot="end">{{ getStatusDesc(currentOrder.statusId) ? getStatusDesc(currentOrder.statusId) : currentOrder.statusId }}</ion-badge>
-              <ion-select v-if="currentOrder.statusId === 'ORDER_CREATED' || currentOrder.statusId === 'ORDER_APPROVED'" slot="end" :value="currentOrder.statusId" selected-text=" " interface="popover" @ionChange="updateOrderStatus($event.detail.value)">
+              <ion-select v-if="currentOrder.statusId === 'ORDER_CREATED' || currentOrder.statusId === 'ORDER_APPROVED'" slot="end" aria-label="status" :value="currentOrder.statusId" selected-text=" " interface="popover" @ionChange="updateOrderStatus($event.detail.value)">
                 <ion-select-option v-if="currentOrder.statusId === 'ORDER_CREATED'" value="ORDER_APPROVED">{{ translate("Approved") }}</ion-select-option>
                 <ion-select-option value="ORDER_CANCELLED">{{ translate("Cancelled") }}</ion-select-option>
               </ion-select>
@@ -158,7 +158,7 @@
               <h1>{{ translate("Items") }}</h1>
               <p>{{ translate(selectedShipmentId ? "Showing items for selected shipment" : "Showing all order items") }}</p>
             </ion-label>
-            <ion-button size="default" fill="outline" color="medium">
+            <ion-button size="default" fill="outline" color="medium" v-if="!selectedShipmentId" @click="addProduct()">
               {{ translate("Add item to transfer") }}
             </ion-button>
           </ion-item>
@@ -261,11 +261,12 @@
 </template>
 
 <script setup lang="ts">
-import { IonBackButton,IonBadge, IonButton, IonCard, IonCardHeader, IonCardTitle, IonChip, IonContent, IonHeader, IonIcon, IonItem, IonLabel, IonList, IonNote, IonPage, IonRadio, IonRadioGroup, IonSelect, IonSelectOption, IonSpinner, IonThumbnail, IonTitle, IonToolbar, onIonViewWillEnter, popoverController } from "@ionic/vue";
+import { IonBackButton,IonBadge, IonButton, IonCard, IonCardHeader, IonCardTitle, IonChip, IonContent, IonHeader, IonIcon, IonItem, IonLabel, IonList, IonNote, IonPage, IonRadio, IonRadioGroup, IonSelect, IonSelectOption, IonSpinner, IonThumbnail, IonTitle, IonToolbar, onIonViewWillEnter, modalController, popoverController } from "@ionic/vue";
 import { getProductIdentificationValue, translate, useProductIdentificationStore } from '@hotwax/dxp-components';
 import { ellipsisVerticalOutline, ticketOutline, downloadOutline, sendOutline, shirtOutline, informationCircleOutline, closeCircleOutline } from "ionicons/icons";
 import Image from "@/components/Image.vue";
 import OrderItemDetailActionsPopover from '@/components/OrderItemDetailActionsPopover.vue';
+import AddProductModal from "@/components/AddProductModal.vue"
 import { computed, defineProps, ref } from "vue";
 import { useStore } from "vuex";
 import logger from "@/logger";
@@ -273,6 +274,7 @@ import { OrderService } from "@/services/OrderService";
 import { hasError } from "@/adapter";
 import { DateTime } from "luxon";
 import { getColorByDesc } from "@/utils";
+import emitter from "@/event-bus";
 
 const store = useStore();
 const productIdentificationStore = useProductIdentificationStore();
@@ -332,7 +334,10 @@ function generateItemsListByParent() {
   }
 
   itemsList?.map((item: any) => {
+    console.log(item);
     const product = getProduct.value(item.productId)
+    console.log(product);
+    
     if(itemsById[product.groupId]) {
       itemsById[product.groupId].push(item)
     } else {
@@ -390,6 +395,21 @@ async function updateCarrierAndShipmentMethod(carrierPartyId: any, shipmentMetho
     logger.error(error);
     carrierMethods.value = shipmentMethodsByCarrier.value[currentOrder.value.carrierPartyId];
   }
+}
+
+
+async function addProduct() {
+  emitter.on("generateItemsListByParent", generateItemsListByParent);
+  const addProductModal = await modalController.create({
+    component: AddProductModal,
+    showBackdrop: false,
+  });
+
+  addProductModal.onDidDismiss().then(() => {
+    emitter.off("generateItemsListByParent", generateItemsListByParent);
+  })
+
+  await addProductModal.present();
 }
 
 async function openOrderItemDetailActionsPopover(event: any, item: any){
