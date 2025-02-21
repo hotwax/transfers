@@ -1,6 +1,5 @@
-import {api, client} from "@/adapter"
+import {api, client, hasError} from "@/adapter"
 import store from "@/store";
-import { hasError } from "@/utils";
 
 const login = async (username: string, password: string): Promise <any> => {
   return api({
@@ -121,7 +120,16 @@ const getUserPermissions = async (payload: any, token: any): Promise<any> => {
     }
 }
 
+const fetchFacilitiesByCurrentStore = (payload: any): Promise <any> => {
+  return api({
+    url: "/performFind",
+    method: "POST",
+    data: payload
+  });
+}
+
 export const UserService = {
+  fetchFacilitiesByCurrentStore,
   getUserProfile,
   getUserPermissions,
   login,

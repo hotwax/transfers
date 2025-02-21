@@ -25,7 +25,6 @@ import "@ionic/vue/css/display.css";
 import "./theme/variables.css";
 import "@hotwax/apps-theme";
 
-import i18n from "./i18n"
 import store from "./store"
 import { DateTime } from "luxon";
 import logger from './logger';
@@ -34,18 +33,18 @@ import permissionRules from '@/authorization/Rules';
 import permissionActions from '@/authorization/Actions';
 import { dxpComponents } from "@hotwax/dxp-components"
 import { login, logout, loader } from "@/user-utils";
-import { getConfig, initialise, setUserLocale, setUserTimeZone, getAvailableTimeZones } from './adapter';
+import { fetchGoodIdentificationTypes, getConfig, getEComStores, getProductIdentificationPref, getUserPreference, initialise, setProductIdentificationPref, setUserPreference, setUserLocale, setUserTimeZone, getAvailableTimeZones } from './adapter';
 import localeMessages from '@/locales';
 
 const app = createApp(App)
   .use(IonicVue, {
-    mode: "md"
+    mode: "md",
+    innerHTMLTemplatesEnabled: true
   })
   .use(logger, {
     level: process.env.VUE_APP_DEFAULT_LOG_LEVEL
   })
   .use(router)
-  .use(i18n)
   .use(store)
   .use(permissionPlugin, {
     rules: permissionRules,
@@ -58,11 +57,17 @@ const app = createApp(App)
     logout,
     loader,
     appLoginUrl: process.env.VUE_APP_LOGIN_URL as string,
+    fetchGoodIdentificationTypes,
     getAvailableTimeZones,
     getConfig,
+    getEComStores,
+    getProductIdentificationPref,
+    getUserPreference,
     hasPermission,
     initialise,
     localeMessages,
+    setProductIdentificationPref,
+    setUserPreference,
     setUserLocale,
     setUserTimeZone, 
   });

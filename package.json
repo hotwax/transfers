@@ -8,8 +8,7 @@
     "build": "vue-cli-service build",
     "test:unit": "vue-cli-service test:unit",
     "test:e2e": "vue-cli-service test:e2e",
-    "lint": "vue-cli-service lint",
-    "i18n:report": "vue-cli-service i18n:report --src \"./src/**/*.?(js|vue)\" --locales \"./src/locales/**/*.json\""
+    "lint": "vue-cli-service lint"
   },
   "dependencies": {
     "@capacitor/android": "^2.4.7",
@@ -17,11 +16,12 @@
     "@casl/ability": "^6.0.0",
     "@hotwax/app-version-info": "^1.0.0",
     "@hotwax/apps-theme": "^1.2.6",
-    "@hotwax/dxp-components": "^1.17.0",
-    "@hotwax/oms-api": "^1.16.0",
+    "@hotwax/dxp-components": "^1.18.0",
+    "@hotwax/oms-api": "^1.17.0",
     "@ionic/core": "^7.6.0",
     "@ionic/vue": "^7.6.0",
     "@ionic/vue-router": "^7.6.0",
+    "@types/papaparse": "^5.3.1",
     "axios": "^0.21.1",
     "axios-cache-adapter": "^2.7.3",
     "boon-js": "^2.0.3",
@@ -30,7 +30,6 @@
     "luxon": "^2.3.0",
     "mitt": "^2.1.0",
     "vue": "^3.2.26",
-    "vue-i18n": "~9.1.6",
     "vue-logger-plugin": "^2.2.3",
     "vue-router": "^4.0.12",
     "vuex": "^4.0.1",
@@ -38,7 +37,6 @@
   },
   "devDependencies": {
     "@capacitor/cli": "^2.4.7",
-    "@intlify/vue-i18n-loader": "^2.1.0",
     "@types/luxon": "^2.0.9",
     "@typescript-eslint/eslint-plugin": "~5.26.0",
     "@typescript-eslint/parser": "~5.26.0",
@@ -53,8 +51,8 @@
     "@vue/test-utils": "^2.0.0-0",
     "cypress": "^8.3.0",
     "eslint": "^7.32.0",
+    "papaparse": "^5.3.1",
     "eslint-plugin-vue": "^8.0.3",
-    "typescript": "~4.7.4",
-    "vue-cli-plugin-i18n": "^1.0.1"
+    "typescript": "~4.7.4"
   }
 }

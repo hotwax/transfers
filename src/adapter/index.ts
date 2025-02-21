@@ -1,15 +1,21 @@
-import { api, client, getAvailableTimeZones, getConfig, getUserFacilities, hasError, initialise, logout, resetConfig, setUserLocale, updateInstanceUrl, updateToken, setUserTimeZone } from '@hotwax/oms-api'
+import { api, client, fetchGoodIdentificationTypes, getAvailableTimeZones, getConfig, getEComStores, getProductIdentificationPref, getUserPreference, getUserFacilities, hasError, initialise, logout, resetConfig, setUserLocale, setProductIdentificationPref, setUserPreference, updateInstanceUrl, updateToken, setUserTimeZone } from '@hotwax/oms-api'
 
 export {
   api,
   client,
-  getConfig,
+  fetchGoodIdentificationTypes,
   getAvailableTimeZones,
+  getConfig,
+  getEComStores,
+  getProductIdentificationPref,
+  getUserPreference,
   getUserFacilities,
   hasError,
   initialise,
   logout,
   resetConfig,
+  setProductIdentificationPref,
+  setUserPreference,
   setUserLocale,
   updateInstanceUrl,
   updateToken,
