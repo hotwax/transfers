@@ -32,7 +32,7 @@ const fetchOrderItems = async (orderId: string): Promise<any> => {
             "orderId": orderId,
             "orderTypeId": "TRANSFER_ORDER"
           },
-          "fieldList": ["orderId", "orderName", "externalId", "orderTypeId", "statusId", "orderDate", "facilityId", "orderFacilityId", "productStoreId", "carrierPartyId", "shipmentMethodTypeId", "oiStatusId", "orderItemSeqId", "quantity", "productId"],
+          "fieldList": ["orderId", "orderName", "externalId", "orderTypeId", "statusId", "orderDate", "facilityId", "orderFacilityId", "productStoreId", "carrierPartyId", "shipmentMethodTypeId", "oiStatusId", "orderItemSeqId", "quantity", "productId", "shipGroupSeqId"],
           "viewIndex": viewIndex,
           "viewSize": 250,
           "distinct": "Y",
@@ -271,6 +271,14 @@ const updateOrderStatus = async (payload: any): Promise<any> => {
   });
 }
 
+const updateOrderItemShipGroup = async (payload: any): Promise<any> => {
+  return api({
+    url: "service/updateOrderItemShipGroup",
+    method: "POST",
+    data: payload
+  })
+}
+
 export const OrderService = {
   changeOrderItemStatus,
   createOrder,
@@ -283,5 +291,6 @@ export const OrderService = {
   fetchShipmentTrackingDetails,
   findOrder,
   updateOrderItem,
+  updateOrderItemShipGroup,
   updateOrderStatus
 }

@@ -141,7 +141,8 @@ const actions: ActionTree<OrderState, RootState> = {
       orderFacilityId: orderItems[0].orderFacilityId,
       productStoreId: orderItems[0].productStoreId,
       carrierPartyId: orderItems[0].carrierPartyId,
-      shipmentMethodTypeId: orderItems[0].carrierPartyId,
+      shipmentMethodTypeId: orderItems[0].shipmentMethodTypeId,
+      shipGroupSeqId: orderItems[0].shipGroupSeqId,
       statusId: orderItems[0].statusId,
       items: orderItems
     }

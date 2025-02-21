@@ -44,13 +44,13 @@
                 </ion-label>
               </ion-item>
               <ion-item>
-                <ion-select :label="translate('Carrier')" v-model="currentOrder.carrierPartyId" interface="popover" :placeholder="translate('Select')">
+                <ion-select :label="translate('Carrier')" :value="currentOrder.carrierPartyId" interface="popover" :placeholder="translate('Select')" @ionChange="updateCarrierAndShipmentMethod($event.detail.value, '')">
                   <ion-select-option :value="carrierPartyId" v-for="(carrierPartyId, index) in Object.keys(shipmentMethodsByCarrier)" :key="index">{{ getCarrierDesc(carrierPartyId) ? getCarrierDesc(carrierPartyId) : carrierPartyId }}</ion-select-option>
                 </ion-select>
               </ion-item>
               <ion-item lines="none">
-                <ion-select :label="translate('Method')" v-model="currentOrder.shipmentMethodTypeId" v-if="getCarrierShipmentMethods()?.length" :placeholder="translate('Select')" interface="popover">
-                  <ion-select-option :value="shipmentMethod.shipmentMethodTypeId" v-for="(shipmentMethod, index) in getCarrierShipmentMethods()" :key="index">{{ shipmentMethod.description ? shipmentMethod.description : shipmentMethod.shipmentMethodTypeId }}</ion-select-option>
+                <ion-select :label="translate('Method')" :value="currentOrder.shipmentMethodTypeId" v-if="carrierMethods?.length" :placeholder="translate('Select')" interface="popover" @ionChange="updateCarrierAndShipmentMethod(currentOrder.carrierPartyId, $event.detail.value)">
+                  <ion-select-option :value="shipmentMethod.shipmentMethodTypeId" v-for="(shipmentMethod, index) in carrierMethods" :key="index">{{ shipmentMethod.description ? shipmentMethod.description : shipmentMethod.shipmentMethodTypeId }}</ion-select-option>
                 </ion-select>
                 <template v-else>
                   <ion-icon :icon="informationCircleOutline" slot="start" />
@@ -289,6 +289,7 @@ const selectedShipmentId = ref("");
 const itemsByParentProductId = ref({}) as any;
 const parentProductInfoById = ref({}) as any;
 const orderTimeline = ref([]) as any;
+const carrierMethods = ref([])
 
 onIonViewWillEnter(async () => {
   isFetchingOrderDetail.value = true;
@@ -297,6 +298,7 @@ onIonViewWillEnter(async () => {
   await Promise.allSettled([store.dispatch('util/fetchStatusDesc'), store.dispatch("util/fetchCarriersDetail"), fetchOrderStatusHistoryTimeline()])
   generateItemsListByParent();
   isFetchingOrderDetail.value = false;
+  carrierMethods.value = shipmentMethodsByCarrier.value[currentOrder.value.carrierPartyId]
 })
 
 async function updateOrderStatus(updatedStatusId: string) {
@@ -365,8 +367,29 @@ function getSelectedShipment() {
   return currentOrder.value.shipments.find((shipment: any) => shipment.shipmentId === selectedShipmentId.value)
 }
 
-function getCarrierShipmentMethods() {
-  return currentOrder.value.carrierPartyId && shipmentMethodsByCarrier.value[currentOrder.value.carrierPartyId]
+async function updateCarrierAndShipmentMethod(carrierPartyId: any, shipmentMethodTypeId: any) {
+  carrierMethods.value = shipmentMethodsByCarrier.value[carrierPartyId]
+  shipmentMethodTypeId = shipmentMethodTypeId ? shipmentMethodTypeId : carrierMethods.value?.[0]?.shipmentMethodTypeId
+  try {
+    const resp = await OrderService.updateOrderItemShipGroup({
+      orderId: currentOrder.value.orderId,
+      shipGroupSeqId: currentOrder.value.shipGroupSeqId,
+      shipmentMethodTypeId : shipmentMethodTypeId ? shipmentMethodTypeId : "",
+      carrierPartyId
+    })
+
+    if(!hasError(resp)) {
+      const order = JSON.parse(JSON.stringify(currentOrder.value));
+      order.carrierPartyId = carrierPartyId
+      order.shipmentMethodTypeId = shipmentMethodTypeId;
+      store.dispatch("order/updateCurrent", order)
+    } else {
+      throw resp.data;
+    }
+  } catch(error: any) {
+    logger.error(error);
+    carrierMethods.value = shipmentMethodsByCarrier.value[currentOrder.value.carrierPartyId];
+  }
 }
 
 async function openOrderItemDetailActionsPopover(event: any, item: any){
