@@ -107,14 +107,14 @@ async function getProducts( vSize?: any, vIndex?: any) {
     })
 
     if(!hasError(resp) && resp.data.response?.docs?.length) {
-      total.value = resp.data.response.numFound;
-      const fetchProducts = resp.data.response.docs
+      const productsList = resp.data.response.docs
       if(viewIndex) {
-        products.value = products.value.concat(fetchProducts);
+        products.value = products.value.concat(productsList);
       } else {
-        products.value = fetchProducts;
+        products.value = productsList;
+        total.value = resp.data.response.numFound;
       }
-      store.dispatch("product/addProductToCachedMultiple", { products: fetchProducts })
+      store.dispatch("product/addProductToCachedMultiple", { products: productsList })
     } else {
       throw resp.data;
     }
@@ -139,15 +139,18 @@ async function loadMoreProducts(event: any) {
 }
 
 async function addToCycleCount(product: any) {
+  const order = JSON.parse(JSON.stringify(currentOrder.value))
   const newProduct = {
-    orderId: currentOrder.value.orderId,
-    orderName: currentOrder.value.orderName,
-    orderTypeId: currentOrder.value.orderTypeId,
-    facilityId: currentOrder.value.facilityId,
-    productStoreId: currentOrder.value.productStoreId,
-    carrierPartyId: currentOrder.value.carrierPartyId,
-    shipmentMethodTypeId: currentOrder.value.shipmentMethodTypeId,
+    orderId: order.orderId,
+    orderName: order.orderName,
+    orderTypeId: order.orderTypeId,
+    facilityId: order.facilityId,
+    productStoreId: order.productStoreId,
+    carrierPartyId: order.carrierPartyId,
+    shipmentMethodTypeId: order.shipmentMethodTypeId,
     itemStatus: "ITEM_APPROVED",
+    productId: product.productId,
+    oiStatus: "ITEM_APPROVED",
     quantity: 1,
     idType: "SKU",
     idValue: product.sku,
@@ -162,8 +165,7 @@ async function addToCycleCount(product: any) {
     const resp = await OrderService.addOrderItem(newProduct)
 
     if(!hasError(resp)) {
-      const order = JSON.parse(JSON.stringify(currentOrder.value))
-      order.items.push({ ...newProduct, productId: product.productId }); 
+      order.items.push(newProduct);
       await store.dispatch("order/updateCurrent", order)
       emitter.emit("generateItemsListByParent", product.productId)
     } else {
