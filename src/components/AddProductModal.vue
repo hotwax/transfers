@@ -149,7 +149,8 @@ async function addToCycleCount(product: any) {
     shipmentMethodTypeId: currentOrder.value.shipmentMethodTypeId,
     itemStatus: "ITEM_APPROVED",
     quantity: 1,
-    productId: product.productId,
+    idType: "SKU",
+    idValue: product.sku,
     customerId: "COMPANY",
     unitPrice: 0,
     unitListPrice: 0,
@@ -162,7 +163,7 @@ async function addToCycleCount(product: any) {
 
     if(!hasError(resp)) {
       const order = JSON.parse(JSON.stringify(currentOrder.value))
-      order.items.push(newProduct); 
+      order.items.push({ ...newProduct, productId: product.productId }); 
       await store.dispatch("order/updateCurrent", order)
       emitter.emit("generateItemsListByParent", product.productId)
     } else {
