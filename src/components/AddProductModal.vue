@@ -165,7 +165,6 @@ async function addToCycleCount(product: any) {
       order.items.push(newProduct); 
       await store.dispatch("order/updateCurrent", order)
       emitter.emit("generateItemsListByParent", product.productId)
-      closeModal()
     } else {
       throw resp.data;
     }
