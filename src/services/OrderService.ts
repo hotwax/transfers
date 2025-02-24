@@ -91,7 +91,7 @@ const fetchOrderItemStats = async (orderItemsList: any): Promise<any> => {
       },
       viewSize: 250,
       entityName: 'ReceivedItemQuantitySum',
-      fieldList: ['orderId', 'orderItemSeqId', 'receivedQuantity']
+      fieldList: ['orderId', 'orderItemSeqId', 'totalQuantityAccepted']
     }
     shippedQtyRequests.push(shippedQtyParams)
     receivedQtyRequests.push(receivedQtyParams)
@@ -121,9 +121,9 @@ const fetchOrderItemStats = async (orderItemsList: any): Promise<any> => {
     if(response.status === "fulfilled" && !hasError(response.value) && response.value.data?.docs?.length) {
       response.value.data.docs.map((doc: any) => {
         if(orderitemStats[`${doc.orderId}_${doc.orderItemSeqId}`]) {
-          orderitemStats[`${doc.orderId}_${doc.orderItemSeqId}`] = { ...orderitemStats[`${doc.orderId}_${doc.orderItemSeqId}`], receivedQty: doc.receivedQuantity }
+          orderitemStats[`${doc.orderId}_${doc.orderItemSeqId}`] = { ...orderitemStats[`${doc.orderId}_${doc.orderItemSeqId}`], receivedQty: doc.totalQuantityAccepted }
         } else {
-          orderitemStats[`${doc.orderId}_${doc.orderItemSeqId}`] = { receivedQty: doc.receivedQuantity }
+          orderitemStats[`${doc.orderId}_${doc.orderItemSeqId}`] = { receivedQty: doc.totalQuantityAccepted }
         }
       })
     }
