@@ -87,12 +87,10 @@
                 <ion-select-option value="originFacilityProductId">{{ translate("Origin and product") }}</ion-select-option>
               </ion-select>
             </ion-item>
-            <ion-item lines="none">
+            <ion-item lines="none" button @click="updateAppliedFilters('', 'sort')">
               <ion-icon slot="start" :icon="swapVerticalOutline" />
-              <ion-select :label="translate('Sort by')" interface="popover" :value="query.sort"  @ionChange="updateAppliedFilters($event['detail'].value, 'sort')">
-                <ion-select-option value="orderDate desc">{{ translate("Newest to oldest") }}</ion-select-option>
-                <ion-select-option value="orderDate asc">{{ translate("Oldest to newest") }}</ion-select-option>
-              </ion-select>
+              <ion-label slot="end">{{ translate("Created date") }}</ion-label>
+              <ion-icon slot="end" :icon="arrowUpOutline" :class="query.sort === 'orderDate asc' ? 'sort-icon rotate' : 'sort-icon'" />
             </ion-item>
           </section>
 
@@ -334,7 +332,7 @@
 
 <script setup lang="ts">
 import { IonBadge, IonButtons, IonChip, IonContent, IonFab, IonFabButton, IonHeader, IonIcon, IonInfiniteScroll, IonInfiniteScrollContent, IonItem, IonLabel, IonList, IonMenuButton, IonNote, IonPage, IonSearchbar, IonSelect, IonSelectOption, IonSpinner, IonThumbnail, IonTitle, IonToolbar, onIonViewWillEnter } from '@ionic/vue';
-import { addOutline, chevronDownOutline, documentTextOutline, downloadOutline, filterOutline, sendOutline, swapVerticalOutline } from 'ionicons/icons';
+import { addOutline, arrowUpOutline, chevronDownOutline, documentTextOutline, downloadOutline, filterOutline, sendOutline, swapVerticalOutline } from 'ionicons/icons';
 import { getProductIdentificationValue, translate, useProductIdentificationStore } from '@hotwax/dxp-components'
 import router from '@/router';
 import Image from '@/components/Image.vue';
@@ -372,6 +370,7 @@ onIonViewWillEnter(async () => {
 
 async function updateAppliedFilters(value: string | boolean, filterName: string) {
   isFetchingOrders.value = true
+  if(filterName === "sort") value = query.value.sort === 'orderDate desc' ? 'orderDate asc' : 'orderDate desc'
   await store.dispatch('order/updateAppliedFilters', { value, filterName })
   isFetchingOrders.value = false
 }
@@ -439,6 +438,15 @@ main > div{
 .list-item {
   --columns-tablet: 4;
   --columns-desktop: 6;
+}
+
+.rotate {
+  transform: rotate(180deg);
+}
+
+.sort-icon {
+  /* Used the same transition property as used in ion-select arrow icon */
+  transition: transform .15s cubic-bezier(.4, 0, .2, 1);
 }
 
 /* Added width property as after updating to ionic7 min-width is getting applied on ion-label inside ion-item
