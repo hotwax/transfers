@@ -36,7 +36,7 @@ const actions: ActionTree<UtilState, RootState> = {
     return shipmentMethodTypeDesc;
   },
 
-  async fetchStatusDesc({ commit, state }, statusIds) {
+  async fetchStatusDesc({ commit, state }) {
     let statusDesc = JSON.parse(JSON.stringify(state.statusDesc))
     if(Object.keys(statusDesc)?.length) return;
 
@@ -70,7 +70,7 @@ const actions: ActionTree<UtilState, RootState> = {
     return statusDesc;
   },
 
-  async fetchStoreCarrierAndMethods({ commit, state }, productStoreId) {
+  async fetchStoreCarrierAndMethods({ commit }, productStoreId) {
     let shipmentMethodsByCarrier = {};
 
     try {
