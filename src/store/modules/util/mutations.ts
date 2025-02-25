@@ -23,6 +23,7 @@ const mutations: MutationTree <UtilState> = {
     state.shipmentMethodTypeDesc = {}
     state.shipmentMethodsByCarrier = {}
     state.carrierDesc = {}
+    state.facilityAddresses = {}
   },
 }
 export default mutations;
