@@ -103,14 +103,12 @@
           <template v-else-if="query.groupBy === 'orderId'">
             <div v-for="(order, index) in ordersList.orders" :key="index" @click="router.push(`/order-detail/${order.orderId}`)">
               <section class="section-header">
-                <div class="primary-info">
-                  <ion-item lines="none">
-                    <ion-label>
-                      <strong>{{ order.orderName }}</strong>
-                      <p>{{ order.orderId }}</p>
-                    </ion-label>
-                  </ion-item>
-                </div>
+                <ion-item class="primary-info" lines="none">
+                  <ion-label>
+                    <strong>{{ order.orderName }}</strong>
+                    <p>{{ order.orderId }}</p>
+                  </ion-label>
+                </ion-item>
                 <div class="tags">
                   <ion-chip outline>
                     <ion-icon :icon="sendOutline" />
@@ -363,8 +361,7 @@ const isScrollable = computed(() => store.getters["order/isScrollable"])
 
 onIonViewWillEnter(async () => {
   isFetchingOrders.value = true;
-  await store.dispatch('order/findOrders', { fetchFacets: true })
-  await store.dispatch('util/fetchStatusDesc')
+  await Promise.allSettled([store.dispatch('order/findOrders', { fetchFacets: true }), store.dispatch('util/fetchStatusDesc')])
   isFetchingOrders.value = false;
 })
 
