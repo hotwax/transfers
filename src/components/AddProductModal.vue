@@ -23,7 +23,7 @@
             <p>{{ getProductIdentificationValue(productIdentificationStore.getProductIdentificationPref.secondaryId, product) }}</p>
           </ion-label>
           <ion-icon v-if="isProductAvailableInCurrentOrder(product.productId)" color="success" :icon="checkmarkCircle" />
-          <ion-button v-else fill="outline" @click="addToCycleCount(product)">{{ translate("Add to count") }}</ion-button>
+          <ion-button v-else fill="outline" @click="addItemToOrder(product)">{{ translate("Add to order") }}</ion-button>
         </ion-item>
       </ion-list>
 
@@ -138,7 +138,7 @@ async function loadMoreProducts(event: any) {
   })
 }
 
-async function addToCycleCount(product: any) {
+async function addItemToOrder(product: any) {
   const order = JSON.parse(JSON.stringify(currentOrder.value))
   const newProduct = {
     orderId: order.orderId,
@@ -177,7 +177,7 @@ async function addToCycleCount(product: any) {
 }
 
 function closeModal() {
-  modalController.dismiss({ dismissed: true });
+  modalController.dismiss();
 }
 
 function handleInput() {

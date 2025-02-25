@@ -63,7 +63,7 @@ const getUserPermissions = async (payload: any, token: any): Promise<any> => {
       })
       if(resp.status === 200 && resp.data.docs?.length && !hasError(resp)) {
         serverPermissions = resp.data.docs.map((permission: any) => permission.permissionId);
-        const total = resp.data.count;
+        const total = resp.data.docs?.length;
         const remainingPermissions = total - serverPermissions.length;
         if (remainingPermissions > 0) {
           // We need to get all the remaining permissions

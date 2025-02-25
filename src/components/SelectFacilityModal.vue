@@ -61,7 +61,7 @@ onMounted(() => {
 })
 
 function closeModal(payload = {}) {
-  modalController.dismiss({ dismissed: true, ...payload });
+  modalController.dismiss({ ...payload });
 }
 
 function saveFacility() {

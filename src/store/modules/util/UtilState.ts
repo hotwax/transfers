@@ -3,4 +3,5 @@ export default interface UtilState {
   statusDesc: any;
   shipmentMethodsByCarrier: any;
   carrierDesc: any;
+  facilityAddresses: any
 }

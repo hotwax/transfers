@@ -20,6 +20,8 @@ const actions: ActionTree<OrderState, RootState> = {
     try {
       resp = await OrderService.findOrder(query)
       if (!hasError(resp) && resp.data?.grouped[state.query.groupBy]?.groups?.length) {
+        let productIds: any = new Set();
+        const orderItemsList = [] as any;
         const orders = resp.data.grouped[state.query.groupBy]?.groups.map((order: any) => {
           const orderItem = order.doclist.docs[0];
 
@@ -40,9 +42,14 @@ const actions: ActionTree<OrderState, RootState> = {
 
           order.shipmentMethodTypeId && shipmentMethodTypeIds.push(orderItem.shipmentMethodTypeId)
 
-          if(state.query.groupBy === "destinationFacilityProductId" || state.query.groupBy === "destinationFacilityProductId") {
+          if(state.query.groupBy === "originFacilityProductId" || state.query.groupBy === "destinationFacilityProductId") {
             order.productId = orderItem.productId
           }
+
+          order.doclist.docs.map((item: any) => {
+            orderItemsList.push(`${item.orderId}_${item.orderItemSeqId}`)
+            if(item.productId) productIds.add(item.productId)
+          })
 
           return order
         })
@@ -50,15 +57,6 @@ const actions: ActionTree<OrderState, RootState> = {
         orderCount = resp.data.grouped[state.query.groupBy]?.ngroups;
         itemCount = resp.data.grouped[state.query.groupBy]?.matches;
 
-        let productIds: any = new Set();
-        const orderItemsList = [] as any;
-
-        orders.map((order: any) => {
-          order.doclist.docs.map((item: any) => {
-            orderItemsList.push(`${item.orderId}_${item.orderItemSeqId}`)
-            if(item.productId) productIds.add(item.productId)
-          })
-        })
         productIds = [...productIds]
 
         // Added check as we are fetching the facets only on first request call and do not fetch facets information on infinite scroll
@@ -99,10 +97,14 @@ const actions: ActionTree<OrderState, RootState> = {
 
         if (query.json.params.start && query.json.params.start > 0) cachedOrders = cachedOrders.concat(orders)
         else cachedOrders = orders
-        await this.dispatch("product/fetchProducts", { productIds })
         await this.dispatch("util/fetchShipmentMethodTypeDesc")
+        const batchSize = 250;
+        const productIdBatches = [];
+        while(productIds.length) {
+          productIdBatches.push(productIds.splice(0, batchSize))
+        }
+        await Promise.allSettled([productIdBatches.map(async (productIds) => await this.dispatch('product/fetchProducts', { productIds }))])
       } else {
-        showToast(translate("Failed to fetch orders"));
         throw resp.data;
       }
     } catch(error) {
@@ -120,8 +122,7 @@ const actions: ActionTree<OrderState, RootState> = {
   
   async updateAppliedFilters({ commit, dispatch }, payload) {
     commit(types.ORDER_FILTERS_UPDATED, payload)
-    const resp = await dispatch("findOrders", { isFilterUpdated: true })
-    return resp;
+    await dispatch("findOrders", { isFilterUpdated: true })
   },
   
   async fetchOrderDetails({ commit }, orderId) {
@@ -147,10 +148,9 @@ const actions: ActionTree<OrderState, RootState> = {
       items: orderItems
     }
 
-    const [facilityAddresses] = await Promise.allSettled([OrderService.fetchFacilityAddresses([orderDetail.facilityId, orderDetail.orderFacilityId]), store.dispatch("util/fetchStoreCarrierAndMethods", orderDetail.productStoreId)])
+    const [facilityAddresses] = await Promise.allSettled([store.dispatch("util/fetchFacilityAddresses", [orderDetail.facilityId, orderDetail.orderFacilityId]), store.dispatch("util/fetchStoreCarrierAndMethods", orderDetail.productStoreId)])
 
-    const orderItemsList = [] as any;
-    orderItems.map((item: any) => orderItemsList.push(`${item.orderId}_${item.orderItemSeqId}`));
+    const orderItemsList = orderItems.map((item: any) => `${item.orderId}_${item.orderItemSeqId}`);
     const orderItemStats = await OrderService.fetchOrderItemStats(orderItemsList);
 
     orderDetail.items.map((item: any) => {

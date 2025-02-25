@@ -54,7 +54,7 @@ const selectedIdentifierColumn = ref('')
 const selectedQuantityColumn = ref('')
 
 function closeModal(identifierData = {}) {
-  modalController.dismiss({ dismissed: true, identifierData });
+  modalController.dismiss({ identifierData });
 }
 
 function saveImportData() {

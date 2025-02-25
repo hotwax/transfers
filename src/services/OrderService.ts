@@ -40,7 +40,7 @@ const fetchOrderItems = async (orderId: string): Promise<any> => {
         }
       }) as any;
 
-      if (!hasError(resp) && resp.data.count) {
+      if (!hasError(resp) && resp.data.docs?.length) {
         orderItems = orderItems.concat(resp.data.docs)
         viewIndex++;
       } else {
@@ -57,7 +57,7 @@ const fetchOrderItems = async (orderId: string): Promise<any> => {
 const fetchOrderItemStats = async (orderItemsList: any): Promise<any> => {
   const orderItems = orderItemsList;
   const shippedQtyRequests = [], receivedQtyRequests = [];
-  const orderitemStats = {} as any;
+  const orderItemStats = {} as any;
 
   while(orderItems.length) {
     const batch = orderItems.splice(0,100);
@@ -112,7 +112,7 @@ const fetchOrderItemStats = async (orderItemsList: any): Promise<any> => {
   shippedItemQtyResps.map((response: any) => {
     if(response.status === "fulfilled" && !hasError(response.value) && response.value.data?.docs?.length) {
       response.value.data.docs.map((doc: any) => {
-        orderitemStats[`${doc.orderId}_${doc.orderItemSeqId}`] = { shippedQty: doc.shippedQuantity }
+        orderItemStats[`${doc.orderId}_${doc.orderItemSeqId}`] = { shippedQty: doc.shippedQuantity }
       })
     }
   })
@@ -120,47 +120,16 @@ const fetchOrderItemStats = async (orderItemsList: any): Promise<any> => {
   receivedItemQtyResps.map((response: any) => {
     if(response.status === "fulfilled" && !hasError(response.value) && response.value.data?.docs?.length) {
       response.value.data.docs.map((doc: any) => {
-        if(orderitemStats[`${doc.orderId}_${doc.orderItemSeqId}`]) {
-          orderitemStats[`${doc.orderId}_${doc.orderItemSeqId}`] = { ...orderitemStats[`${doc.orderId}_${doc.orderItemSeqId}`], receivedQty: doc.totalQuantityAccepted }
+        if(orderItemStats[`${doc.orderId}_${doc.orderItemSeqId}`]) {
+          orderItemStats[`${doc.orderId}_${doc.orderItemSeqId}`] = { ...orderItemStats[`${doc.orderId}_${doc.orderItemSeqId}`], receivedQty: doc.totalQuantityAccepted }
         } else {
-          orderitemStats[`${doc.orderId}_${doc.orderItemSeqId}`] = { receivedQty: doc.totalQuantityAccepted }
+          orderItemStats[`${doc.orderId}_${doc.orderItemSeqId}`] = { receivedQty: doc.totalQuantityAccepted }
         }
       })
     }
   })
 
-  return orderitemStats
-}
-
-const fetchFacilityAddresses = async (facilityIds: any): Promise<any> => {
-  try {
-    const resp = await api({
-      url: "performFind",
-      method: "get",
-      params : {
-        inputFields: {
-          contactMechPurposeTypeId: "PRIMARY_LOCATION",
-          contactMechTypeId: "POSTAL_ADDRESS",
-          facilityId: facilityIds,
-          facilityId_op: "in"
-        },
-        entityName: "FacilityContactDetailByPurpose",
-        orderBy: 'fromDate DESC',
-        filterByDate: 'Y',
-        fieldList: ['address1', 'address2', 'city', 'countryGeoName', 'postalCode', 'stateGeoName', 'facilityId', 'facilityName'],
-        viewSize: 2
-      }
-    }) as any;
-
-    if(!hasError(resp) && resp.data.count) {
-      return resp.data.docs
-    } else {
-      throw resp.data;
-    }
-  } catch (error) {
-    logger.error(error);
-  }
-  return []
+  return orderItemStats
 }
 
 const fetchShipments = async (params: any): Promise<any> => {
@@ -201,7 +170,7 @@ const fetchShipmentItems = async (shipmentIds: any): Promise<any> => {
         }
       }) as any;
 
-      if (!hasError(resp) && resp.data.count) {
+      if (!hasError(resp) && resp.data.docs?.length) {
         shipmentItems = shipmentItems.concat(resp.data.docs)
         viewIndex++;
       } else {
@@ -236,7 +205,7 @@ const fetchShipmentTrackingDetails = async (shipmentIds: any): Promise<any> => {
       }
     }) as any;
 
-    if (!hasError(resp) && resp.data.count) {
+    if (!hasError(resp) && resp.data.docs?.length) {
       shipmentRouteSegs = resp.data.docs
     } else {
       throw resp.data;
@@ -267,7 +236,7 @@ const fetchShipmentStatuses = async (shipmentIds: any): Promise<any> => {
       }
     }) as any;
 
-    if (!hasError(resp) && resp.data.count) {
+    if (!hasError(resp) && resp.data.docs?.length) {
       resp.data.docs.map((status: any) => {
         statuses[status.shipmentId] = status.statusDate
       })
@@ -324,7 +293,6 @@ export const OrderService = {
   addOrderItem,
   changeOrderItemStatus,
   createOrder,
-  fetchFacilityAddresses,
   fetchOrderItems,
   fetchOrderItemStats,
   fetchOrderStatusHistory,

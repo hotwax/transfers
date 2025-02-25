@@ -129,8 +129,8 @@
                 <p class="overline">{{ translate("Search result") }}</p>
                 {{ searchedProduct.internalName || searchedProduct.sku || searchedProduct.productId }}
               </ion-label>
-              <ion-button slot="end" fill="clear" @click="addProductToCount" :color="isProductAvailableInCycleCount() ? 'success' : 'primary'">
-                <ion-icon slot="icon-only" :icon="isProductAvailableInCycleCount() ? checkmarkCircle : addCircleOutline"/>
+              <ion-button slot="end" fill="clear" @click="addProductToCount" :color="isProductAvailableInOrder() ? 'success' : 'primary'">
+                <ion-icon slot="icon-only" :icon="isProductAvailableInOrder() ? checkmarkCircle : addCircleOutline"/>
               </ion-button>
             </ion-item>
             <p v-else-if="queryString">{{ translate("No product found") }}</p>
@@ -359,7 +359,7 @@ async function findProductFromIdentifier(payload: any) {
 
 async function addProductToCount() {
   if (!searchedProduct.value.productId ||!queryString.value) return;
-  if (isProductAvailableInCycleCount()) return;
+  if (isProductAvailableInOrder()) return;
 
   let newProduct = { 
     productId: searchedProduct.value.productId,
@@ -600,7 +600,7 @@ async function refetchAllItemsStock() {
   })
 }
 
-function isProductAvailableInCycleCount() {
+function isProductAvailableInOrder() {
   return currentOrder.value.items.some((item: any) => item.productId === searchedProduct.value.productId)
 }
 

@@ -26,7 +26,7 @@ defineProps(["item"]);
 
 const getProduct = computed(() => store.getters["product/getProduct"])
 
-function handleItemAction(action: any) {
-  popoverController.dismiss({ dismissed: true, action })
+function handleItemAction(action: string) {
+  popoverController.dismiss({ action })
 }
 </script>

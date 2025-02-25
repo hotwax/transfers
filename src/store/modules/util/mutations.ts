@@ -15,6 +15,9 @@ const mutations: MutationTree <UtilState> = {
   [types.UTIL_CARRIER_DESC_UPDATED] (state, payload) {
     state.carrierDesc = payload
   },
+  [types.UTIL_FACILITY_ADDRESSES_UPDATED] (state, payload) {
+    state.facilityAddresses = payload
+  },
   [types.UTIL_CLEARED] (state) {
     state.statusDesc = {}
     state.shipmentMethodTypeDesc = {}

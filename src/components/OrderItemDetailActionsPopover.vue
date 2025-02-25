@@ -63,7 +63,7 @@ async function editOrderedQuantity() {
                 }
               })
               store.dispatch("order/updateCurrent", order)
-              popoverController.dismiss({ dismissed: true, isItemUpdated: true });
+              popoverController.dismiss({ isItemUpdated: true });
               showToast(translate("Item ordered quantity updated successfully."));
             } else {
               throw resp.data;
@@ -119,7 +119,7 @@ async function completeItem() {
         }
       })
       await store.dispatch("order/updateCurrent", order)
-      popoverController.dismiss({ dismissed: true, isItemUpdated: true });
+      popoverController.dismiss({ isItemUpdated: true });
       showToast(translate("Item status updated successfully."));
     } else {
       throw resp.data;
