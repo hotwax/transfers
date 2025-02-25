@@ -82,13 +82,13 @@ const products = ref([]) as any;
 const total = ref(0) as any;
 
 onUnmounted(() => {
-  store.dispatch("product/clearProducts")
+  products.value = []
 })
 
 async function handleSearch() {
   if (!queryString.value) {
     isSearching.value = false; 
-    store.dispatch("product/clearProducts");
+    products.value = [];
     return;
   }
   await getProducts();
@@ -183,7 +183,7 @@ function closeModal() {
 function handleInput() {
   if (!queryString.value) {
     isSearching.value = false;
-    store.dispatch("product/clearProducts");
+    products.value = []
   }
 }
 

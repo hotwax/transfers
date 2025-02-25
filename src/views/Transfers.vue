@@ -100,6 +100,9 @@
             <ion-spinner name="crescent" />
             <p>{{ translate("Loading") }}</p>
           </div>
+          <div class="empty-state" v-else-if="!ordersList.orders?.length">
+            <p>{{ translate("No order found") }}</p>
+          </div>
           <template v-else-if="query.groupBy === 'orderId'">
             <div v-for="(order, index) in ordersList.orders" :key="index" @click="router.push(`/order-detail/${order.orderId}`)">
               <section class="section-header">

@@ -71,7 +71,7 @@
               </ion-select>
               <template v-else>
                 <ion-icon :icon="informationCircleOutline" slot="start" />
-                <ion-label>{{ "No shipment methods found" }}</ion-label>
+                <ion-label>{{ translate("No shipment methods found") }}</ion-label>
               </template>
             </ion-item>
           </ion-card>
@@ -428,7 +428,7 @@ async function updateBulkOrderItemQuantity(action: any) {
   if(action === "bookQOH" || action === "bookATP") {
     currentOrder.value.items.map((item: any) => {
       if(item.isChecked) {
-        item.quantity = (action === "boolean") ? item.qoh : item.atp
+        item.quantity = (action === "bookQOH") ? item.qoh : item.atp
       }
     })
   } else if(action === "customQty") {
