@@ -2,8 +2,6 @@ import { ActionTree } from "vuex"
 import RootState from "@/store/RootState"
 import * as types from "./mutation-types"
 import OrderState from "./OrderState"
-import { showToast } from "@/utils"
-import { translate } from "@hotwax/dxp-components"
 import { prepareOrderQuery } from "@/utils/solrHelper";
 import { hasError } from "@/adapter";
 import logger from "@/logger"

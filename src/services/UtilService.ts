@@ -1,5 +1,4 @@
-import { api, hasError } from '@/adapter';
-import logger from '@/logger';
+import { api } from '@/adapter';
 
 const fetchShipmentMethodTypeDesc = async (query: any): Promise <any>  => {
   return api({

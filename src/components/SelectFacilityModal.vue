@@ -30,24 +30,7 @@
 </template>
   
 <script setup lang="ts">
-import { 
-  IonAccordion,
-  IonAccordionGroup,
-  IonButton,
-  IonButtons,
-  IonContent,
-  IonFab,
-  IonFabButton,
-  IonHeader,
-  IonIcon,
-  IonItem,
-  IonLabel,
-  IonRadio,
-  IonRadioGroup,
-  IonTitle,
-  IonToolbar,
-  modalController
-} from "@ionic/vue";
+import { IonButton, IonButtons, IonContent, IonFab, IonFabButton, IonHeader, IonIcon, IonItem, IonLabel, IonRadio, IonRadioGroup, IonTitle, IonToolbar, modalController } from "@ionic/vue";
 import { defineProps, onMounted, ref } from "vue";
 import { closeOutline, saveOutline } from "ionicons/icons";
 import { translate } from '@hotwax/dxp-components'

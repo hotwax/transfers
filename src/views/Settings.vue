@@ -52,8 +52,8 @@
 </template>
 
 <script setup lang="ts">
-import { IonAvatar, IonButton, IonCard, IonCardHeader, IonCardSubtitle, IonCardTitle, IonContent, IonHeader, IonIcon, IonItem, IonMenuButton, IonPage, IonTitle, IonToolbar } from "@ionic/vue";
-import { computed, onMounted, ref } from "vue";
+import { IonAvatar, IonButton, IonCard, IonCardHeader, IonCardSubtitle, IonCardTitle, IonContent, IonHeader, IonIcon, IonItem, IonPage, IonTitle, IonToolbar } from "@ionic/vue";
+import { computed } from "vue";
 import { useStore } from "vuex";
 import Image from "@/components/Image.vue";
 import { openOutline } from "ionicons/icons";
