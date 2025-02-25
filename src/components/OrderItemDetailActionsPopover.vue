@@ -8,7 +8,7 @@
       <ion-item button @click="redirectToFulfillItem()">
         {{ translate("Fulfill") }}
       </ion-item>
-      <ion-item button :disabled="getCurrentItemInboundShipment()" @click="redirectToReceiveItem()">
+      <ion-item button :disabled="!getCurrentItemInboundShipment()" @click="redirectToReceiveItem()">
         {{ translate("Receive") }}
       </ion-item>
       <ion-item button lines="none" :disabled="item.oiStatusId !== 'ITEM_APPROVED'" @click="completeItem()">
