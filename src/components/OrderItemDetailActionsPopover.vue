@@ -57,9 +57,10 @@ async function editOrderedQuantity() {
 
             if(!hasError(resp)) {
               const order = JSON.parse(JSON.stringify(currentOrder.value));
-              order.items.map((item: any) => {
+              order.items.find((item: any) => {
                 if(item.orderId === props.item.orderId && item.orderItemSeqId === props.item.orderItemSeqId) {
                   item.quantity = quantity
+                  return true;
                 }
               })
               store.dispatch("order/updateCurrent", order)
@@ -113,9 +114,10 @@ async function completeItem() {
 
     if(!hasError(resp)) {
       const order = JSON.parse(JSON.stringify(currentOrder.value));
-      order.items.map((item: any) => {
+      order.items.find((item: any) => {
         if(item.orderId === props.item.orderId && item.orderItemSeqId === props.item.orderItemSeqId) {
           item.oiStatusId = "ITEM_COMPLETED"
+          return true;
         }
       })
       await store.dispatch("order/updateCurrent", order)
