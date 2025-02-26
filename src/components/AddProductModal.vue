@@ -68,7 +68,7 @@ import emitter from "@/event-bus";
 import Image from "@/components/Image.vue"
 import logger from "@/logger";
 import { ProductService } from "@/services/ProductService";
-import { hasError } from "@hotwax/oms-api";
+import { hasError } from "@/adapter";
 import { OrderService } from "@/services/OrderService";
 
 const productIdentificationStore = useProductIdentificationStore();
@@ -86,7 +86,7 @@ onUnmounted(() => {
 })
 
 async function handleSearch() {
-  if (!queryString.value) {
+  if (!queryString.value.trim()) {
     isSearching.value = false; 
     products.value = [];
     return;
@@ -101,7 +101,7 @@ async function getProducts( vSize?: any, vIndex?: any) {
 
   try {
     const resp = await ProductService.fetchProducts({
-      "filters": ['isVirtual: false', `sku: *${queryString.value}*`],
+      "filters": ['isVirtual: false', `sku: *${queryString.value.trim()}*`],
       viewSize,
       viewIndex
     })
@@ -181,7 +181,7 @@ function closeModal() {
 }
 
 function handleInput() {
-  if (!queryString.value) {
+  if (!queryString.value.trim()) {
     isSearching.value = false;
     products.value = []
   }
