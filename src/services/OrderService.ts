@@ -158,7 +158,7 @@ const fetchShipmentItems = async (shipmentIds: any): Promise<any> => {
         url: "performFind",
         method: "get",
         params: {
-          "entityName": "ShipmentItem",
+          "entityName": "ShipmentItemDetail",
           inputFields : {
             shipmentId: shipmentIds,
             shipmentId_op: "in"
