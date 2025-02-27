@@ -2,7 +2,7 @@
   <ion-page>
     <ion-header>
       <ion-toolbar>
-        <ion-back-button slot="start" :default-href="`/tabs/transfers`" />
+        <ion-back-button slot="start" default-href="/tabs/transfers" />
         <ion-title>{{ translate("Transfer order details") }}</ion-title>
       </ion-toolbar>
     </ion-header>
@@ -44,12 +44,12 @@
                 </ion-label>
               </ion-item>
               <ion-item>
-                <ion-select :label="translate('Carrier')" :value="currentOrder.carrierPartyId" interface="popover" :placeholder="translate('Select')" :disabled="isOrderCompleted()" @ionChange="updateCarrierAndShipmentMethod($event.detail.value, '')">
+                <ion-select :label="translate('Carrier')" :value="currentOrder.carrierPartyId" interface="popover" :placeholder="translate('Select')" :disabled="isOrderFinished()" @ionChange="updateCarrierAndShipmentMethod($event.detail.value, '')">
                   <ion-select-option :value="carrierPartyId" v-for="(carrierPartyId, index) in Object.keys(shipmentMethodsByCarrier)" :key="index">{{ getCarrierDesc(carrierPartyId) ? getCarrierDesc(carrierPartyId) : carrierPartyId }}</ion-select-option>
                 </ion-select>
               </ion-item>
               <ion-item lines="none">
-                <ion-select :label="translate('Method')" :value="currentOrder.shipmentMethodTypeId" v-if="carrierMethods?.length" :placeholder="translate('Select')" interface="popover" :disabled="isOrderCompleted()" @ionChange="updateCarrierAndShipmentMethod(currentOrder.carrierPartyId, $event.detail.value)">
+                <ion-select :label="translate('Method')" :value="currentOrder.shipmentMethodTypeId" v-if="carrierMethods?.length" :placeholder="translate('Select')" interface="popover" :disabled="isOrderFinished()" @ionChange="updateCarrierAndShipmentMethod(currentOrder.carrierPartyId, $event.detail.value)">
                   <ion-select-option :value="shipmentMethod.shipmentMethodTypeId" v-for="(shipmentMethod, index) in carrierMethods" :key="index">{{ shipmentMethod.description ? shipmentMethod.description : shipmentMethod.shipmentMethodTypeId }}</ion-select-option>
                 </ion-select>
                 <template v-else>
@@ -158,7 +158,7 @@
               <h1>{{ translate("Items") }}</h1>
               <p>{{ translate(selectedShipmentId ? "Showing items for selected shipment" : "Showing all order items") }}</p>
             </ion-label>
-            <ion-button size="default" fill="outline" color="medium" v-if="!selectedShipmentId" :disabled="isOrderCompleted()" @click="addProduct()">
+            <ion-button size="default" fill="outline" color="medium" v-if="!selectedShipmentId" :disabled="isOrderFinished()" @click="addProduct()">
               {{ translate("Add item to transfer") }}
             </ion-button>
           </ion-item>
@@ -247,7 +247,7 @@
                   </div>
                   <ion-badge :color="getColorByDesc(getStatusDesc(item.oiStatusId)) || getColorByDesc('default')">{{ getStatusDesc(item.oiStatusId) ? getStatusDesc(item.oiStatusId) : item.oiStatusId }}</ion-badge>
                 </template>
-                <ion-button slot="end" fill="clear" color="medium" :disabled="isOrderCompleted()" @click="openOrderItemDetailActionsPopover($event, item)">
+                <ion-button slot="end" fill="clear" color="medium" :disabled="isOrderFinished()" @click="openOrderItemDetailActionsPopover($event, item)">
                   <ion-icon :icon="ellipsisVerticalOutline" slot="icon-only" />
                 </ion-button>
               </div>
@@ -362,7 +362,7 @@ function generateItemsListByParent() {
   itemsByParentProductId.value = itemsById
 }
 
-function isOrderCompleted() {
+function isOrderFinished() {
   return ["ORDER_COMPLETED", "ORDER_REJECTED", "ORDER_CANCELLED"].includes(currentOrder.value.statusId)
 }
 

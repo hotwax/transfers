@@ -196,7 +196,7 @@
 
 <script setup lang="ts">
 import { IonBackButton, IonButton, IonCard, IonCardHeader, IonCardTitle, IonCheckbox, IonChip, IonContent, IonDatetime, IonFab, IonFabButton, IonHeader, IonIcon, IonInput, IonItem, IonLabel, IonModal, IonPage, IonSelect, IonSelectOption, IonSpinner, IonThumbnail, IonTitle, IonToolbar, onIonViewDidEnter, alertController, modalController, popoverController } from '@ionic/vue';
-import { addCircleOutline, checkmarkCircle, checkmarkDoneOutline, cloudUploadOutline, downloadOutline, ellipsisVerticalOutline, informationCircleOutline, listOutline, pencilOutline, sendOutline, storefrontOutline } from 'ionicons/icons';
+import { addCircleOutline, checkmarkCircle, checkmarkDoneOutline, cloudUploadOutline, downloadOutline, ellipsisVerticalOutline, informationCircleOutline, listOutline, sendOutline, storefrontOutline } from 'ionicons/icons';
 import { getProductIdentificationValue, translate, useProductIdentificationStore, useUserStore } from '@hotwax/dxp-components'
 import { computed, ref, watch } from "vue";
 import { getDateWithOrdinalSuffix, parseCsv, showToast } from '@/utils';
@@ -270,6 +270,7 @@ watch(queryString, (value) => {
 }, { deep: true })
 
 onIonViewDidEnter(async () => {
+  emitter.emit("presentLoader")
   stores.value = useUserStore().eComStores
   if(stores.value?.length) currentOrder.value.productStoreId = stores.value[0]?.productStoreId
   await Promise.allSettled([fetchFacilitiesByCurrentStore(), store.dispatch("util/fetchStoreCarrierAndMethods", currentOrder.value.productStoreId), store.dispatch("util/fetchCarriersDetail"), await store.dispatch('util/fetchStatusDesc')])
@@ -280,6 +281,7 @@ onIonViewDidEnter(async () => {
   currentOrder.value.originFacilityId = facilities.value[0]?.facilityId
   uploadedFile.value = {}
   content.value = []
+  emitter.emit("dismissLoader")
 })
 
 async function parse(event: any) {
@@ -333,7 +335,7 @@ async function findProductFromIdentifier(payload: any) {
         }
       })
 
-      Object.entries(productsByIdValue).map(async ([idValue, product], index) => {
+      Object.entries(productsByIdValue).map(async ([idValue, product]) => {
         if(productIdsAlreadyAddedInList.includes(product.productId)) {
           if(quantityField) {
             const item = currentOrder.value.items.find((item: any) => item.productId === product.productId)
@@ -441,6 +443,11 @@ function getFacilityName(facilityId: any) {
 }
 
 async function updateBulkOrderItemQuantity(action: any) {
+  if(!isEligibleForBulkAction()) {
+    showToast(translate("No order item is selected for bulk action."))
+    return;
+  }
+
   if(action === "bookQOH" || action === "bookATP") {
     currentOrder.value.items.map((item: any) => {
       if(item.isChecked) {
@@ -525,7 +532,7 @@ async function createOrder() {
   try {
     const resp = await OrderService.createOrder({ order })
     if(!hasError(resp)) {
-      router.push(`/order-detail/${resp.data.orderId}`)
+      router.replace(`/order-detail/${resp.data.orderId}`)
     } else {
       throw resp.data;
     }
