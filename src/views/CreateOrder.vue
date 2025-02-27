@@ -30,10 +30,9 @@
               <ion-icon :icon="sendOutline" slot="start" />
               <ion-label>{{ translate("Origin") }}</ion-label>
               <template v-if="currentOrder.originFacilityId" slot="end">
-                <ion-label slot="end">{{ getFacilityName(currentOrder.originFacilityId) }}</ion-label>
-                <ion-button slot="end" class="ion-no-padding" fill="clear" @click="openSelectFacilityModal('originFacilityId')">
-                  <ion-icon :icon="pencilOutline" slot="icon-only" />
-                </ion-button>
+                <ion-chip outline @click="openSelectFacilityModal('originFacilityId')">
+                  {{ getFacilityName(currentOrder.originFacilityId) ? getFacilityName(currentOrder.originFacilityId) : currentOrder.originFacilityId }}
+                </ion-chip>
               </template>
               <ion-button v-else slot="end" fill="outline" @click="openSelectFacilityModal('originFacilityId')">
                 <ion-icon slot="start" :icon="addCircleOutline" />
@@ -44,10 +43,9 @@
               <ion-icon :icon="downloadOutline" slot="start" />
               <ion-label>{{ translate("Destination") }}</ion-label>
               <template v-if="currentOrder.destinationFacilityId" slot="end">
-                <ion-label slot="end">{{ getFacilityName(currentOrder.destinationFacilityId) }}</ion-label>
-                <ion-button slot="end" fill="clear" @click="openSelectFacilityModal('destinationFacilityId')">
-                  <ion-icon :icon="pencilOutline" slot="icon-only" />
-                </ion-button>
+                <ion-chip outline @click="openSelectFacilityModal('destinationFacilityId')">
+                  {{ getFacilityName(currentOrder.destinationFacilityId) ? getFacilityName(currentOrder.destinationFacilityId) : currentOrder.destinationFacilityId }}
+                </ion-chip>
               </template>
               <ion-button v-else slot="end" fill="outline" @click="openSelectFacilityModal('destinationFacilityId')">
                 <ion-icon slot="start" :icon="addCircleOutline" />
@@ -61,7 +59,7 @@
               <ion-card-title>{{ translate("Shipping Method") }}</ion-card-title>
             </ion-card-header>
             <ion-item>
-              <ion-select :label="translate('Carrier')" :placeholder="translate('Select')" v-model="currentOrder.carrierPartyId" interface="popover">
+              <ion-select :label="translate('Carrier')" :placeholder="translate('Select')" v-model="currentOrder.carrierPartyId" interface="popover" @ionChange="selectUpdatedMethod()">
                 <ion-select-option :value="carrierPartyId" v-for="(carrierPartyId, index) in Object.keys(shipmentMethodsByCarrier)" :key="index">{{ getCarrierDesc(carrierPartyId) }}</ion-select-option>
               </ion-select>
             </ion-item>
@@ -165,7 +163,7 @@
                 </ion-label>
               </ion-item>
               <div class="tablet">
-                <ion-chip outline>
+                <ion-chip outline :color="isQOHAvailable(item) ? '' : 'warning'">
                   <ion-icon slot="start" :icon="sendOutline" />
                   <ion-label>{{ item.qoh }} {{ translate("QOH") }}</ion-label>
                 </ion-chip>
@@ -215,6 +213,7 @@ import { OrderService } from '@/services/OrderService';
 import router from '@/router';
 import { DateTime } from 'luxon';
 import { hasError } from "@/adapter";
+import emitter from '@/event-bus';
 
 const store = useStore();
 const productIdentificationStore = useProductIdentificationStore();
@@ -274,6 +273,10 @@ onIonViewDidEnter(async () => {
   stores.value = useUserStore().eComStores
   if(stores.value?.length) currentOrder.value.productStoreId = stores.value[0]?.productStoreId
   await Promise.allSettled([fetchFacilitiesByCurrentStore(), store.dispatch("util/fetchStoreCarrierAndMethods", currentOrder.value.productStoreId), store.dispatch("util/fetchCarriersDetail"), await store.dispatch('util/fetchStatusDesc')])
+  if(Object.keys(shipmentMethodsByCarrier.value)?.length) {
+    currentOrder.value.carrierPartyId = Object.keys(shipmentMethodsByCarrier.value)[0]
+    selectUpdatedMethod()
+  }
   currentOrder.value.originFacilityId = facilities.value[0]?.facilityId
   uploadedFile.value = {}
   content.value = []
@@ -380,12 +383,25 @@ async function addProductToCount() {
 async function productStoreUpdated() {
   await fetchFacilitiesByCurrentStore();
   const isFacilityUpdated = currentOrder.value.originFacilityId !== facilities.value[0]?.facilityId
-  store.dispatch("util/fetchStoreCarrierAndMethods", currentOrder.value.productStoreId);
   if(isFacilityUpdated) {
     currentOrder.value.originFacilityId = facilities.value[0]?.facilityId;
     currentOrder.value.destinationFacilityId = "";
     refetchAllItemsStock()
   }
+  await store.dispatch("util/fetchStoreCarrierAndMethods", currentOrder.value.productStoreId);
+  if(Object.keys(shipmentMethodsByCarrier.value)?.length) {
+    currentOrder.value.carrierPartyId = Object.keys(shipmentMethodsByCarrier.value)[0]
+    selectUpdatedMethod()
+  }
+}
+
+function selectUpdatedMethod() {
+  const shipmentMethods = getCarrierShipmentMethods()
+  if(shipmentMethods?.length) currentOrder.value.shipmentMethodTypeId = shipmentMethods[0]?.shipmentMethodTypeId
+}
+
+function isQOHAvailable(item: any) {
+  return item.qoh && Number(item.qoh) > Number(item.quantity)
 }
 
 function getCarrierShipmentMethods() {

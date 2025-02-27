@@ -57,13 +57,13 @@
             <ion-item lines="none">
               <ion-select :label="translate('Method')" interface="popover" :value="query.shipmentMethodTypeId" @ionChange="updateAppliedFilters($event['detail'].value, 'shipmentMethodTypeId')">
                 <ion-select-option value="">{{ translate("All") }}</ion-select-option>
-                <ion-select-option v-for="method in shipmentMethodOptions" :key="method" :value="method">{{ method }}</ion-select-option>
+                <ion-select-option v-for="method in shipmentMethodOptions" :key="method" :value="method">{{ getShipmentMethodDesc(method) ? getShipmentMethodDesc(method) : method }}</ion-select-option>
               </ion-select>
             </ion-item>
             <ion-item lines="none">
               <ion-select :label="translate('Carrier')" interface="popover" :value="query.carrierPartyId" @ionChange="updateAppliedFilters($event['detail'].value, 'carrierPartyId')">
                 <ion-select-option value="">{{ translate("All") }}</ion-select-option>
-                <ion-select-option v-for="carrier in carrierOptions" :key="carrier" :value="carrier">{{ carrier }}</ion-select-option>
+                <ion-select-option v-for="carrier in carrierOptions" :key="carrier" :value="carrier">{{ getCarrierDesc(carrier) ? getCarrierDesc(carrier) : carrier }}</ion-select-option>
               </ion-select>
             </ion-item>
             <ion-item lines="none">
@@ -361,10 +361,12 @@ const shipmentMethodOptions = computed(() => store.getters["order/getShipmentMet
 const carrierOptions = computed(() => store.getters["order/getCarrierOptions"])
 const getProduct = computed(() => store.getters["product/getProduct"])
 const isScrollable = computed(() => store.getters["order/isScrollable"])
+const getCarrierDesc = computed(() => store.getters["util/getCarrierDesc"])
+const getShipmentMethodDesc = computed(() => store.getters["util/getShipmentMethodDesc"])
 
 onIonViewWillEnter(async () => {
   isFetchingOrders.value = true;
-  await Promise.allSettled([store.dispatch('order/findOrders', { fetchFacets: true }), store.dispatch('util/fetchStatusDesc')])
+  await Promise.allSettled([store.dispatch('order/findOrders', { fetchFacets: true }), store.dispatch('util/fetchStatusDesc'), store.dispatch("util/fetchCarriersDetail"), store.dispatch("util/fetchShipmentMethodTypeDesc")])
   isFetchingOrders.value = false;
 })
 
