@@ -1,6 +1,5 @@
-import {api, client} from "@/adapter"
+import {api, client, hasError} from "@/adapter"
 import store from "@/store";
-import { hasError } from "@/utils";
 
 const login = async (username: string, password: string): Promise <any> => {
   return api({
@@ -64,7 +63,7 @@ const getUserPermissions = async (payload: any, token: any): Promise<any> => {
       })
       if(resp.status === 200 && resp.data.docs?.length && !hasError(resp)) {
         serverPermissions = resp.data.docs.map((permission: any) => permission.permissionId);
-        const total = resp.data.count;
+        const total = resp.data.docs?.length;
         const remainingPermissions = total - serverPermissions.length;
         if (remainingPermissions > 0) {
           // We need to get all the remaining permissions
@@ -121,7 +120,16 @@ const getUserPermissions = async (payload: any, token: any): Promise<any> => {
     }
 }
 
+const fetchFacilitiesByCurrentStore = (payload: any): Promise <any> => {
+  return api({
+    url: "/performFind",
+    method: "POST",
+    data: payload
+  });
+}
+
 export const UserService = {
+  fetchFacilitiesByCurrentStore,
   getUserProfile,
   getUserPermissions,
   login,

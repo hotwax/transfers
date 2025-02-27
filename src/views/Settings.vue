@@ -2,7 +2,6 @@
   <ion-page>
     <ion-header :translucent="true">
       <ion-toolbar>
-        <ion-menu-button slot="start" />
         <ion-title>{{ translate("Settings") }}</ion-title>
       </ion-toolbar>
     </ion-header>
@@ -37,6 +36,7 @@
 
       <section>
         <DxpOmsInstanceNavigator />
+        <DxpProductStoreSelector @updateEComStore="updateEComStore" />
       </section>
 
       <hr />
@@ -44,6 +44,7 @@
       <DxpAppVersionInfo />
 
       <section>
+        <DxpProductIdentifier />
         <DxpTimeZoneSwitcher @timeZoneUpdated="timeZoneUpdated" />
       </section>
     </ion-content>
@@ -51,22 +52,17 @@
 </template>
 
 <script setup lang="ts">
-import { IonAvatar, IonButton, IonCard, IonCardHeader, IonCardSubtitle, IonCardTitle, IonContent, IonHeader, IonIcon, IonItem, IonMenuButton, IonPage, IonTitle, IonToolbar } from "@ionic/vue";
-import { computed, onMounted, ref } from "vue";
+import { IonAvatar, IonButton, IonCard, IonCardHeader, IonCardSubtitle, IonCardTitle, IonContent, IonHeader, IonIcon, IonItem, IonPage, IonTitle, IonToolbar } from "@ionic/vue";
+import { computed } from "vue";
 import { useStore } from "vuex";
-import Image from "@/components/Image.vue"
-import { translate } from "@/i18n"
-import { openOutline } from "ionicons/icons"
+import Image from "@/components/Image.vue";
+import { openOutline } from "ionicons/icons";
+import { translate, useProductIdentificationStore } from "@hotwax/dxp-components";
+import logger from "@/logger";
 
 const store = useStore()
-const appVersion = ref("")
-const appInfo = (process.env.VUE_APP_VERSION_INFO ? JSON.parse(process.env.VUE_APP_VERSION_INFO) : {}) as any
 
 const userProfile = computed(() => store.getters["user/getUserProfile"])
-
-onMounted(() => {
-  appVersion.value = appInfo.branch ? (appInfo.branch + "-" + appInfo.revision) : appInfo.tag;
-})
 
 function logout() {
   store.dispatch('user/logout', { isUserUnauthorised: false }).then((redirectionUrl: string) => {
@@ -80,6 +76,11 @@ function logout() {
 
 async function timeZoneUpdated(tzId: string) {
   await store.dispatch("user/setUserTimeZone", tzId)
+}
+
+async function updateEComStore(selectedProductStore: any) {
+  await useProductIdentificationStore().getIdentificationPref(selectedProductStore.productStoreId)
+    .catch((error) => logger.error(error));
 }
 
 function goToLaunchpad() {

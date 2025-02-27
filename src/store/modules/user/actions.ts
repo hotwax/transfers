@@ -4,11 +4,10 @@ import RootState from "@/store/RootState"
 import UserState from "./UserState"
 import * as types from "./mutation-types"
 import { showToast } from "@/utils"
-import { translate } from "@/i18n"
 import logger from "@/logger"
 import emitter from "@/event-bus"
 import { Settings } from "luxon"
-import { useAuthStore, useUserStore } from '@hotwax/dxp-components'
+import { translate, useAuthStore, useUserStore, useProductIdentificationStore } from '@hotwax/dxp-components'
 import { logout, resetConfig, updateInstanceUrl, updateToken } from '@/adapter'
 import { getServerPermissionsFromRules, prepareAppPermissions, resetPermissions, setPermissions } from "@/authorization"
 
@@ -54,6 +53,14 @@ const actions: ActionTree<UserState, RootState> = {
       if (userProfile.timeZone) {
         Settings.defaultZone = userProfile.timeZone;
       }
+
+      const ecomStores = await useUserStore().getEComStores()
+      useUserStore().eComStores = ecomStores
+      await useUserStore().getEComStorePreference("SELECTED_BRAND")
+      const preferredStore: any = useUserStore().getCurrentEComStore
+
+      await useProductIdentificationStore().getIdentificationPref(preferredStore.productStoreId)
+        .catch((error) => logger.error(error));
       
       setPermissions(appPermissions);
       commit(types.USER_TOKEN_CHANGED, { newToken: token })
@@ -102,6 +109,9 @@ const actions: ActionTree<UserState, RootState> = {
     const userStore = useUserStore()
     // TODO add any other tasks if need
     commit(types.USER_END_SESSION)
+    await this.dispatch("order/clearOrderState")
+    await this.dispatch("product/clearProductState")
+    await this.dispatch("util/clearUtilState")
     resetConfig();
     resetPermissions();
 

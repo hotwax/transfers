@@ -4,7 +4,7 @@
       <ion-router-outlet></ion-router-outlet>
       <ion-tab-bar slot="bottom" v-if="showFooter()">
         <ion-tab-button tab="transfers" href="/tabs/transfers">
-          <ion-icon :icon="settingsOutline" />
+          <ion-icon :icon="businessOutline" />
           <ion-label>{{ translate("Transfers") }}</ion-label>
         </ion-tab-button>
         <ion-tab-button tab="settings" href="/tabs/settings">
@@ -17,10 +17,10 @@
 </template>
 
 <script setup lang="ts">
-import { translate } from "@/i18n";
 import { IonIcon, IonLabel, IonPage, IonRouterOutlet, IonTabBar, IonTabButton, IonTabs } from "@ionic/vue";
-import { settingsOutline } from "ionicons/icons";
+import { businessOutline, settingsOutline } from "ionicons/icons";
 import { useRouter } from "vue-router";
+import { translate } from "@hotwax/dxp-components";
 
 const router = useRouter();
 
