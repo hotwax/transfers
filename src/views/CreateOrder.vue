@@ -99,7 +99,7 @@
         <ion-modal class="date-time-modal" :is-open="dateTimeModalOpen" @didDismiss="closeDateTimeModal">
           <ion-content force-overscroll="false">
             <ion-datetime 
-              :value="currentOrder[selectedDateFilter]"
+              :value="currentOrder[selectedDateFilter] ? currentOrder[selectedDateFilter] : DateTime.now().toISO()"
               show-clear-button
               show-default-buttons
               presentation="date"
@@ -515,8 +515,8 @@ async function createOrder() {
       orderFacilityId: currentOrder.value.destinationFacilityId,
       carrierPartyId: currentOrder.value.carrierPartyId,
       shipmentMethodTypeId: currentOrder.value.shipmentMethodTypeId,
-      estimatedShipDate: currentOrder.value.shipDate ? DateTime.fromISO(currentOrder.value.shipDate).toMillis() : "",
-      estimatedDeliveryDate: currentOrder.value.deliveryDate ? DateTime.fromISO(currentOrder.value.deliveryDate).toMillis() : "",
+      estimatedShipDate: currentOrder.value.shipDate ? DateTime.fromISO(currentOrder.value.shipDate).toFormat("yyyy-mm-dd 23:59:59.000") : "",
+      estimatedDeliveryDate: currentOrder.value.deliveryDate ? DateTime.fromISO(currentOrder.value.deliveryDate).toFormat("yyyy-mm-dd 23:59:59.000") : "",
       items: currentOrder.value.items.map((item: any) => {
         return {
           productId: item.productId,

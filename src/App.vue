@@ -5,7 +5,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from "vue";
+import { computed, onBeforeMount, onMounted, onUnmounted, ref } from "vue";
 import { IonApp, IonRouterOutlet, loadingController } from "@ionic/vue";
 import emitter from "@/event-bus"
 import { Settings } from 'luxon'
@@ -65,16 +65,12 @@ function dismissLoader() {
   }
 }
 
-onMounted(async () => {
-  loader.value = await loadingController
-    .create({
-      message: translate("Click the backdrop to dismiss."),
-      translucent: true,
-      backdropDismiss: true
-    });
-  emitter.on("presentLoader", presentLoader);
-  emitter.on("dismissLoader", dismissLoader);
+onBeforeMount(() => {
+  emitter.on('presentLoader', presentLoader);
+  emitter.on('dismissLoader', dismissLoader);
+})
 
+onMounted(async () => {
   if (userProfile.value) {
     // Luxon timezone should be set with the user's selected timezone
     userProfile.value.timeZone && (Settings.defaultZone = userProfile.value.timeZone);
