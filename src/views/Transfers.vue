@@ -174,7 +174,7 @@
                       <ion-item lines="none">
                         <ion-icon slot="start" :icon="query.groupBy === 'facilityName' ? sendOutline : downloadOutline" />
                         <ion-label>
-                          <strong>{{ order.groupValue }}</strong>
+                          {{ order.groupValue }}
                           <p>{{ query.groupBy === 'facilityName' ? order.originFacilityId : order.destinationFacilityId }}</p>
                         </ion-label>
                       </ion-item>
@@ -244,7 +244,7 @@
                           <Image :src="getProduct(order.productId)?.mainImageUrl" />
                         </ion-thumbnail>
                         <ion-label>
-                          <strong>{{ getProductIdentificationValue(productIdentificationStore.getProductIdentificationPref.primaryId, getProduct(order.productId)) || getProduct(order.productId).productName }}</strong>
+                          {{ getProductIdentificationValue(productIdentificationStore.getProductIdentificationPref.primaryId, getProduct(order.productId)) || getProduct(order.productId).productName }}
                           <p>{{ getProductIdentificationValue(productIdentificationStore.getProductIdentificationPref.secondaryId, getProduct(order.productId)) }}</p>
                         </ion-label>
                       </ion-item>
