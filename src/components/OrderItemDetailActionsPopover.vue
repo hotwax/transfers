@@ -95,7 +95,7 @@ function isEligibleToComplete() {
   if(item?.oiStatusId !== "ITEM_APPROVED") return false;
 
   if(item.statusFlowId === "RECEIVE_ONLY") {
-    return item.receivedQty && item.receivedQty >= item.receivedQty
+    return item.receivedQty && item.receivedQty >= item.quantity
   } else {
     return item.shippedQty && item.shippedQty >= item.quantity
   }
