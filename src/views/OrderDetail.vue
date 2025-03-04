@@ -273,7 +273,7 @@ import logger from "@/logger";
 import { OrderService } from "@/services/OrderService";
 import { hasError } from "@/adapter";
 import { DateTime } from "luxon";
-import { getColorByDesc } from "@/utils";
+import { getColorByDesc, showToast} from "@/utils";
 import emitter from "@/event-bus";
 
 const store = useStore();
@@ -305,21 +305,45 @@ onIonViewWillEnter(async () => {
 })
 
 async function updateOrderStatus(updatedStatusId: string) {
-  try {
-    const resp = await OrderService.updateOrderStatus({
-      orderId: currentOrder.value.orderId,
-      statusId: updatedStatusId
+  if(currentOrder.value.statusFlowId === "RECEIVE_ONLY") {
+    const itemsToUpdate = currentOrder.value.items.filter((item: any) => {
+      if(updatedStatusId === "ORDER_APPROVED" && item.oiStatusId === "ITEM_CREATED") return true;
+      if(updatedStatusId === "ORDER_CANCELLED" && (item.oiStatusId === "ITEM_CREATED" || item.oiStatusId === "ITEM_APPROVED")) return true;
+      return false;
     })
 
-    if(!hasError(resp)) {
-      const order = JSON.parse(JSON.stringify(currentOrder.value));
-      order.statusId = updatedStatusId
-      store.dispatch("order/updateCurrent", order)
+    if(itemsToUpdate?.length) {
+      const responses = await  Promise.allSettled(itemsToUpdate.map((item: any) => OrderService.changeOrderItemStatus({ ...item, statusId: updatedStatusId === "ORDER_APPROVED" ? "ITEM_APPROVED" : "ITEM_CANCELLED" })))
+      const hasFailedResponse = responses.some((response: any) => response.status === "rejected")
+
+      if(hasFailedResponse) {
+        showToast(translate("Failed to update status of some items."))
+        return;
+      }
+    }
+  }
+
+  let resp;
+  try{
+    if(currentOrder.value.statusFlowId === "RECEIVE_ONLY") {
+      resp = await OrderService.updateOrderStatus({
+        orderId: currentOrder.value.orderId,
+        statusId: updatedStatusId
+      }) 
     } else {
-      throw resp.data
+      resp = (updatedStatusId === "ORDER_APPROVED") ? await OrderService.approveOrder({ orderId: currentOrder.value.orderId }) : await OrderService.cancelOrder({ orderId: currentOrder.value.orderId })
+    }
+
+    if(!hasError(resp)) {
+      showToast(translate("Order status updated successfully."))
+      await store.dispatch("order/fetchOrderDetails", props.orderId)
+      generateItemsListByParent();
+    } else {
+      throw resp.data;
     }
   } catch(error) {
     logger.error(error)
+    showToast(translate("Failed to update order status."))
   }
 }
 
