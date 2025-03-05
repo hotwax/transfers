@@ -243,6 +243,10 @@ const actions: ActionTree<OrderState, RootState> = {
     commit(types.ORDER_CURRENT_UPDATED, payload);
   },
 
+  async updateOrdersList ({ commit }, payload) {
+    commit(types.ORDER_LIST_UPDATED, payload);
+  },
+
   async clearOrderState ({ commit }) {
     commit(types.ORDER_CLEARED)
   }

@@ -365,6 +365,7 @@ const getCarrierDesc = computed(() => store.getters["util/getCarrierDesc"])
 const getShipmentMethodDesc = computed(() => store.getters["util/getShipmentMethodDesc"])
 
 onIonViewWillEnter(async () => {
+  await   store.dispatch("order/updateOrdersList", { orders: [], orderCount: 0, itemCount: 0 })
   isFetchingOrders.value = true;
   await Promise.allSettled([store.dispatch('order/findOrders', { fetchFacets: true }), store.dispatch('util/fetchStatusDesc'), store.dispatch("util/fetchCarriersDetail"), store.dispatch("util/fetchShipmentMethodTypeDesc")])
   isFetchingOrders.value = false;
