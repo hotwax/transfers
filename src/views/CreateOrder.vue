@@ -90,7 +90,10 @@
 
           <ion-item>
             <ion-icon :icon="cloudUploadOutline" slot="start" />
-            <ion-label>{{ translate("Import Items CSV") }}</ion-label>
+            <ion-label>
+              {{ translate("Import Items CSV") }}
+              <p class="primary-color pointer" button @click="downloadSampleCsv()">{{ translate("Download example") }}</p>
+            </ion-label>
             <input @change="parse" ref="file" class="ion-hide" type="file" id="updateProductFile" :key="fileUploaded.toString()"/>
             <label for="updateProductFile" class="pointer">{{ translate("Upload") }}</label>
           </ion-item>
@@ -199,7 +202,7 @@ import { IonBackButton, IonButton, IonCard, IonCardHeader, IonCardTitle, IonChec
 import { addCircleOutline, checkmarkCircle, checkmarkDoneOutline, cloudUploadOutline, downloadOutline, ellipsisVerticalOutline, informationCircleOutline, listOutline, sendOutline, storefrontOutline } from 'ionicons/icons';
 import { getProductIdentificationValue, translate, useProductIdentificationStore, useUserStore } from '@hotwax/dxp-components'
 import { computed, ref, watch } from "vue";
-import { getDateWithOrdinalSuffix, parseCsv, showToast } from '@/utils';
+import { getDateWithOrdinalSuffix, jsonToCsv, parseCsv, showToast } from '@/utils';
 import logger from '@/logger';
 import { useStore } from 'vuex';
 import Image from '@/components/Image.vue';
@@ -240,6 +243,7 @@ let content = ref([]) as any
 let fileColumns = ref([]) as any 
 let uploadedFile = ref({}) as any
 const fileUploaded = ref(false);
+const sampleData = ref([{ sku: "MT07-S-Gray", quantity: 2 }, { sku: "MS10-S-Blue", quantity: 2 }, { sku: "WJ10-S-Black", quantity: 2 }, { sku: "MSH11-36-Red", quantity: 2 }, { sku: "MH09-S-Green", quantity: 2 }, { sku: "WT06-S-Red", quantity: 2 }, { sku: "WH12-S-Green", quantity: 2 }, { sku: "MH07-S-Green", quantity: 2 }, { sku: "MH09-M-Red", quantity: 2 }, { sku: "MH09-L-Blue", quantity: 2 }]);
 
 const getProduct = computed(() => store.getters["product/getProduct"])
 const shipmentMethodsByCarrier = computed(() => store.getters["util/getShipmentMethodsByCarrier"])
@@ -595,6 +599,13 @@ async function openImportCsvModal() {
   importCsvModal.present();
 }
 
+function downloadSampleCsv() {
+  jsonToCsv(sampleData.value, {
+    download: true,
+    name: "Sample CSV.csv"
+  })
+}
+
 async function openSelectFacilityModal(facilityType: any) {
   const addressModal = await modalController.create({
     component: SelectFacilityModal,
@@ -714,6 +725,14 @@ which results in distorted label text and thus reduced ion-item width */
   --width: 320px;
   --height: 400px;
   --border-radius: 8px;
+}
+
+.primary-color {
+  color: var(--ion-color-primary);
+}
+
+.pointer {
+  cursor: pointer;
 }
 
 @media (min-width: 991px) {

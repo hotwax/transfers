@@ -2,6 +2,7 @@ import { toastController } from "@ionic/vue";
 import { DateTime } from "luxon";
 import store from "@/store";
 import Papa from 'papaparse'
+import { saveAs } from 'file-saver';
 
 const dateOrdinalSuffix = {
   1: 'st',
@@ -51,6 +52,29 @@ const parseCsv = async (file: File, options?: any) => {
   })
 }
 
+// Here we have created a JsonToCsvOption which contains the properties which we can pass to jsonToCsv function
+
+interface JsonToCsvOption {
+  parse?: object | null;
+  encode?: object | null;
+  name?: string;
+  download?: boolean;
+}
+
+const jsonToCsv = (file: any, options: JsonToCsvOption = {}) => {
+  const csv = Papa.unparse(file, {
+    ...options.parse
+  });
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+
+  if (options.download) {
+    saveAs(blob, options.name ? options.name : "default.csv");
+  }
+
+  return blob;
+};
+
 const getColorByDesc = (desc: string) => ({
   "Approved": "primary",
   "Authorized": "medium",
@@ -68,4 +92,4 @@ const getColorByDesc = (desc: string) => ({
   "default": "medium"
 } as any)[desc]
 
-export { formatUtcDate, getColorByDesc, getDateWithOrdinalSuffix, parseCsv, showToast }
+export { formatUtcDate, getColorByDesc, getDateWithOrdinalSuffix, jsonToCsv, JsonToCsvOption, parseCsv, showToast }
