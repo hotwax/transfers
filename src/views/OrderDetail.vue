@@ -15,7 +15,7 @@
       </main>
       <main v-else>
         <section class="header">
-          <div class="id">
+          <div class="id ion-margin-top">
             <ion-item lines="none">
               <ion-icon slot="start" :icon="ticketOutline" />
               <ion-label>
