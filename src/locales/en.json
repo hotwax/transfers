@@ -12,6 +12,8 @@
   "Browser TimeZone": "Browser TimeZone",
   "Built: ": "Built: {builtTime}",
   "Cancel": "Cancel",
+  "Cancel Transfer Order": "Cancel Transfer Order",
+  "Cancelation cannot be reverted. Are you sure you want to cancel this transfer order?": "Cancelation cannot be reverted. Are you sure you want to cancel this transfer order?",
   "Cancelled": "Cancelled",
   "Carrier": "Carrier",
   "Change": "Change",
