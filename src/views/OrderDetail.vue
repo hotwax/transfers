@@ -167,7 +167,7 @@
 
           <template v-for="([parentProductId, items], index) in Object.entries(itemsByParentProductId)" :key="index">
             <template v-if="items.length">
-              <div class="list-item">
+              <div class="list-item product-header">
                 <ion-item lines="none">
                   <ion-thumbnail slot="start">
                     <Image :src="getProduct(items[0].productId)?.mainImageUrl" />
@@ -532,6 +532,10 @@ ion-card-header {
   flex-direction: row;
   justify-content: space-between;
   align-items: center;
+}
+
+.product-header {
+  background-color: var(--ion-color-light);
 }
 
 @media (min-width: 991px) {
