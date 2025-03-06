@@ -22,9 +22,9 @@
                 <h1>{{ currentOrder.orderName ? currentOrder.orderName : currentOrder.orderId }}</h1>
               </ion-label>
               <ion-badge :color="getColorByDesc(getStatusDesc(currentOrder.statusId)) || getColorByDesc('default')" slot="end">{{ getStatusDesc(currentOrder.statusId) ? getStatusDesc(currentOrder.statusId) : currentOrder.statusId }}</ion-badge>
-              <ion-select v-if="currentOrder.statusId === 'ORDER_CREATED' || currentOrder.statusId === 'ORDER_APPROVED'" slot="end" aria-label="status" :value="currentOrder.statusId" selected-text=" " interface="popover" @ionChange="updateOrderStatus($event.detail.value)">
-                <ion-select-option v-if="currentOrder.statusId === 'ORDER_CREATED'" value="ORDER_APPROVED">{{ translate("Approved") }}</ion-select-option>
-                <ion-select-option value="ORDER_CANCELLED">{{ translate("Cancelled") }}</ion-select-option>
+              <ion-select v-if="currentOrder.statusId === 'ORDER_CREATED' || currentOrder.statusId === 'ORDER_APPROVED'" ref="selectRef" slot="end" aria-label="status" :value="currentOrder.statusId" selected-text=" " interface="popover" @ionChange="changeOrderStatus($event.detail.value)">
+                <ion-select-option v-if="currentOrder.statusId === 'ORDER_CREATED'" value="ORDER_APPROVED">{{ translate("Approve") }}</ion-select-option>
+                <ion-select-option value="ORDER_CANCELLED">{{ translate("Cancel") }}</ion-select-option>
               </ion-select>
             </ion-item>
           </div>
@@ -261,7 +261,7 @@
 </template>
 
 <script setup lang="ts">
-import { IonBackButton,IonBadge, IonButton, IonCard, IonCardHeader, IonCardTitle, IonChip, IonContent, IonHeader, IonIcon, IonItem, IonLabel, IonList, IonNote, IonPage, IonRadio, IonRadioGroup, IonSelect, IonSelectOption, IonSpinner, IonThumbnail, IonTitle, IonToolbar, onIonViewWillEnter, modalController, popoverController } from "@ionic/vue";
+import { IonBackButton,IonBadge, IonButton, IonCard, IonCardHeader, IonCardTitle, IonChip, IonContent, IonHeader, IonIcon, IonItem, IonLabel, IonList, IonNote, IonPage, IonRadio, IonRadioGroup, IonSelect, IonSelectOption, IonSpinner, IonThumbnail, IonTitle, IonToolbar, onIonViewWillEnter, alertController, modalController, popoverController } from "@ionic/vue";
 import { getProductIdentificationValue, translate, useProductIdentificationStore } from '@hotwax/dxp-components';
 import { ellipsisVerticalOutline, ticketOutline, downloadOutline, sendOutline, shirtOutline, informationCircleOutline, closeCircleOutline } from "ionicons/icons";
 import Image from "@/components/Image.vue";
@@ -293,6 +293,7 @@ const itemsByParentProductId = ref({}) as any;
 const parentProductInfoById = ref({}) as any;
 const orderTimeline = ref([]) as any;
 const carrierMethods = ref([])
+const selectRef = ref("") as any;
 
 onIonViewWillEnter(async () => {
   isFetchingOrderDetail.value = true;
@@ -303,6 +304,30 @@ onIonViewWillEnter(async () => {
   isFetchingOrderDetail.value = false;
   carrierMethods.value = shipmentMethodsByCarrier.value[currentOrder.value.carrierPartyId]
 })
+
+async function changeOrderStatus(updatedStatusId: string) {
+  if(updatedStatusId === "ORDER_APPORVED") {
+    updateOrderStatus(updatedStatusId);
+    return;
+  }
+
+  const alert = await alertController.create({
+    header: translate("Cancel Transfer Order"),
+    message: translate("Cancelation cannot be reverted. Are you sure you want to cancel this transfer order?"),
+    buttons: [{
+      text: translate("Dismiss"),
+      handler: () => {
+        selectRef.value.$el.value = currentOrder.value
+      }
+    }, {
+      text: translate("Cancel"),
+      handler: () => {
+        updateOrderStatus(updatedStatusId);
+      }
+    }]
+  })
+  alert.present()
+}
 
 async function updateOrderStatus(updatedStatusId: string) {
   if(currentOrder.value.statusFlowId === "RECEIVE_ONLY") {
@@ -318,6 +343,7 @@ async function updateOrderStatus(updatedStatusId: string) {
 
       if(hasFailedResponse) {
         showToast(translate("Failed to update status of some items."))
+        selectRef.value.$el.value = currentOrder.value
         return;
       }
     }
@@ -344,6 +370,7 @@ async function updateOrderStatus(updatedStatusId: string) {
   } catch(error) {
     logger.error(error)
     showToast(translate("Failed to update order status."))
+    selectRef.value.$el.value = currentOrder.value
   }
 }
 
