@@ -143,6 +143,7 @@ const actions: ActionTree<OrderState, RootState> = {
       shipmentMethodTypeId: orderItems[0].shipmentMethodTypeId,
       shipGroupSeqId: orderItems[0].shipGroupSeqId,
       statusId: orderItems[0].statusId,
+      statusFlowId: orderItems[0].statusFlowId,
       items: orderItems
     }
 
@@ -240,6 +241,10 @@ const actions: ActionTree<OrderState, RootState> = {
   
   async updateCurrent ({ commit }, payload) {
     commit(types.ORDER_CURRENT_UPDATED, payload);
+  },
+
+  async updateOrdersList ({ commit }, payload) {
+    commit(types.ORDER_LIST_UPDATED, payload);
   },
 
   async clearOrderState ({ commit }) {

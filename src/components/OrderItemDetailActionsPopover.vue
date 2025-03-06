@@ -11,7 +11,7 @@
       <ion-item button :disabled="!getCurrentItemInboundShipment()" @click="redirectToReceiveItem()">
         {{ translate("Receive") }}
       </ion-item>
-      <ion-item button lines="none" :disabled="item.oiStatusId !== 'ITEM_APPROVED'" @click="completeItem()">
+      <ion-item button lines="none" :disabled="!isEligibleToComplete()" @click="completeItem()">
         {{ translate("Complete item") }}
       </ion-item>
     </ion-list>
@@ -88,6 +88,17 @@ async function editOrderedQuantity() {
   
 
   alert.present()
+}
+
+function isEligibleToComplete() {
+  const item = props.item
+  if(item?.oiStatusId !== "ITEM_APPROVED") return false;
+
+  if(item.statusFlowId === "RECEIVE_ONLY") {
+    return item.receivedQty && item.receivedQty >= item.quantity
+  } else {
+    return item.shippedQty && item.shippedQty >= item.quantity
+  }
 }
 
 function getCurrentItemInboundShipment() {

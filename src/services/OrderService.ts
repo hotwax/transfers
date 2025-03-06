@@ -32,7 +32,7 @@ const fetchOrderItems = async (orderId: string): Promise<any> => {
             "orderId": orderId,
             "orderTypeId": "TRANSFER_ORDER"
           },
-          "fieldList": ["orderId", "orderName", "externalId", "orderTypeId", "statusId", "orderDate", "facilityId", "orderFacilityId", "productStoreId", "carrierPartyId", "shipmentMethodTypeId", "oiStatusId", "orderItemSeqId", "quantity", "productId", "shipGroupSeqId", "oisgFacilityId"],
+          "fieldList": ["orderId", "orderName", "externalId", "orderTypeId", "statusId", "orderDate", "facilityId", "orderFacilityId", "productStoreId", "carrierPartyId", "shipmentMethodTypeId", "oiStatusId", "orderItemSeqId", "quantity", "productId", "shipGroupSeqId", "oisgFacilityId", "statusFlowId"],
           "viewIndex": viewIndex,
           "viewSize": 250,
           "distinct": "Y",
@@ -289,8 +289,26 @@ const addOrderItem = async (payload: any): Promise<any> => {
   })
 }
 
+const approveOrder = async (payload: any): Promise<any> => {
+  return api({
+    url: "service/approveSalesOrder",
+    method: "POST",
+    data: payload
+  })
+}
+
+const cancelOrder = async (payload: any): Promise<any> => {
+  return api({
+    url: "service/cancelSalesOrder",
+    method: "POST",
+    data: payload
+  })
+}
+
 export const OrderService = {
   addOrderItem,
+  approveOrder,
+  cancelOrder,
   changeOrderItemStatus,
   createOrder,
   fetchOrderItems,

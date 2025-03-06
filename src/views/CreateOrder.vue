@@ -509,6 +509,7 @@ async function createOrder() {
     customerId: "COMPANY",
     statusId: "ORDER_CREATED",
     productStoreId: currentOrder.value.productStoreId,
+    statusFlowId: "FULFILL_AND_RECEIVE",
     shipGroup: [{
       shipGroupSeqId: "00001",
       facilityId: currentOrder.value.originFacilityId,
