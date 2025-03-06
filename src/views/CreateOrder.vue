@@ -92,7 +92,7 @@
             <ion-icon :icon="cloudUploadOutline" slot="start" />
             <ion-label>
               {{ translate("Import Items CSV") }}
-              <p class="primary-color pointer" button @click="downloadSampleCsv()">{{ translate("Download example") }}</p>
+              <p class="primary-color pointer" @click="downloadSampleCsv()">{{ translate("Download example") }}</p>
             </ion-label>
             <input @change="parse" ref="file" class="ion-hide" type="file" id="updateProductFile" :key="fileUploaded.toString()"/>
             <label for="updateProductFile" class="pointer">{{ translate("Upload") }}</label>
@@ -243,7 +243,7 @@ let content = ref([]) as any
 let fileColumns = ref([]) as any 
 let uploadedFile = ref({}) as any
 const fileUploaded = ref(false);
-const sampleData = ref([{ sku: "MT07-S-Gray", quantity: 2 }, { sku: "MS10-S-Blue", quantity: 2 }, { sku: "WJ10-S-Black", quantity: 2 }, { sku: "MSH11-36-Red", quantity: 2 }, { sku: "MH09-S-Green", quantity: 2 }, { sku: "WT06-S-Red", quantity: 2 }, { sku: "WH12-S-Green", quantity: 2 }, { sku: "MH07-S-Green", quantity: 2 }, { sku: "MH09-M-Red", quantity: 2 }, { sku: "MH09-L-Blue", quantity: 2 }]);
+const sampleData = ref([{ sku: "MT07-S-Gray", quantity: 2 }, { sku: "MS10-S-Blue", quantity: 1 }, { sku: "WJ10-S-Black", quantity: 8 }, { sku: "MSH11-36-Red", quantity: 7 }, { sku: "MH09-S-Green", quantity: 3 }, { sku: "WT06-S-Red", quantity: 2 }, { sku: "WH12-S-Green", quantity: 10 }, { sku: "MH07-S-Green", quantity: 12 }, { sku: "MH09-M-Red", quantity: 1 }, { sku: "MH09-L-Blue", quantity: 3 }]);
 
 const getProduct = computed(() => store.getters["product/getProduct"])
 const shipmentMethodsByCarrier = computed(() => store.getters["util/getShipmentMethodsByCarrier"])
