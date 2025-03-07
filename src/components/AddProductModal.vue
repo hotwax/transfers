@@ -27,7 +27,7 @@
         </ion-item>
       </ion-list>
 
-      <ion-infinite-scroll @ionInfinite="loadMoreProducts($event)" threshold="100px" :disabled="!isScrollable">
+      <ion-infinite-scroll @ionInfinite="loadMoreProducts($event)" threshold="100px" :disabled="!isScrollable()">
         <ion-infinite-scroll-content loading-spinner="crescent" :loading-text="translate('Loading')" />
       </ion-infinite-scroll>
     </template>
@@ -120,8 +120,6 @@ async function getProducts( vSize?: any, vIndex?: any) {
     }
   } catch(error) {
     logger.error(error)
-    products.value = []
-    total.value = 0
   }
 }
 

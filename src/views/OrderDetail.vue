@@ -158,7 +158,7 @@
               <h1>{{ translate("Items") }}</h1>
               <p>{{ translate(selectedShipmentId ? "Showing items for selected shipment" : "Showing all order items") }}</p>
             </ion-label>
-            <ion-button size="default" fill="outline" color="medium" v-if="!selectedShipmentId" :disabled="isOrderFinished()" @click="addProduct()">
+            <ion-button size="default" fill="outline" color="medium" v-if="!selectedShipmentId" :disabled="currentOrder.statusId !== 'ORDER_CREATED'" @click="addProduct()">
               {{ translate("Add item to transfer") }}
             </ion-button>
           </ion-item>
