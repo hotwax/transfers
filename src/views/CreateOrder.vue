@@ -276,7 +276,7 @@ watch(queryString, (value) => {
 onIonViewDidEnter(async () => {
   emitter.emit("presentLoader")
   stores.value = useUserStore().eComStores
-  if(stores.value?.length) currentOrder.value.productStoreId = stores.value[0]?.productStoreId
+  currentOrder.value.productStoreId = useUserStore().getCurrentEComStore?.productStoreId
   await Promise.allSettled([fetchFacilitiesByCurrentStore(), store.dispatch("util/fetchStoreCarrierAndMethods", currentOrder.value.productStoreId), store.dispatch("util/fetchCarriersDetail"), await store.dispatch('util/fetchStatusDesc')])
   if(Object.keys(shipmentMethodsByCarrier.value)?.length) {
     currentOrder.value.carrierPartyId = Object.keys(shipmentMethodsByCarrier.value)[0]
