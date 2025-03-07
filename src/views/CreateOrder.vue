@@ -91,7 +91,7 @@
           <ion-item>
             <ion-icon :icon="cloudUploadOutline" slot="start" />
             <ion-label>
-              {{ translate("Import Items CSV") }}
+              {{ translate("Import items CSV") }}
               <p class="primary-color pointer" @click="downloadSampleCsv()">{{ translate("Download example") }}</p>
             </ion-label>
             <input @change="parse" ref="file" class="ion-hide" type="file" id="updateProductFile" :key="fileUploaded.toString()"/>
@@ -363,6 +363,7 @@ async function findProductFromIdentifier(payload: any) {
     }
   } catch(error) {
     logger.error(error)
+    showToast(translate("Failed to add items to the order due to incorrect SKU mapping or invalid SKUs."))
   }
 }
 

@@ -31,6 +31,7 @@
   "Edit ordered qty": "Edit ordered qty",
   "Enter a SKU, or product name to search a product": "Enter a SKU, or product name to search a product",
   "Enter a valid product sku": "Enter a valid product sku",
+  "Failed to add items to the order due to incorrect SKU mapping or invalid SKUs.": "Failed to add items to the order due to incorrect SKU mapping or invalid SKUs.",
   "Failed to create order.": "Failed to create order.",
   "Failed to update item ordered quantity.": "Failed to update item ordered quantity.",
   "Failed to update item status.": "Failed to update item status.",
