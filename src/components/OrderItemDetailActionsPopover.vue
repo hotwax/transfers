@@ -45,8 +45,11 @@ async function editOrderedQuantity() {
     }, {
       text: translate("Save"),
       handler: async (data: any) => {
-        if(!data?.quantity) return false;
         const quantity = Number(data.quantity);
+        if(!quantity) {
+          showToast(translate("Please enter a valid quantity."))
+          return;
+        }
         if(quantity !== props.item.quantity) {
           try {
             const resp = await OrderService.updateOrderItem({
