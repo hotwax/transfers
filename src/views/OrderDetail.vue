@@ -306,7 +306,7 @@ onIonViewWillEnter(async () => {
 })
 
 async function changeOrderStatus(updatedStatusId: string) {
-  if(updatedStatusId === "ORDER_APPORVED") {
+  if(updatedStatusId === "ORDER_APPROVED") {
     updateOrderStatus(updatedStatusId);
     return;
   }
