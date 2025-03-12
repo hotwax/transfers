@@ -506,6 +506,14 @@ async function createOrder() {
 
   if(currentOrder.value.originFacilityId === currentOrder.value.destinationFacilityId) {
     showToast(translate("Origin and destination facility can't be same."))
+    return;
+  }
+
+
+  const isItemQuantityInvalid = currentOrder.value.items.some((item: any) => !item.quantity)
+  if(isItemQuantityInvalid) {
+    showToast(translate("Order items must have an ordered quantity."))
+    return;
   }
 
   const order = {
