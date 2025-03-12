@@ -99,12 +99,13 @@
                   <ion-card-title>{{ translate("Fulfillment") }}</ion-card-title>
                 </ion-card-header>
                 <ion-item v-for="(shipment, index) in getFilteredShipments('OUT_TRANSFER')" :key="index">
-                  <ion-radio :value="shipment.shipmentId">
+                  <ion-radio :value="shipment.shipmentId" label-placement="end" justify="start">
                     <ion-label>
                       {{ shipment.shipmentId }}
                       <p v-if="shipment.trackingCode">{{ shipment.trackingCode }}</p>
                     </ion-label>
                   </ion-radio>
+                  <ion-badge slot="end" class="no-pointer-events" :color="getColorByDesc(getStatusDesc(shipment.statusId)) || getColorByDesc('default')">{{ getStatusDesc(shipment.statusId) ? getStatusDesc(shipment.statusId) : shipment.statusId }}</ion-badge>
                 </ion-item>
               </ion-card>
               
@@ -113,12 +114,13 @@
                   <ion-card-title>{{ translate("Receipts") }}</ion-card-title>
                 </ion-card-header>
                 <ion-item v-for="(shipment, index) in getFilteredShipments('IN_TRANSFER')" :key="index">
-                  <ion-radio :value="shipment.shipmentId">
+                  <ion-radio :value="shipment.shipmentId" label-placement="end" justify="start">
                     <ion-label>
                       {{ shipment.shipmentId }}
                       <p v-if="shipment.trackingCode">{{ shipment.trackingCode }}</p>
                     </ion-label>
                   </ion-radio>
+                  <ion-badge slot="end" class="no-pointer-events" :color="getColorByDesc(getStatusDesc(shipment.statusId)) || getColorByDesc('default')">{{ getStatusDesc(shipment.statusId) ? getStatusDesc(shipment.statusId) : shipment.statusId }}</ion-badge>
                 </ion-item>
               </ion-card>
             </div>
@@ -563,6 +565,10 @@ ion-card-header {
 
 .product-header {
   background-color: var(--ion-color-light);
+}
+
+.no-pointer-events {
+  pointer-events: none;
 }
 
 @media (min-width: 991px) {
