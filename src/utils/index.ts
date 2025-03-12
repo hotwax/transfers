@@ -89,6 +89,7 @@ const getColorByDesc = (desc: string) => ({
   "Received": "success",
   "Refunded": "success",
   "Settled": "success",
+  "Shipped": "success",
   "default": "medium"
 } as any)[desc]
 

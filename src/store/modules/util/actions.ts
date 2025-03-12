@@ -44,7 +44,7 @@ const actions: ActionTree<UtilState, RootState> = {
     try {
       const payload = {
         "inputFields": {
-          "statusTypeId": ["ORDER_STATUS", "ORDER_ITEM_STATUS"],
+          "statusTypeId": ["ORDER_STATUS", "ORDER_ITEM_STATUS", "SHIPMENT_STATUS", "PURCH_SHIP_STATUS"],
           "statusTypeId_op": "in"
         },
         "fieldList": ["statusId", "description"],
