@@ -541,7 +541,26 @@ async function createOrder() {
         }
       })
     }]
-  }
+  } as any;
+
+  const addresses = await store.dispatch("util/fetchFacilityAddresses", [currentOrder.value.originFacilityId, currentOrder.value.destinationFacilityId])
+  
+  addresses.map((address: any) => {
+    if(address.facilityId === currentOrder.value.originFacilityId) {
+      order.shipGroup[0].shipFrom = {
+        postalAddress: {
+          id: address.contactMechId
+        }
+      }
+    }
+    if(address.facilityId === currentOrder.value.destinationFacilityId) {
+      order.shipGroup[0].shipTo = {
+        postalAddress: {
+          id: address.contactMechId
+        }
+      }
+    }
+  })
 
   try {
     const resp = await OrderService.createOrder({ order })
