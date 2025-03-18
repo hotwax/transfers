@@ -150,7 +150,7 @@
               <div class="tablet">
                 <ion-checkbox :modelValue="isEligibleForBulkAction()" @ionChange="toggleBulkSelection($event.detail.checked)" />
               </div>
-              <ion-button slot="end" fill="clear" color="medium" @click="openOrderItemActionsPopover($event, null, true)">
+              <ion-button slot="end" fill="clear" color="medium" :disabled="!isEligibleForBulkAction()" @click="openOrderItemActionsPopover($event, null, true)">
                 <ion-icon :icon="ellipsisVerticalOutline" slot="icon-only" />
               </ion-button>
             </div>
