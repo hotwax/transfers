@@ -130,7 +130,7 @@
                 <p class="overline">{{ translate("Search result") }}</p>
                 {{ searchedProduct.internalName || searchedProduct.sku || searchedProduct.productId }}
               </ion-label>
-              <ion-button slot="end" fill="clear" @click="addProductToCount" :color="isProductAvailableInOrder() ? 'success' : 'primary'">
+              <ion-button size="default" slot="end" fill="clear" @click="addProductToCount" :color="isProductAvailableInOrder() ? 'success' : 'primary'">
                 <ion-icon slot="icon-only" :icon="isProductAvailableInOrder() ? checkmarkCircle : addCircleOutline"/>
               </ion-button>
             </ion-item>
