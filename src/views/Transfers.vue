@@ -17,7 +17,7 @@
       </ion-toolbar>
     </ion-header>
 
-    <ion-content id="filter-content" ref="contentRef" :scroll-events="true" @ionScroll="enableScrolling()">
+    <ion-content id="filter-content">
       <div class="find">
         <section class="search">
           <ion-searchbar :placeholder="translate('Search transfer orders')" v-model="queryString" @keyup.enter="queryString = $event.target.value; updateAppliedFilters($event.target.value, 'queryString')" />
@@ -316,7 +316,7 @@
             </ion-accordion-group>
           </template>
 
-          <ion-infinite-scroll @ionInfinite="loadMoreOrders($event)" threshold="100px" v-show="isScrollable" ref="infiniteScrollRef">
+          <ion-infinite-scroll @ionInfinite="loadMoreOrders($event)" threshold="100px" v-if="isScrollable">
             <ion-infinite-scroll-content loading-spinner="crescent" :loading-text="translate('Loading')"/>
           </ion-infinite-scroll>
         </main>
@@ -379,28 +379,12 @@ async function updateAppliedFilters(value: string | boolean, filterName: string)
 }
 
 async function loadMoreOrders(event: any) {
-  // Added this check here as if added on infinite-scroll component the Loading content does not gets displayed
-  if(!(isScrollingEnabled.value && isScrollable.value)) {
-    await event.target.complete();
-  }
   await store.dispatch('order/findOrders', {
     viewSize: undefined,
     viewIndex: Math.ceil(ordersList.value.orders.length / 10).toString()
   }).then(async () => {
     await event.target.complete();
   })
-}
-
-function enableScrolling() {
-  const parentElement = contentRef.value.$el
-  const scrollEl = parentElement.shadowRoot.querySelector("main[part='scroll']")
-  let scrollHeight = scrollEl.scrollHeight, infiniteHeight = infiniteScrollRef?.value?.$el?.offsetHeight, scrollTop = scrollEl.scrollTop, threshold = 100, height = scrollEl.offsetHeight
-  const distanceFromInfinite = scrollHeight - infiniteHeight - scrollTop - threshold - height
-  if(distanceFromInfinite < 0) {
-    isScrollingEnabled.value = false;
-  } else {
-    isScrollingEnabled.value = true;
-  }
 }
 </script>
 
