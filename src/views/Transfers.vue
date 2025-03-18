@@ -347,9 +347,6 @@ const store = useStore();
 
 const queryString = ref("");
 const isFetchingOrders = ref(false);
-const isScrollingEnabled = ref(false);
-const contentRef = ref({}) as any
-const infiniteScrollRef = ref({}) as any
 
 const ordersList = computed(() => store.getters["order/getOrders"])
 const query = computed(() => store.getters["order/getQuery"])
