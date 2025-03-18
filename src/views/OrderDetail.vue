@@ -44,12 +44,12 @@
                 </ion-label>
               </ion-item>
               <ion-item>
-                <ion-select :label="translate('Carrier')" :value="currentOrder.carrierPartyId" interface="popover" :placeholder="translate('Select')" :disabled="isOrderFinished()" @ionChange="updateCarrierAndShipmentMethod($event.detail.value, '')">
+                <ion-select :label="translate('Carrier')" :value="currentOrder.carrierPartyId" interface="popover" :placeholder="translate('Select')" :disabled="isOrderFinished()" @ionChange="updateCarrierAndShipmentMethod($event, $event.detail.value, '')">
                   <ion-select-option :value="carrierPartyId" v-for="(carrierPartyId, index) in Object.keys(shipmentMethodsByCarrier)" :key="index">{{ getCarrierDesc(carrierPartyId) ? getCarrierDesc(carrierPartyId) : carrierPartyId }}</ion-select-option>
                 </ion-select>
               </ion-item>
               <ion-item lines="none">
-                <ion-select :label="translate('Method')" :value="currentOrder.shipmentMethodTypeId" v-if="carrierMethods?.length" :placeholder="translate('Select')" interface="popover" :disabled="isOrderFinished()" @ionChange="updateCarrierAndShipmentMethod(currentOrder.carrierPartyId, $event.detail.value)">
+                <ion-select :label="translate('Method')" :value="currentOrder.shipmentMethodTypeId" v-if="carrierMethods?.length" :placeholder="translate('Select')" interface="popover" :disabled="isOrderFinished()" @ionChange="updateCarrierAndShipmentMethod($event, currentOrder.carrierPartyId, $event.detail.value)">
                   <ion-select-option :value="shipmentMethod.shipmentMethodTypeId" v-for="(shipmentMethod, index) in carrierMethods" :key="index">{{ shipmentMethod.description ? shipmentMethod.description : shipmentMethod.shipmentMethodTypeId }}</ion-select-option>
                 </ion-select>
                 <template v-else>
@@ -427,8 +427,9 @@ function getSelectedShipment() {
   return currentOrder.value.shipments.find((shipment: any) => shipment.shipmentId === selectedShipmentId.value)
 }
 
-async function updateCarrierAndShipmentMethod(carrierPartyId: any, shipmentMethodTypeId: any) {
+async function updateCarrierAndShipmentMethod(event: any, carrierPartyId: any, shipmentMethodTypeId: any) {
   carrierMethods.value = shipmentMethodsByCarrier.value[carrierPartyId]
+  const isShipmentMethodUpdated = shipmentMethodTypeId ? true : false
   shipmentMethodTypeId = shipmentMethodTypeId ? shipmentMethodTypeId : carrierMethods.value?.[0]?.shipmentMethodTypeId
   try {
     const resp = await OrderService.updateOrderItemShipGroup({
@@ -449,6 +450,7 @@ async function updateCarrierAndShipmentMethod(carrierPartyId: any, shipmentMetho
   } catch(error: any) {
     logger.error(error);
     carrierMethods.value = shipmentMethodsByCarrier.value[currentOrder.value.carrierPartyId];
+    event.target.value = isShipmentMethodUpdated ? currentOrder.value.shipmentMethodTypeId : currentOrder.value.carrierPartyId
   }
 }
 

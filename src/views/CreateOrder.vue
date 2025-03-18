@@ -343,14 +343,14 @@ async function findProductFromIdentifier(payload: any) {
         if(productIdsAlreadyAddedInList.includes(product.productId)) {
           if(quantityField) {
             const item = currentOrder.value.items.find((item: any) => item.productId === product.productId)
-            item.quantity = Number(item.quantity) + Number(uploadedItemsByIdValue[idValue][quantityField] ? uploadedItemsByIdValue[idValue][quantityField] : 0)
+            item.quantity = Number(item.quantity) + (Number(uploadedItemsByIdValue[idValue][quantityField]) || 0)
           }
         } else {
           const stock = await fetchStock(product.productId);
           currentOrder.value.items.push({
             productId: product.productId,
             sku: product.sku,
-            quantity: uploadedItemsByIdValue[idValue][quantityField] ? uploadedItemsByIdValue[idValue][quantityField] : 0,
+            quantity: (Number(uploadedItemsByIdValue[idValue][quantityField]) || 0),
             isChecked: false,
             unitPrice: product.BASE_PRICE_PURCHASE_USD_STORE_GROUP_price,
             qoh: stock.quantityOnHandTotal || 0,
