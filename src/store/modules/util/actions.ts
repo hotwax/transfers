@@ -179,7 +179,7 @@ const actions: ActionTree<UtilState, RootState> = {
     return addresses
   },
 
-  async fetchSampleProducts ({ commit, state }, facilityIds) {
+  async fetchSampleProducts ({ commit, state }) {
     let products = state.sampleProducts ? JSON.parse(JSON.stringify(state.sampleProducts)) : []
     if(products.length) return;
 
