@@ -15,5 +15,8 @@ const getters: GetterTree <UtilState, RootState> = {
   getCarrierDesc: (state) => (partyId: string) => {
     return state.carrierDesc[partyId] ? state.carrierDesc[partyId] : partyId
   },
+  getSampleProducts (state) {
+    return state.sampleProducts
+  }
 }
 export default getters;

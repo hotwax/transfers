@@ -306,6 +306,10 @@ body {
   display: unset;
 }
 
+p:has(a) {
+  cursor: pointer;
+}
+
 @media (min-width: 991px) {
   .find {
     grid: "search  main" min-content

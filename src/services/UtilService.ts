@@ -48,9 +48,18 @@ const fetchFacilityAddresses = async (params: any): Promise<any> => {
   })
 }
 
+const fetchSampleProducts = async (params: any): Promise<any> => {
+  return api({
+    url: "performFind",
+    method: "get",
+    params
+  })
+}
+
 export const UtilService = {
   fetchCarriers,
   fetchFacilityAddresses,
+  fetchSampleProducts,
   fetchShipmentMethodTypeDesc,
   fetchStatusDesc,
   fetchStoreCarrierAndMethods,

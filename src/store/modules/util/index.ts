@@ -12,7 +12,8 @@ const utilModule: Module<UtilState, RootState> = {
     shipmentMethodTypeDesc: {},
     shipmentMethodsByCarrier: {},
     carrierDesc: {},
-    facilityAddresses: {}
+    facilityAddresses: {},
+    sampleProducts: []
   },
   getters,
   actions,

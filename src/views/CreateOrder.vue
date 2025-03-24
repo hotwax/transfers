@@ -92,7 +92,9 @@
             <ion-icon :icon="cloudUploadOutline" slot="start" />
             <ion-label>
               {{ translate("Import items CSV") }}
-              <p class="primary-color pointer" @click="downloadSampleCsv()">{{ translate("Download example") }}</p>
+              <p @click="downloadSampleCsv()">
+                <a>{{ translate("Download example") }}</a>
+              </p>
             </ion-label>
             <input @change="parse" ref="file" class="ion-hide" type="file" id="updateProductFile" :key="fileUploaded.toString()"/>
             <label for="updateProductFile" class="pointer">{{ translate("Upload") }}</label>
@@ -243,11 +245,11 @@ let content = ref([]) as any
 let fileColumns = ref([]) as any 
 let uploadedFile = ref({}) as any
 const fileUploaded = ref(false);
-const sampleData = ref([{ sku: "MT07-S-Gray", quantity: 2 }, { sku: "MS10-S-Blue", quantity: 1 }, { sku: "WJ10-S-Black", quantity: 8 }, { sku: "MSH11-36-Red", quantity: 7 }, { sku: "MH09-S-Green", quantity: 3 }, { sku: "WT06-S-Red", quantity: 2 }, { sku: "WH12-S-Green", quantity: 10 }, { sku: "MH07-S-Green", quantity: 12 }, { sku: "MH09-M-Red", quantity: 1 }, { sku: "MH09-L-Blue", quantity: 3 }]);
 
 const getProduct = computed(() => store.getters["product/getProduct"])
 const shipmentMethodsByCarrier = computed(() => store.getters["util/getShipmentMethodsByCarrier"])
 const getCarrierDesc = computed(() => store.getters["util/getCarrierDesc"])
+const sampleProducts = computed(() => store.getters["util/getSampleProducts"])
 
 // Implemented watcher to display the search spinner correctly. Mainly the watcher is needed to not make the findProduct call always and to create the debounce effect.
 // Previously we were using the `debounce` property of ion-input but it was updating the searchedString and making other related effects after the debounce effect thus the spinner is also displayed after the debounce
@@ -277,7 +279,7 @@ onIonViewDidEnter(async () => {
   emitter.emit("presentLoader")
   stores.value = useUserStore().eComStores
   currentOrder.value.productStoreId = useUserStore().getCurrentEComStore?.productStoreId
-  await Promise.allSettled([fetchFacilitiesByCurrentStore(), store.dispatch("util/fetchStoreCarrierAndMethods", currentOrder.value.productStoreId), store.dispatch("util/fetchCarriersDetail"), await store.dispatch('util/fetchStatusDesc')])
+  await Promise.allSettled([fetchFacilitiesByCurrentStore(), store.dispatch("util/fetchStoreCarrierAndMethods", currentOrder.value.productStoreId), store.dispatch("util/fetchCarriersDetail"), store.dispatch("util/fetchStatusDesc"), store.dispatch("util/fetchSampleProducts")])
   if(Object.keys(shipmentMethodsByCarrier.value)?.length) {
     currentOrder.value.carrierPartyId = Object.keys(shipmentMethodsByCarrier.value)[0]
     selectUpdatedMethod()
@@ -629,7 +631,7 @@ async function openImportCsvModal() {
 }
 
 function downloadSampleCsv() {
-  jsonToCsv(sampleData.value, {
+  jsonToCsv(sampleProducts.value, {
     download: true,
     name: "Sample CSV.csv"
   })
@@ -754,10 +756,6 @@ which results in distorted label text and thus reduced ion-item width */
   --width: 320px;
   --height: 400px;
   --border-radius: 8px;
-}
-
-.primary-color {
-  color: var(--ion-color-primary);
 }
 
 .pointer {
