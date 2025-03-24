@@ -510,7 +510,7 @@ async function createOrder() {
   }
 
 
-  const isItemQuantityInvalid = currentOrder.value.items.some((item: any) => !item.quantity)
+  const isItemQuantityInvalid = currentOrder.value.items.some((item: any) => !Number(item.quantity))
   if(isItemQuantityInvalid) {
     showToast(translate("Order items must have an ordered quantity."))
     return;
