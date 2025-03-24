@@ -89,7 +89,8 @@
             </ion-item>
             <ion-item lines="none" button @click="updateAppliedFilters('', 'sort')">
               <ion-icon slot="start" :icon="swapVerticalOutline" />
-              <ion-label slot="end">{{ translate("Created date") }}</ion-label>
+              <ion-label>{{ translate("Sort by") }}</ion-label>
+              <ion-label>{{ translate("Created date") }}</ion-label>
               <ion-icon slot="end" :icon="arrowUpOutline" :class="query.sort === 'orderDate asc' ? 'sort-icon rotate' : 'sort-icon'" />
             </ion-item>
           </section>
