@@ -68,7 +68,7 @@
   "OMS": "OMS",
   "OMS instance": "OMS instance",
   "Order item": "Order item",
-  "Order items must have an ordered quantity.": "Order items must have an ordered quantity.",
+  "Order items must have a valid ordered quantity.": "Order items must have a valid ordered quantity.",
   "Order status updated successfully.": "Order status updated successfully.",
   "ordered": "ordered",
   "ordered quantity": "ordered quantity",
