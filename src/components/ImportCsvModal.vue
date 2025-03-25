@@ -47,7 +47,7 @@ import { translate, useProductIdentificationStore } from "@hotwax/dxp-components
 import { showToast } from "@/utils";
 
 const props = defineProps(["fileColumns", "content", "countId"])
-const productIdentifications = ref([]);
+const productIdentifications = ref([]) as any;
 
 const selectedIdentifier = ref('')
 const selectedIdentifierColumn = ref('')
@@ -55,7 +55,7 @@ const selectedQuantityColumn = ref('')
 
 onMounted(async () => {
   await useProductIdentificationStore().prepareProductIdentifierOptions();
-  productIdentifications.value = useProductIdentificationStore()?.getGoodIdentificationOptions ? useProductIdentificationStore()?.getGoodIdentificationOptions : []
+  productIdentifications.value = useProductIdentificationStore()?.getGoodIdentificationOptions ? useProductIdentificationStore().getGoodIdentificationOptions : []
 })
 
 function closeModal(identifierData = {}) {
