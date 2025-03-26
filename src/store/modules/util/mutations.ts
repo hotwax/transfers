@@ -18,12 +18,16 @@ const mutations: MutationTree <UtilState> = {
   [types.UTIL_FACILITY_ADDRESSES_UPDATED] (state, payload) {
     state.facilityAddresses = payload
   },
+  [types.UTIL_SAMPLE_PRODUCTS_UPDATED] (state, payload) {
+    state.sampleProducts = payload
+  },
   [types.UTIL_CLEARED] (state) {
     state.statusDesc = {}
     state.shipmentMethodTypeDesc = {}
     state.shipmentMethodsByCarrier = {}
     state.carrierDesc = {}
     state.facilityAddresses = {}
+    state.sampleProducts = []
   },
 }
 export default mutations;

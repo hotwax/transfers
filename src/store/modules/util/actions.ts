@@ -179,6 +179,39 @@ const actions: ActionTree<UtilState, RootState> = {
     return addresses
   },
 
+  async fetchSampleProducts ({ commit, state }) {
+    let products = state.sampleProducts ? JSON.parse(JSON.stringify(state.sampleProducts)) : []
+    if(products.length) return;
+
+    try {
+      const resp = await UtilService.fetchSampleProducts({
+        inputFields: {
+          internalName_op: "not-empty"
+        },
+        entityName: "Product",
+        fieldList: ["internalName", "productId"],
+        noConditionFind: "Y",
+        viewSize: 10
+      }) as any;
+  
+      if(!hasError(resp) && resp.data.docs?.length) {
+        products = resp.data.docs
+        products.map((product: any) => {
+          product.sku = product.internalName
+          product.quantity = 2
+          delete product["internalName"]
+          delete product["productId"]
+        })
+        
+      } else {
+        throw resp.data;
+      }
+    } catch (error) {
+      logger.error(error);
+    }
+    commit(types.UTIL_SAMPLE_PRODUCTS_UPDATED, products)
+  },
+
   async clearUtilState ({ commit }) {
     commit(types.UTIL_CLEARED)
   }
