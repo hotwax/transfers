@@ -146,9 +146,8 @@ async function addItemToOrder(product: any) {
     productStoreId: order.productStoreId,
     carrierPartyId: order.carrierPartyId,
     shipmentMethodTypeId: order.shipmentMethodTypeId,
-    itemStatus: "ITEM_APPROVED",
+    itemStatus: "ITEM_CREATED",
     productId: product.productId,
-    oiStatus: "ITEM_APPROVED",
     quantity: 1,
     idType: "SKU",
     idValue: product.sku,
@@ -163,7 +162,9 @@ async function addItemToOrder(product: any) {
     const resp = await OrderService.addOrderItem(newProduct)
 
     if(!hasError(resp)) {
-      order.items.push(newProduct);
+      const newItem  = await OrderService.fetchOrderItem({ orderId: newProduct.orderId, productId: newProduct.productId })
+      if(newItem?.orderItemSeqId) order.items.push(newItem);
+
       await store.dispatch("order/updateCurrent", order)
       emitter.emit("generateItemsListByParent", product.productId)
     } else {
