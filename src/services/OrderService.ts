@@ -54,6 +54,39 @@ const fetchOrderItems = async (orderId: string): Promise<any> => {
   return orderItems
 }
 
+const fetchOrderItem = async (payload: any): Promise<any> => {
+  let orderItem = {};
+
+  try {
+    const resp = await api({
+      url: "performFind",
+      method: "get",
+      params : {
+        "entityName": "OrderHeaderItemAndShipGroup",
+        "inputFields": {
+          "orderId": payload.orderId,
+          "orderTypeId": "TRANSFER_ORDER",
+          "productId": payload.productId
+        },
+        "fieldList": ["orderId", "orderName", "externalId", "orderTypeId", "statusId", "orderDate", "facilityId", "orderFacilityId", "productStoreId", "carrierPartyId", "shipmentMethodTypeId", "oiStatusId", "orderItemSeqId", "quantity", "productId", "shipGroupSeqId", "oisgFacilityId", "statusFlowId"],
+        "viewSize": 1,
+        "distinct": "Y",
+        "noConditionFind": "Y"
+      }
+    })
+
+    if(!hasError(resp) && resp?.data.docs?.length) {
+      orderItem = resp.data.docs[0]
+    } else {
+      throw resp?.data
+    }
+  } catch(error: any) {
+    logger.error(error)
+  }
+
+  return orderItem;
+}
+
 const fetchOrderItemStats = async (orderItemsList: any): Promise<any> => {
   const orderItems = orderItemsList;
   const shippedQtyRequests = [], receivedQtyRequests = [];
@@ -311,6 +344,7 @@ export const OrderService = {
   cancelOrder,
   changeOrderItemStatus,
   createOrder,
+  fetchOrderItem,
   fetchOrderItems,
   fetchOrderItemStats,
   fetchOrderStatusHistory,
