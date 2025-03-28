@@ -163,7 +163,7 @@ async function addItemToOrder(product: any) {
 
     if(!hasError(resp)) {
       const newItem  = await OrderService.fetchOrderItem({ orderId: newProduct.orderId, productId: newProduct.productId })
-      if(newItem?.orderItemSeqId) order.items.push(newItem);
+      order.items.push({ ...newProduct, oiStatusId: "ITEM_CREATED", statusId: "ORDER_CREATED", orderItemSeqId: newItem?.orderItemSeqId });
 
       await store.dispatch("order/updateCurrent", order)
       emitter.emit("generateItemsListByParent", product.productId)
