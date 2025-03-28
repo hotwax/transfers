@@ -41,7 +41,7 @@
                   <h3 v-if="currentOrder.originFacility?.address2">{{ currentOrder.originFacility.address2 }}</h3>
                   <p>{{ currentOrder.originFacility?.city ?? "" }}{{ currentOrder.originFacility?.postalCode && ", " }}{{ currentOrder.originFacility?.postalCode ?? "" }}</p>
                   <p>{{ currentOrder.originFacility?.stateGeoName ?? "" }}{{ currentOrder.originFacility?.countryGeoName && ", " }}{{ currentOrder.originFacility?.countryGeoName ?? "" }}</p>
-                  </ion-label>
+                </ion-label>
               </ion-item>
               <ion-item>
                 <ion-select :label="translate('Carrier')" :value="currentOrder.carrierPartyId" interface="popover" :placeholder="translate('Select')" :disabled="isOrderFinished()" @ionChange="updateCarrierAndShipmentMethod($event, $event.detail.value, '')">
