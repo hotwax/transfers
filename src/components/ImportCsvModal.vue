@@ -41,17 +41,22 @@
   
 <script setup lang="ts">
 import { IonButton, IonButtons, IonContent, IonFab, IonFabButton, IonHeader, IonIcon, IonItem, IonList, IonListHeader, IonSelect, IonSelectOption, IonTitle, IonToolbar,modalController } from "@ionic/vue";
-import { defineProps, ref } from "vue";
+import { defineProps, onMounted, ref } from "vue";
 import { closeOutline, saveOutline } from "ionicons/icons";
-import { translate } from "@hotwax/dxp-components";
+import { translate, useProductIdentificationStore } from "@hotwax/dxp-components";
 import { showToast } from "@/utils";
 
 const props = defineProps(["fileColumns", "content", "countId"])
-const productIdentifications = ["productId", "SKU", "UPCA", "SHOPIFY_PROD_SKU", "SHOPIFY_PROD_ID"]
+const productIdentifications = ref([]) as any;
 
 const selectedIdentifier = ref('')
 const selectedIdentifierColumn = ref('')
 const selectedQuantityColumn = ref('')
+
+onMounted(async () => {
+  await useProductIdentificationStore().prepareProductIdentifierOptions();
+  productIdentifications.value = useProductIdentificationStore()?.getGoodIdentificationOptions ? useProductIdentificationStore().getGoodIdentificationOptions : []
+})
 
 function closeModal(identifierData = {}) {
   modalController.dismiss({ identifierData });
