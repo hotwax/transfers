@@ -7,8 +7,8 @@ const prepareOrderQuery = (query: any) => {
     "json": {
       "params": {
         "sort": `${query.sort}`,
-        "rows": viewSize,
-        "start": viewSize * viewIndex,
+        "rows": query.fetchFacets ? 0 : viewSize,
+        "start": query.fetchFacets ? 0 : (viewSize * viewIndex),
         "group": true,
         "group.field": `${query.groupBy}`,
         "group.limit": 10000,
@@ -87,6 +87,10 @@ const prepareOrderQuery = (query: any) => {
         }
       },
     }
+  }
+
+  if(query.fetchFacets) {
+    return payload;
   }
 
   if (query.queryString) {
