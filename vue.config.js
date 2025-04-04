@@ -8,6 +8,17 @@ module.exports = {
       }
     }
   },
+  pwa: {
+    name: "Transfers - HotWax Commerce",
+    themeColor: "#FFFFFF",
+    manifestOptions: {
+      short_name: "Transfers",
+      start_url: "./"
+    },
+    id: "/",
+    display: "standalone",
+    background_color: "#000000"
+  },
   runtimeCompiler: true,
   transpileDependencies: ['@hotwax/dxp-components']
 }
