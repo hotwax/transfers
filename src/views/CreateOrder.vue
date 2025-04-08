@@ -548,7 +548,7 @@ async function createOrder() {
 
   let grandTotal = 0;
   order.shipGroup[0].items.map((item: any) => {
-    grandTotal += item.quantity * item.unitPrice
+    grandTotal += Number(item.quantity) * Number(item.unitPrice)
   })
 
   order["grandTotal"] = grandTotal

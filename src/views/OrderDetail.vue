@@ -403,12 +403,12 @@ function generateItemsListByParent() {
   })
 
   Object.entries(itemsById).map(([groupId, items], index) => {
-    let totalOrdered = 0, totalReceived = 0, totalShipped = 0, totalPrice = 0, currencyCode = "";
+    let totalOrdered = 0, totalReceived = 0, totalShipped = 0, totalPrice = 0;
     items.map((item: any) => {
       if(item.quantity) totalOrdered = totalOrdered + item.quantity
       if(item.shippedQty) totalShipped = totalShipped + item.shippedQty
       if(item.receivedQty) totalReceived = totalReceived + item.receivedQty
-      totalPrice = totalPrice + item.quantity * item.unitPrice;
+      totalPrice = totalPrice + (item.quantity * item.unitPrice);
 
       parentProductInfoById.value[groupId] = {
         ...parentProductInfoById.value[groupId],
