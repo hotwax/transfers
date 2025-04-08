@@ -194,7 +194,6 @@
                       <p>{{ translate("ordered") }}</p>
                     </ion-label>
                   </div>
-                  <div></div>
                   <div class="tablet ion-text-center">
                     <ion-label>
                       {{ parentProductInfoById[parentProductId]?.totalShipped || 0 }}
@@ -205,6 +204,11 @@
                     <ion-label>
                       {{ parentProductInfoById[parentProductId]?.totalReceived || 0 }}
                       <p>{{ translate("received") }}</p>
+                    </ion-label>
+                  </div>
+                  <div class="ion-text-center ion-padding-end">
+                    <ion-label>
+                      {{ formatCurrency(parentProductInfoById[parentProductId]?.totalPrice, currentOrder.currencyUom) || "0.00" }}
                     </ion-label>
                   </div>
                 </template>
@@ -277,6 +281,7 @@ import { hasError } from "@/adapter";
 import { DateTime } from "luxon";
 import { getColorByDesc, showToast} from "@/utils";
 import emitter from "@/event-bus";
+import { formatCurrency } from "@/utils";
 
 const store = useStore();
 const productIdentificationStore = useProductIdentificationStore();
@@ -398,17 +403,19 @@ function generateItemsListByParent() {
   })
 
   Object.entries(itemsById).map(([groupId, items], index) => {
-    let totalOrdered = 0, totalReceived = 0, totalShipped = 0;
+    let totalOrdered = 0, totalReceived = 0, totalShipped = 0, totalPrice = 0, currencyCode = "";
     items.map((item: any) => {
       if(item.quantity) totalOrdered = totalOrdered + item.quantity
       if(item.shippedQty) totalShipped = totalShipped + item.shippedQty
       if(item.receivedQty) totalReceived = totalReceived + item.receivedQty
+      totalPrice = totalPrice + item.quantity * item.unitPrice;
 
       parentProductInfoById.value[groupId] = {
         ...parentProductInfoById.value[groupId],
         totalOrdered,
         totalReceived,
-        totalShipped
+        totalShipped,
+        totalPrice
       }
     })
   })
