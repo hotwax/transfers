@@ -144,6 +144,8 @@ const actions: ActionTree<OrderState, RootState> = {
       shipGroupSeqId: orderItems[0].shipGroupSeqId,
       statusId: orderItems[0].statusId,
       statusFlowId: orderItems[0].statusFlowId,
+      currencyUom: orderItems[0].currencyUom,
+      grandTotal: orderItems[0].grandTotal,
       items: orderItems
     }
 

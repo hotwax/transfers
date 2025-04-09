@@ -70,6 +70,7 @@ import logger from "@/logger";
 import { ProductService } from "@/services/ProductService";
 import { hasError } from "@/adapter";
 import { OrderService } from "@/services/OrderService";
+import { UtilService } from "@/services/UtilService";
 
 const productIdentificationStore = useProductIdentificationStore();
 
@@ -138,6 +139,8 @@ async function loadMoreProducts(event: any) {
 
 async function addItemToOrder(product: any) {
   const order = JSON.parse(JSON.stringify(currentOrder.value))
+  const productAverageCostDetail = await UtilService.fetchProductsAverageCost([product.productId], order.facilityId)
+
   const newProduct = {
     orderId: order.orderId,
     orderName: order.orderName,
@@ -152,9 +155,9 @@ async function addItemToOrder(product: any) {
     idType: "SKU",
     idValue: product.sku,
     customerId: "COMPANY",
-    unitPrice: 0,
+    unitPrice: productAverageCostDetail[product.productId] || 0.00,
     unitListPrice: 0,
-    grandTotal: 0,
+    grandTotal: order.grandTotal,
     itemTotalDiscount: 0
   }
 
@@ -163,7 +166,7 @@ async function addItemToOrder(product: any) {
 
     if(!hasError(resp)) {
       const newItem  = await OrderService.fetchOrderItem({ orderId: newProduct.orderId, productId: newProduct.productId })
-      order.items.push({ ...newProduct, oiStatusId: "ITEM_CREATED", statusId: "ORDER_CREATED", orderItemSeqId: newItem?.orderItemSeqId });
+      order.items.push({ ...newProduct, oiStatusId: "ITEM_CREATED", statusId: "ORDER_CREATED", orderItemSeqId: newItem?.orderItemSeqId, unitPrice: productAverageCostDetail[product.productId] || 0.00 });
 
       await store.dispatch("order/updateCurrent", order)
       emitter.emit("generateItemsListByParent", product.productId)

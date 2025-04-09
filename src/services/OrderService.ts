@@ -32,7 +32,7 @@ const fetchOrderItems = async (orderId: string): Promise<any> => {
             "orderId": orderId,
             "orderTypeId": "TRANSFER_ORDER"
           },
-          "fieldList": ["orderId", "orderName", "externalId", "orderTypeId", "statusId", "orderDate", "facilityId", "orderFacilityId", "productStoreId", "carrierPartyId", "shipmentMethodTypeId", "oiStatusId", "orderItemSeqId", "quantity", "productId", "shipGroupSeqId", "oisgFacilityId", "statusFlowId"],
+          "fieldList": ["orderId", "orderName", "externalId", "orderTypeId", "statusId", "orderDate", "facilityId", "orderFacilityId", "productStoreId", "carrierPartyId", "shipmentMethodTypeId", "oiStatusId", "orderItemSeqId", "quantity", "productId", "shipGroupSeqId", "oisgFacilityId", "statusFlowId", "unitPrice", "currencyUom", "grandTotal"],
           "viewIndex": viewIndex,
           "viewSize": 250,
           "distinct": "Y",

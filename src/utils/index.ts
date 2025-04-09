@@ -93,4 +93,14 @@ const getColorByDesc = (desc: string) => ({
   "default": "medium"
 } as any)[desc]
 
-export { formatUtcDate, getColorByDesc, getDateWithOrdinalSuffix, jsonToCsv, JsonToCsvOption, parseCsv, showToast }
+const currentSymbol: any = {
+  "USD": "$",
+  "EUR": "€",
+  "JPY": "¥"
+}
+
+const formatCurrency = (amount: any, code: string) => {
+  return `${currentSymbol[code] || code} ${amount ? amount.toFixed(2) : "0.00"}`
+}
+
+export { formatUtcDate, formatCurrency, getColorByDesc, getDateWithOrdinalSuffix, jsonToCsv, JsonToCsvOption, parseCsv, showToast }
