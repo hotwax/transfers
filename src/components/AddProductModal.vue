@@ -139,7 +139,7 @@ async function loadMoreProducts(event: any) {
 
 async function addItemToOrder(product: any) {
   const order = JSON.parse(JSON.stringify(currentOrder.value))
-  const productsUnitPrice = await UtilService.fetchProductsAverageCost([product.productId], order.facilityId)
+  const productAverageCostDetail = await UtilService.fetchProductsAverageCost([product.productId], order.facilityId)
 
   const newProduct = {
     orderId: order.orderId,
@@ -155,7 +155,7 @@ async function addItemToOrder(product: any) {
     idType: "SKU",
     idValue: product.sku,
     customerId: "COMPANY",
-    unitPrice: productsUnitPrice[product.productId] || 0.00,
+    unitPrice: productAverageCostDetail[product.productId] || 0.00,
     unitListPrice: 0,
     grandTotal: order.grandTotal,
     itemTotalDiscount: 0
@@ -166,7 +166,7 @@ async function addItemToOrder(product: any) {
 
     if(!hasError(resp)) {
       const newItem  = await OrderService.fetchOrderItem({ orderId: newProduct.orderId, productId: newProduct.productId })
-      order.items.push({ ...newProduct, oiStatusId: "ITEM_CREATED", statusId: "ORDER_CREATED", orderItemSeqId: newItem?.orderItemSeqId, unitPrice: productsUnitPrice[product.productId] || 0.00 });
+      order.items.push({ ...newProduct, oiStatusId: "ITEM_CREATED", statusId: "ORDER_CREATED", orderItemSeqId: newItem?.orderItemSeqId, unitPrice: productAverageCostDetail[product.productId] || 0.00 });
 
       await store.dispatch("order/updateCurrent", order)
       emitter.emit("generateItemsListByParent", product.productId)
