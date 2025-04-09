@@ -5,7 +5,7 @@
       <ion-item button :disabled="item.statusId !== 'ORDER_CREATED'" @click="editOrderedQuantity()">
         {{ translate("Edit ordered qty") }}
       </ion-item>
-      <ion-item button @click="redirectToFulfillItem()">
+      <ion-item button :disabled="!isEligibleToFulfill()" @click="redirectToFulfillItem()">
         {{ translate("Fulfill") }}
       </ion-item>
       <ion-item button :disabled="!getCurrentItemInboundShipment()" @click="redirectToReceiveItem()">
@@ -104,6 +104,9 @@ function isEligibleToComplete() {
   }
 }
 
+function isEligibleToFulfill() {
+  return currentOrder.value.statusId !== "ORDER_CREATED" && currentOrder.value.statusId !== "ORDER_CANCELLED" && currentOrder.value.statusId !== "ORDER_REJECTED"
+}
 function getCurrentItemInboundShipment() {
   return currentOrder.value.shipments?.find((shipment: any) => shipment.orderItemSeqId === props.item.orderItemSeqId && shipment.shipmentTypeId === "IN_TRANSFER")
 }
