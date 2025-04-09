@@ -39,8 +39,8 @@
                 <ion-label>
                   <h3 v-if="currentOrder.originFacility?.address1">{{ currentOrder.originFacility.address1 }}</h3>
                   <h3 v-if="currentOrder.originFacility?.address2">{{ currentOrder.originFacility.address2 }}</h3>
-                  <p>{{ currentOrder.originFacility?.city ?? "" }}{{ currentOrder.originFacility?.postalCode && ", " }}{{ currentOrder.originFacility?.postalCode ?? "" }}</p>
-                  <p>{{ currentOrder.originFacility?.stateGeoName ?? "" }}{{ currentOrder.originFacility?.countryGeoName && ", " }}{{ currentOrder.originFacility?.countryGeoName ?? "" }}</p>
+                  <p>{{ currentOrder.originFacility?.city ?? "" }}{{ (currentOrder.originFacility?.city && currentOrder.originFacility?.postalCode) && ", " }}{{ currentOrder.originFacility?.postalCode ?? "" }}</p>
+                  <p>{{ currentOrder.originFacility?.stateGeoName ?? "" }}{{ (currentOrder.originFacility?.stateGeoName && currentOrder.originFacility?.countryGeoName) && ", " }}{{ currentOrder.originFacility?.countryGeoName ?? "" }}</p>
                 </ion-label>
               </ion-item>
               <ion-item>
@@ -68,8 +68,8 @@
                 <ion-label>
                   <h3 v-if="currentOrder.destinationFacility?.address1">{{ currentOrder.destinationFacility.address1 }}</h3>
                   <h3 v-if="currentOrder.destinationFacility?.address2">{{ currentOrder.destinationFacility.address2 }}</h3>
-                  <p>{{ currentOrder.destinationFacility?.city ?? "" }}{{ currentOrder.destinationFacility?.postalCode && ", " }}{{ currentOrder.destinationFacility?.postalCode ?? "" }}</p>
-                  <p>{{ currentOrder.destinationFacility?.stateGeoName ?? "" }}{{ currentOrder.destinationFacility?.countryGeoName && ", " }}{{ currentOrder.destinationFacility?.countryGeoName ?? "" }}</p>
+                  <p>{{ currentOrder.destinationFacility?.city ?? "" }}{{ (currentOrder.destinationFacility?.city && currentOrder.destinationFacility?.postalCode) && ", " }}{{ currentOrder.destinationFacility?.postalCode ?? "" }}</p>
+                  <p>{{ currentOrder.destinationFacility?.stateGeoName ?? "" }}{{ (currentOrder.destinationFacility?.stateGeoName && currentOrder.destinationFacility?.countryGeoName) && ", " }}{{ currentOrder.destinationFacility?.countryGeoName ?? "" }}</p>
                 </ion-label>
               </ion-item>
             </ion-card>
