@@ -196,7 +196,8 @@ const actions: ActionTree<UtilState, RootState> = {
       }) as any;
   
       if(!hasError(resp) && resp.data.docs?.length) {
-        let fieldName = await UtilService.fetchStoreGlobalIdentifier(useUserStore()?.getCurrentEComStore);
+        const currentEComStore = useUserStore()?.getCurrentEComStore as any;
+        let fieldName = currentEComStore?.productIdentifierEnumId
         if(fieldName === "SHOPIFY_BARCODE") fieldName = "UPCA"
 
         products = resp.data.docs

@@ -57,42 +57,9 @@ const fetchSampleProducts = async (params: any): Promise<any> => {
   })
 }
 
-const fetchStoreGlobalIdentifier = async (store: any): Promise<any> => {
-  if(!store.productStoreId) return "SKU";
-  let globalIdentifier = "SKU";
-
-  try {
-    const resp = await api({
-      url: "performFind",
-      method: "get",
-      params : {
-        "entityName": "ProductStore",
-        "inputFields": {
-          productStoreId: store.productStoreId
-        },
-        "fieldList": ["productStoreId", "productIdentifierEnumId"],
-        "viewSize": 1,
-        "distinct": "Y",
-        "noConditionFind": "Y"
-      }
-    })
-
-    if(!hasError(resp) && resp?.data.docs?.length) {
-      globalIdentifier = resp.data.docs[0]?.productIdentifierEnumId
-    } else {
-      throw resp?.data
-    }
-  } catch(error: any) {
-    logger.error(error)
-  }
-
-  return globalIdentifier;
-}
-
 export const UtilService = {
   fetchCarriers,
   fetchFacilityAddresses,
-  fetchStoreGlobalIdentifier,
   fetchSampleProducts,
   fetchShipmentMethodTypeDesc,
   fetchStatusDesc,
