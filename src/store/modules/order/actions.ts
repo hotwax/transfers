@@ -101,7 +101,7 @@ const actions: ActionTree<OrderState, RootState> = {
   },
   
   async fetchOrderFilters({ commit, state }) {
-    const query = prepareOrderQuery({ ...(state.query), fetchFacets: true })
+    const query = prepareOrderQuery({ ...(state.query), fetchFacets: true, viewSize: 0 })
 
     try {
       const resp = await OrderService.findOrder(query);

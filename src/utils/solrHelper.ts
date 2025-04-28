@@ -1,6 +1,6 @@
 /* eslint-disable */
 const prepareOrderQuery = (query: any) => {
-  const viewSize = query.viewSize ? query.viewSize : process.env.VUE_APP_VIEW_SIZE;
+  const viewSize = query.viewSize || query.viewSize === 0 ? query.viewSize : process.env.VUE_APP_VIEW_SIZE;  
   const viewIndex = query.viewIndex ? query.viewIndex : 0;
 
   const payload = {
