@@ -105,8 +105,10 @@ function isEligibleToComplete() {
 }
 
 function isEligibleToFulfill() {
-  return currentOrder.value.statusId !== "ORDER_CREATED" && currentOrder.value.statusId !== "ORDER_CANCELLED" && currentOrder.value.statusId !== "ORDER_REJECTED"
+  const excludedStatuses = ["ORDER_CREATED", "ORDER_CANCELLED", "ORDER_REJECTED"];
+  return !excludedStatuses.includes(currentOrder.value.statusId);
 }
+
 function getCurrentItemInboundShipment() {
   return currentOrder.value.shipments?.find((shipment: any) => shipment.orderItemSeqId === props.item.orderItemSeqId && shipment.shipmentTypeId === "IN_TRANSFER")
 }
