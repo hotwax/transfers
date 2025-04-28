@@ -197,7 +197,7 @@ const actions: ActionTree<UtilState, RootState> = {
   
       if(!hasError(resp) && resp.data.docs?.length) {
         const currentEComStore = useUserStore()?.getCurrentEComStore as any;
-        let fieldName = currentEComStore?.productIdentifierEnumId
+        let fieldName = currentEComStore?.productIdentifierEnumId || "SKU";
         if(fieldName === "SHOPIFY_BARCODE") fieldName = "UPCA"
 
         products = resp.data.docs
