@@ -5,6 +5,7 @@ import * as types from './mutation-types'
 import { UtilService } from '@/services/UtilService'
 import { hasError } from '@/adapter'
 import logger from '@/logger'
+import { useUserStore } from '@hotwax/dxp-components'
 
 const actions: ActionTree<UtilState, RootState> = {
   async fetchShipmentMethodTypeDesc({ commit, state }) {
@@ -195,14 +196,17 @@ const actions: ActionTree<UtilState, RootState> = {
       }) as any;
   
       if(!hasError(resp) && resp.data.docs?.length) {
+        const currentEComStore = useUserStore()?.getCurrentEComStore as any;
+        let fieldName = currentEComStore?.productIdentifierEnumId || "SKU";
+        if(fieldName === "SHOPIFY_BARCODE") fieldName = "UPCA"
+
         products = resp.data.docs
         products.map((product: any) => {
-          product.sku = product.internalName
+          product[fieldName] = product.internalName
           product.quantity = 2
           delete product["internalName"]
           delete product["productId"]
         })
-        
       } else {
         throw resp.data;
       }
