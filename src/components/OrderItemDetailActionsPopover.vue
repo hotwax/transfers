@@ -5,7 +5,7 @@
       <ion-item button :disabled="item.statusId !== 'ORDER_CREATED'" @click="editOrderedQuantity()">
         {{ translate("Edit ordered qty") }}
       </ion-item>
-      <ion-item button @click="redirectToFulfillItem()">
+      <ion-item button :disabled="!isEligibleToFulfill()" @click="redirectToFulfillItem()">
         {{ translate("Fulfill") }}
       </ion-item>
       <ion-item button :disabled="!getCurrentItemInboundShipment()" @click="redirectToReceiveItem()">
@@ -102,6 +102,11 @@ function isEligibleToComplete() {
   } else {
     return item.shippedQty && item.shippedQty >= item.quantity
   }
+}
+
+function isEligibleToFulfill() {
+  const excludedStatuses = ["ORDER_CREATED", "ORDER_CANCELLED", "ORDER_REJECTED"];
+  return !excludedStatuses.includes(currentOrder.value.statusId);
 }
 
 function getCurrentItemInboundShipment() {
