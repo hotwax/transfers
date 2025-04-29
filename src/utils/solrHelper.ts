@@ -13,7 +13,7 @@ const prepareOrderQuery = (query: any) => {
         "group.field": `${query.groupBy}`,
         "group.limit": 10000,
         "group.ngroups": true,
-        "q.op": "AND"
+        "q.op": "OR"
       } as any,
       "query": "*:*",
       "filter": ["docType: ORDER", "orderTypeId: TRANSFER_ORDER"]
