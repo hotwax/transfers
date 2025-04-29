@@ -57,24 +57,6 @@ const actions: ActionTree<OrderState, RootState> = {
 
         productIds = [...productIds]
 
-        // Added check as we are fetching the facets only on first request call and do not fetch facets information on infinite scroll
-        if(params?.fetchFacets) {
-          const originFacilities = resp.data.facets?.facilityNameFacet?.buckets.map((bucket: any) => bucket.val)
-          const destinationFacilities = resp.data.facets?.orderFacilityNameFacet?.buckets.map((bucket: any) => bucket.val)
-          const productStores = resp.data.facets?.productStoreIdFacet?.buckets.map((bucket: any) => bucket.val)
-          const carriers = resp.data.facets?.carrierPartyIdFacet?.buckets.map((bucket: any) => bucket.val)
-          const shipmentMethodTypeIds = resp.data.facets?.shipmentMethodTypeIdFacet?.buckets.map((bucket: any) => bucket.val)
-          const statuses = resp.data.facets?.orderStatusDescFacet?.buckets.map((bucket: any) => bucket.val)
-
-          commit(types.ORDER_PRODUCT_STORE_OPTIONS_UPDATED, productStores);
-          commit(types.ORDER_ORIGIN_FACILITY_OPTIONS_UPDATED, originFacilities);
-          commit(types.ORDER_DESTINATION_FACILITY_OPTIONS_UPDATED, destinationFacilities);
-          commit(types.ORDER_CARRIERS_OPTIONS_UPDATED, carriers);
-          commit(types.ORDER_SHIPMENT_METHODS_OPTIONS_UPDATED, shipmentMethodTypeIds);
-          commit(types.ORDER_STATUS_OPTIONS_UPDATED, statuses);
-        }
-
-
         const orderItemStats = await OrderService.fetchOrderItemStats(orderItemsList);
         orders.map((order: any) => {
           let totalOrdered = 0, totalShipped = 0, totalReceived = 0;
@@ -118,6 +100,34 @@ const actions: ActionTree<OrderState, RootState> = {
     return resp;
   },
   
+  async fetchOrderFilters({ commit, state }) {
+    const query = prepareOrderQuery({ ...(state.query), fetchFacets: true, viewSize: 0 })
+
+    try {
+      const resp = await OrderService.findOrder(query);
+
+      if(!hasError(resp)) {
+        const originFacilities = resp.data.facets?.facilityNameFacet?.buckets.map((bucket: any) => bucket.val)
+        const destinationFacilities = resp.data.facets?.orderFacilityNameFacet?.buckets.map((bucket: any) => bucket.val)
+        const productStores = resp.data.facets?.productStoreIdFacet?.buckets.map((bucket: any) => bucket.val)
+        const carriers = resp.data.facets?.carrierPartyIdFacet?.buckets.map((bucket: any) => bucket.val)
+        const shipmentMethodTypeIds = resp.data.facets?.shipmentMethodTypeIdFacet?.buckets.map((bucket: any) => bucket.val)
+        const statuses = resp.data.facets?.orderStatusDescFacet?.buckets.map((bucket: any) => bucket.val)
+
+        commit(types.ORDER_PRODUCT_STORE_OPTIONS_UPDATED, productStores);
+        commit(types.ORDER_ORIGIN_FACILITY_OPTIONS_UPDATED, originFacilities);
+        commit(types.ORDER_DESTINATION_FACILITY_OPTIONS_UPDATED, destinationFacilities);
+        commit(types.ORDER_CARRIERS_OPTIONS_UPDATED, carriers);
+        commit(types.ORDER_SHIPMENT_METHODS_OPTIONS_UPDATED, shipmentMethodTypeIds);
+        commit(types.ORDER_STATUS_OPTIONS_UPDATED, statuses);
+      } else {
+        throw resp.data;
+      }
+    } catch(error: any) {
+      logger.error(error)
+    }
+  },
+
   async updateAppliedFilters({ commit, dispatch }, payload) {
     commit(types.ORDER_FILTERS_UPDATED, payload)
     await dispatch("findOrders", { isFilterUpdated: true })
