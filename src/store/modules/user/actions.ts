@@ -59,6 +59,7 @@ const actions: ActionTree<UserState, RootState> = {
       await useUserStore().getEComStorePreference("SELECTED_BRAND")
       const preferredStore: any = useUserStore().getCurrentEComStore
 
+      updateToken(token)
       await useProductIdentificationStore().getIdentificationPref(preferredStore.productStoreId)
         .catch((error) => logger.error(error));
       
@@ -66,7 +67,6 @@ const actions: ActionTree<UserState, RootState> = {
       commit(types.USER_TOKEN_CHANGED, { newToken: token })
       commit(types.USER_INFO_UPDATED, userProfile);
       commit(types.USER_PERMISSIONS_UPDATED, appPermissions);
-      updateToken(token)
       emitter.emit("dismissLoader")
     } catch (err: any) {
       emitter.emit("dismissLoader")
