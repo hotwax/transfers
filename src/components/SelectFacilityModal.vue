@@ -9,12 +9,10 @@
       <ion-title>{{ translate("Select facility") }}</ion-title>
     </ion-toolbar>
   </ion-header>
-
   <ion-content>
     <ion-searchbar @ionFocus="selectSearchBarText($event)" :placeholder="$t('Search facilities')" v-model="queryString" @keyup.enter="queryString = $event.target.value; findFacility()" @keydown="preventSpecialCharacters($event)"/>
     <ion-radio-group v-model="selectedFacilityIdValue">
-      <ion-item
-        v-for="facility in facilities" :key="facility.facilityId">
+      <ion-item v-for="facility in facilities" :key="facility.facilityId">
           <ion-radio label-placement="end" justify="start" :value="facility.facilityId">
             <ion-label>
               {{ facility.facilityName ? facility.facilityName : facility.facilityId }}
@@ -26,31 +24,19 @@
   </ion-content>
 
   <ion-fab vertical="bottom" horizontal="end" slot="fixed">
-    <ion-fab-button :disabled="selectedFacilityIdValue === selectedFacilityId" @click="saveFacility"><ion-icon :icon="saveOutline" /></ion-fab-button>
+    <ion-fab-button :disabled="selectedFacilityIdValue === selectedFacilityId" @click="saveFacility">
+      <ion-icon :icon="saveOutline" />
+    </ion-fab-button>
   </ion-fab>
 </template>
 
 <script setup lang="ts">
-import {
-  IonButton,
-  IonButtons,
-  IonContent,
-  IonFab,
-  IonFabButton,
-  IonHeader,
-  IonIcon,
-  IonItem,
-  IonLabel,
-  IonRadio,
-  IonRadioGroup,
-  IonTitle,
-  IonToolbar,
-  modalController
-} from "@ionic/vue";
+import { IonButton, IonButtons, IonContent, IonFab, IonFabButton, IonHeader, IonIcon, IonItem, IonLabel, IonRadio,
+IonRadioGroup, IonTitle, IonToolbar, modalController } from "@ionic/vue";
 
 import { defineProps, onMounted, ref } from "vue";
 import { closeOutline, saveOutline } from "ionicons/icons";
-import { translate } from "@hotwax/dxp-components";
+import { translate } from '@hotwax/dxp-components';
 
 const props = defineProps(["selectedFacilityId", "facilities"]);
 
@@ -89,7 +75,7 @@ function closeModal(payload = {}) {
 }
 
 function saveFacility() {
-  closeModal({ selectedFacilityId: selectedFacilityIdValue.value });
+  closeModal({ selectedFacilityId: selectedFacilityIdValue.value })
 }
 </script>
 
