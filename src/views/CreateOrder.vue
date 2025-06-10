@@ -79,6 +79,11 @@
               <ion-card-title>{{ translate("Plan") }}</ion-card-title>
             </ion-card-header>
             <ion-item>
+              <ion-select :label="translate('Lifecycle')" placeholder="Select" v-model="currentOrder.statusFlowId" interface="popover">
+                <ion-select-option v-for="flow in statusFlows" :key="flow.statusFlowId" :value="flow.statusFlowId">{{ translate(flow.description) }}</ion-select-option>
+              </ion-select>
+            </ion-item>
+            <ion-item>
               <ion-label>{{ translate("Ship Date") }}</ion-label>
               <ion-button slot="end" class="date-time-button" @click="openDateTimeModal('shipDate')">{{ currentOrder.shipDate ? formatDateTime(currentOrder.shipDate) : translate("Select date") }}</ion-button>
             </ion-item>
@@ -238,8 +243,24 @@ const currentOrder = ref({
   destinationFacilityId: "",
   carrierPartyId: "",
   shipmentMethodTypeId: "", 
-  items: []
+  items: [],
+  statusFlowId: ""
 }) as any;
+//TODO: In future when transfers app is migrated to Moqui, fetch the status flows using API
+const statusFlows = [
+  {
+    statusFlowId: "TO_Fulfill_And_Receive",
+    description: "Fulfill & Receive"
+  },
+  {
+    statusFlowId: "TO_Fulfill_Only",
+    description: "Fulfill only"
+  },
+  {
+    statusFlowId: "TO_Receive_Only",
+    description: "Receive only"
+  }
+]
 
 let content = ref([]) as any 
 let fileColumns = ref([]) as any 
@@ -516,6 +537,11 @@ async function createOrder() {
     return;
   }
 
+  if(!currentOrder.value.statusFlowId) {
+    showToast(translate("Please select transfer order lifecycle."));
+    return;
+  }
+
   const productIds = currentOrder.value.items?.map((item: any) => item.productId);
   const productAverageCostDetail = await UtilService.fetchProductsAverageCost(productIds, currentOrder.value.originFacilityId)
 
@@ -525,7 +551,7 @@ async function createOrder() {
     customerId: "COMPANY",
     statusId: "ORDER_CREATED",
     productStoreId: currentOrder.value.productStoreId,
-    statusFlowId: "FULFILL_AND_RECEIVE",
+    statusFlowId: currentOrder.value.statusFlowId,
     shipGroup: [{
       shipGroupSeqId: "00001",
       facilityId: currentOrder.value.originFacilityId,
