@@ -1,31 +1,55 @@
-import {api, hasError} from "@/adapter"
+import {apiClient, hasError} from "@/adapter"
 import logger from "@/logger";
+import store from '@/store';
 
 const findOrder = async (payload: any): Promise<any> => {
-  return api({
+  const baseURL = store.getters['user/getOmsBaseUrl'];
+  const omstoken = store.getters['user/getUserToken'];
+
+  return apiClient({
     url: "/solr-query",
     method: "post",
+    baseURL,
+    headers: {
+      "Authorization": "Bearer " + omstoken,
+      "Content-Type": "application/json"
+    },
     data: payload
   });
 }
 
 const createOrder = async (payload: any): Promise<any> => {
-  return api({
+  const baseURL = store.getters['user/getOmsBaseUrl'];
+  const omstoken = store.getters['user/getUserToken'];
+
+  return apiClient({
     url: "service/createSalesOrder",
     method: "post",
+    baseURL,
+    headers: {
+      "Authorization": "Bearer " + omstoken,
+      "Content-Type": "application/json"
+    },
     data: payload
   });
 }
 
 const fetchOrderItems = async (orderId: string): Promise<any> => {
+  const baseURL = store.getters['user/getOmsBaseUrl'];
+  const omstoken = store.getters['user/getUserToken'];
   let viewIndex = 0;
   let orderItems = [] as any, resp;
 
   try {
     do {
-      resp = await api({
+      resp = await apiClient({
         url: "performFind",
         method: "get",
+        baseURL,
+        headers: {
+          "Authorization": "Bearer " + omstoken,
+          "Content-Type": "application/json"
+        },
         params : {
           "entityName": "OrderHeaderItemAndShipGroup",
           "inputFields": {
@@ -55,12 +79,19 @@ const fetchOrderItems = async (orderId: string): Promise<any> => {
 }
 
 const fetchOrderItem = async (payload: any): Promise<any> => {
+  const baseURL = store.getters['user/getOmsBaseUrl'];
+  const omstoken = store.getters['user/getUserToken'];
   let orderItem = {};
 
   try {
-    const resp = await api({
+    const resp = await apiClient({
       url: "performFind",
       method: "get",
+      baseURL,
+      headers: {
+        "Authorization": "Bearer " + omstoken,
+        "Content-Type": "application/json"
+      },
       params : {
         "entityName": "OrderHeaderItemAndShipGroup",
         "inputFields": {
@@ -88,6 +119,8 @@ const fetchOrderItem = async (payload: any): Promise<any> => {
 }
 
 const fetchOrderItemStats = async (orderItemsList: any): Promise<any> => {
+  const baseURL = store.getters['user/getOmsBaseUrl'];
+  const omstoken = store.getters['user/getUserToken'];
   const orderItems = orderItemsList;
   const shippedQtyRequests = [], receivedQtyRequests = [];
   const orderItemStats = {} as any;
@@ -130,15 +163,25 @@ const fetchOrderItemStats = async (orderItemsList: any): Promise<any> => {
     receivedQtyRequests.push(receivedQtyParams)
   }
 
-  const shippedItemQtyResps = await Promise.allSettled(shippedQtyRequests.map((params) => api({
+  const shippedItemQtyResps = await Promise.allSettled(shippedQtyRequests.map((params) => apiClient({
     url: 'performFind',
     method: 'POST',
+    baseURL,
+    headers: {
+      "Authorization": "Bearer " + omstoken,
+      "Content-Type": "application/json"
+    },
     data: params
   })))
 
-  const receivedItemQtyResps = await Promise.allSettled(receivedQtyRequests.map((params) => api({
+  const receivedItemQtyResps = await Promise.allSettled(receivedQtyRequests.map((params) => apiClient({
     url: 'performFind',
     method: 'POST',
+    baseURL,
+    headers: {
+      "Authorization": "Bearer " + omstoken,
+      "Content-Type": "application/json"
+    },
     data: params
   })))
 
@@ -166,30 +209,53 @@ const fetchOrderItemStats = async (orderItemsList: any): Promise<any> => {
 }
 
 const fetchShipments = async (params: any): Promise<any> => {
-  return await api({
+  const baseURL = store.getters['user/getOmsBaseUrl'];
+  const omstoken = store.getters['user/getUserToken'];
+
+  return await apiClient({
     url: "performFind",
     method: "get",
+    baseURL,
+    headers: {
+      "Authorization": "Bearer " + omstoken,
+      "Content-Type": "application/json"
+    },
     params
   })
 }
 
 const fetchOrderStatusHistory = async (params: any): Promise<any> => {
-  return await api({
+  const baseURL = store.getters['user/getOmsBaseUrl'];
+  const omstoken = store.getters['user/getUserToken'];
+
+  return await apiClient({
     url: "performFind",
     method: "get",
+    baseURL,
+    headers: {
+      "Authorization": "Bearer " + omstoken,
+      "Content-Type": "application/json"
+    },
     params
   })
 }
 
 const fetchShipmentItems = async (shipmentIds: any): Promise<any> => {
+  const baseURL = store.getters['user/getOmsBaseUrl'];
+  const omstoken = store.getters['user/getUserToken'];
   let viewIndex = 0;
   let shipmentItems = [] as any, resp;
 
   try {
     do {
-      resp = await api({
+      resp = await apiClient({
         url: "performFind",
         method: "get",
+        baseURL,
+        headers: {
+          "Authorization": "Bearer " + omstoken,
+          "Content-Type": "application/json"
+        },
         params: {
           "entityName": "ShipmentItemDetail",
           inputFields : {
@@ -218,12 +284,19 @@ const fetchShipmentItems = async (shipmentIds: any): Promise<any> => {
 }
 
 const fetchShipmentTrackingDetails = async (shipmentIds: any): Promise<any> => {
+  const baseURL = store.getters['user/getOmsBaseUrl'];
+  const omstoken = store.getters['user/getUserToken'];
   let shipmentRouteSegs = [] as any;
 
   try {
-    const resp = await api({
+    const resp = await apiClient({
       url: "performFind",
       method: "get",
+      baseURL,
+      headers: {
+        "Authorization": "Bearer " + omstoken,
+        "Content-Type": "application/json"
+      },
       params: {
         "entityName": "ShipmentAndRouteSegment",
         inputFields : {
@@ -250,12 +323,19 @@ const fetchShipmentTrackingDetails = async (shipmentIds: any): Promise<any> => {
 }
 
 const fetchShipmentStatuses = async (shipmentIds: any): Promise<any> => {
+  const baseURL = store.getters['user/getOmsBaseUrl'];
+  const omstoken = store.getters['user/getUserToken'];
   const statuses = {} as any;
 
   try {
-    const resp = await api({
+    const resp = await apiClient({
       url: "performFind",
       method: "get",
+      baseURL,
+      headers: {
+        "Authorization": "Bearer " + omstoken,
+        "Content-Type": "application/json"
+      },
       params: {
         "entityName": "ShipmentStatus",
         inputFields : {
@@ -283,7 +363,10 @@ const fetchShipmentStatuses = async (shipmentIds: any): Promise<any> => {
 }
 
 const updateOrderItem = async (payload: any): Promise<any> => {
-  return api({
+  const baseURL = store.getters['user/getOmsBaseUrl'];
+  const omstoken = store.getters['user/getUserToken'];
+
+  return apiClient({
     url: "service/updateOrderItem",
     method: "post",
     data: payload
@@ -291,49 +374,97 @@ const updateOrderItem = async (payload: any): Promise<any> => {
 }
 
 const changeOrderItemStatus = async (payload: any): Promise<any> => {
-  return api({
+  const baseURL = store.getters['user/getOmsBaseUrl'];
+  const omstoken = store.getters['user/getUserToken'];
+
+  return apiClient({
     url: "service/changeOrderItemStatus",
     method: "post",
+    baseURL,
+    headers: {
+      "Authorization": "Bearer " + omstoken,
+      "Content-Type": "application/json"
+    },
     data: payload
   });
 }
 
 const updateOrderStatus = async (payload: any): Promise<any> => {
-  return api({
+  const baseURL = store.getters['user/getOmsBaseUrl'];
+  const omstoken = store.getters['user/getUserToken'];
+
+  return apiClient({
     url: "service/changeOrderStatus",
     method: "post",
+    baseURL,
+    headers: {
+      "Authorization": "Bearer " + omstoken,
+      "Content-Type": "application/json"
+    },
     data: payload
   });
 }
 
 const updateOrderItemShipGroup = async (payload: any): Promise<any> => {
-  return api({
+  const baseURL = store.getters['user/getOmsBaseUrl'];
+  const omstoken = store.getters['user/getUserToken'];
+
+  return apiClient({
     url: "service/updateOrderItemShipGroup",
     method: "POST",
+    baseURL,
+    headers: {
+      "Authorization": "Bearer " + omstoken,
+      "Content-Type": "application/json"
+    },
     data: payload
   })
 }
 
 const addOrderItem = async (payload: any): Promise<any> => {
-  return api({
+  const baseURL = store.getters['user/getOmsBaseUrl'];
+  const omstoken = store.getters['user/getUserToken'];
+
+  return apiClient({
     url: "service/orderDataSetup",
     method: "POST",
+    baseURL,
+    headers: {
+      "Authorization": "Bearer " + omstoken,
+      "Content-Type": "application/json"
+    },
     data: payload
   })
 }
 
 const approveOrder = async (payload: any): Promise<any> => {
-  return api({
+  const baseURL = store.getters['user/getOmsBaseUrl'];
+  const omstoken = store.getters['user/getUserToken'];
+
+  return apiClient({
     url: "service/approveSalesOrder",
     method: "POST",
+    baseURL,
+    headers: {
+      "Authorization": "Bearer " + omstoken,
+      "Content-Type": "application/json"
+    },
     data: payload
   })
 }
 
 const cancelOrder = async (payload: any): Promise<any> => {
-  return api({
+  const baseURL = store.getters['user/getOmsBaseUrl'];
+  const omstoken = store.getters['user/getUserToken'];
+
+  return apiClient({
     url: "service/cancelSalesOrder",
     method: "POST",
+    baseURL,
+    headers: {
+      "Authorization": "Bearer " + omstoken,
+      "Content-Type": "application/json"
+    },
     data: payload
   })
 }

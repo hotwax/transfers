@@ -1,9 +1,18 @@
-import { api } from '@/adapter';
+import { apiClient } from '@/adapter';
+import store from '@/store';
 
 const fetchProducts = async (query: any): Promise <any>  => {
-  return api({
+  const baseURL = store.getters['user/getOmsBaseUrl'];
+  const omstoken = store.getters['user/getUserToken'];
+
+  return apiClient({
     url: "searchProducts", 
     method: "post",
+    baseURL,
+    headers: {
+      "Authorization": "Bearer " + omstoken,
+      "Content-Type": "application/json"
+    },
     data: query,
     cache: true
   });

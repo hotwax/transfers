@@ -1,62 +1,122 @@
-import { api } from '@/adapter';
+import { apiClient } from '@/adapter';
+import store from '@/store';
 
 const fetchShipmentMethodTypeDesc = async (query: any): Promise <any>  => {
-  return api({
+  const baseURL = store.getters['user/getOmsBaseUrl'];
+  const omstoken = store.getters['user/getUserToken'];
+
+  return apiClient({
     url: "performFind",
     method: "get",
+    baseURL,
+    headers: {
+      "Authorization": "Bearer " + omstoken,
+      "Content-Type": "application/json"
+    },
     params: query
   });
 }
 
 const fetchStatusDesc = async (query: any): Promise <any>  => {
-  return api({
+  const baseURL = store.getters['user/getOmsBaseUrl'];
+  const omstoken = store.getters['user/getUserToken'];
+
+  return apiClient({
     url: "performFind",
     method: "get",
+    baseURL,
+    headers: {
+      "Authorization": "Bearer " + omstoken,
+      "Content-Type": "application/json"
+    },
     params: query
   });
 }
 
 const fetchStoreCarrierAndMethods = async (query: any): Promise <any>  => {
-  return api({
+  const baseURL = store.getters['user/getOmsBaseUrl'];
+  const omstoken = store.getters['user/getUserToken'];
+
+  return apiClient({
     url: "performFind",
     method: "get",
+    baseURL,
+    headers: {
+      "Authorization": "Bearer " + omstoken,
+      "Content-Type": "application/json"
+    },
     params: query
   });
 }
 
 const getInventoryAvailableByFacility = async (query: any): Promise <any> => {
-  return api({
+  const baseURL = store.getters['user/getOmsBaseUrl'];
+  const omstoken = store.getters['user/getUserToken'];
+
+  return apiClient({
     url: "service/getInventoryAvailableByFacility",
     method: "post",
+    baseURL,
+    headers: {
+      "Authorization": "Bearer " + omstoken,
+      "Content-Type": "application/json"
+    },
     data: query
   });
 }
 
 const fetchCarriers = async (query: any): Promise <any>  => {
-  return api({
+  const baseURL = store.getters['user/getOmsBaseUrl'];
+  const omstoken = store.getters['user/getUserToken'];
+
+  return apiClient({
     url: "performFind",
     method: "get",
+    baseURL,
+    headers: {
+      "Authorization": "Bearer " + omstoken,
+      "Content-Type": "application/json"
+    },
     params: query
   });
 }
 
 const fetchFacilityAddresses = async (params: any): Promise<any> => {
-  return api({
+  const baseURL = store.getters['user/getOmsBaseUrl'];
+  const omstoken = store.getters['user/getUserToken'];
+
+  return apiClient({
     url: "performFind",
     method: "get",
+    baseURL,
+    headers: {
+      "Authorization": "Bearer " + omstoken,
+      "Content-Type": "application/json"
+    },
     params
   })
 }
 
 const fetchSampleProducts = async (params: any): Promise<any> => {
-  return api({
+  const baseURL = store.getters['user/getOmsBaseUrl'];
+  const omstoken = store.getters['user/getUserToken'];
+
+  return apiClient({
     url: "performFind",
     method: "get",
+    baseURL,
+    headers: {
+      "Authorization": "Bearer " + omstoken,
+      "Content-Type": "application/json"
+    },
     params
   })
 }
 
 const fetchProductsAverageCost = async (productIds: any, facilityId: any): Promise<any> => {
+  const baseURL = store.getters['user/getOmsBaseUrl'];
+  const omstoken = store.getters['user/getUserToken'];
+
   if(!productIds.length) return []
   const requests = [], productIdList = productIds, productAverageCostDetail = {} as any;
 
@@ -78,9 +138,14 @@ const fetchProductsAverageCost = async (productIds: any, facilityId: any): Promi
     requests.push(params)
   }
 
-  const productAverageCostResps = await Promise.allSettled(requests.map((params) => api({
+  const productAverageCostResps = await Promise.allSettled(requests.map((params) => apiClient({
     url: 'performFind',
     method: 'POST',
+    baseURL,
+    headers: {
+      "Authorization": "Bearer " + omstoken,
+      "Content-Type": "application/json"
+    },
     data: params
   })))
 
