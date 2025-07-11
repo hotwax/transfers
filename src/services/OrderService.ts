@@ -1,4 +1,4 @@
-import {apiClient, hasError} from "@/adapter"
+import { api, apiClient, hasError } from "@/adapter"
 import logger from "@/logger";
 import store from '@/store';
 
@@ -19,17 +19,9 @@ const findOrder = async (payload: any): Promise<any> => {
 }
 
 const createOrder = async (payload: any): Promise<any> => {
-  const baseURL = store.getters['user/getOmsBaseUrl'];
-  const omstoken = store.getters['user/getUserToken'];
-
-  return apiClient({
-    url: "service/createSalesOrder",
+  return api({
+    url: 'oms/transferOrders',
     method: "post",
-    baseURL,
-    headers: {
-      "Authorization": "Bearer " + omstoken,
-      "Content-Type": "application/json"
-    },
     data: payload
   });
 }
