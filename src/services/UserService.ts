@@ -122,18 +122,11 @@ const getUserPermissions = async (payload: any, url: string, token: any): Promis
 }
 
 const fetchFacilitiesByCurrentStore = (payload: any): Promise <any> => {
-  const baseURL = store.getters['user/getOmsBaseUrl'];
-  const omstoken = store.getters['user/getUserToken'];
 
-  return apiClient({
-    url: "/performFind",
-    method: "POST",
-    baseURL,
-    headers: {
-      "Authorization": "Bearer " + omstoken,
-      "Content-Type": "application/json"
-    },
-    data: payload
+  return api({
+    url: `/oms/productStores/${payload.productStoreId}/facilities`,
+    method: "get",
+    params: payload
   });
 }
 
