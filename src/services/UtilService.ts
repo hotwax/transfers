@@ -37,7 +37,7 @@ const fetchStoreCarrierAndMethods = async (payload: any): Promise <any>  => {
 
 
  return api({
-    url: `/oms/dataDocumentView`,
+    url: "/oms/dataDocumentView",
     method: "post",
     data: payload
   });
@@ -85,7 +85,7 @@ const fetchProductsAverageCost = async (productIds: any, facilityId: any): Promi
 
   while(productIdList.length) {
     const productIds = productIdList.splice(0, 100)
-   const params = {
+    const params = {
       customParametersMap: {
         facilityId,
         productId: productIds,
