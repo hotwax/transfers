@@ -300,7 +300,7 @@ onIonViewDidEnter(async () => {
   emitter.emit("presentLoader")
   stores.value = useUserStore().eComStores
   currentOrder.value.productStoreId = useUserStore().getCurrentEComStore?.productStoreId
-  await Promise.allSettled([fetchFacilitiesByCurrentStore(), store.dispatch("util/fetchStoreCarrierAndMethods", currentOrder.value.productStoreId), store.dispatch("util/fetchCarriersDetail"), store.dispatch("util/fetchStatusDesc"), store.dispatch("util/fetchSampleProducts")])
+  await Promise.allSettled([fetchFacilitiesByCurrentStore(), store.dispatch("util/fetchStoreCarrierAndMethods", currentOrder.value.productStoreId), store.dispatch("util/fetchCarriersDetail"), store.dispatch("util/fetchSampleProducts")])
   if(Object.keys(shipmentMethodsByCarrier.value)?.length) {
     currentOrder.value.carrierPartyId = Object.keys(shipmentMethodsByCarrier.value)[0]
     selectUpdatedMethod()
@@ -372,11 +372,11 @@ async function findProductFromIdentifier(payload: any) {
           const stock = await fetchStock(product.productId);
           currentOrder.value.items.push({
             productId: product.productId,
-            sku: product.sku,
-            quantity: (Number(uploadedItemsByIdValue[idValue][quantityField]) || 0),
+              sku: product.sku,
+            quantity:quantityField ? Number(uploadedItemsByIdValue[idValue][quantityField]) || 0:0,
             isChecked: false,
-            qoh: stock.quantityOnHandTotal || 0,
-            atp: stock.availableToPromiseTotal || 0
+            qoh: stock?.qoh || 0,
+            atp: stock?.atp || 0
           })
         }
       })
@@ -401,8 +401,8 @@ async function addProductToCount() {
   } as any;
 
   const stock = await fetchStock(newProduct.productId);
-  if(stock?.quantityOnHandTotal || stock?.quantityOnHandTotal === 0) {
-    newProduct = { ...newProduct, qoh: stock.quantityOnHandTotal, atp: stock.availableToPromiseTotal }
+  if(stock?.qoh || stock?.qoh === 0) {
+    newProduct = { ...newProduct, qoh: stock.qoh, atp: stock.atp };
   }
 
   currentOrder.value.items.push(newProduct);
@@ -441,20 +441,19 @@ async function fetchFacilitiesByCurrentStore() {
 
   try {
     const resp = await UserService.fetchFacilitiesByCurrentStore({
-      inputFields: {
-        productStoreId: currentOrder.value.productStoreId,
-        facilityTypeId: "VIRTUAL_FACILITY",
-        facilityTypeId_op: "notEqual",
-        parentFacilityTypeId: "VIRTUAL_FACILITY",
-        parentFacilityTypeId_op: "notEqual"
-      },
-      fieldList: ["facilityId", "facilityName"],
-      viewSize: 200,
-      entityName: "FacilityAndProductStore"
-    })
+			productStoreId: currentOrder.value.productStoreId,
+			facilityTypeId: "VIRTUAL_FACILITY",
+			facilityTypeId_op: "equals",
+			facilityTypeId_not: "Y",
+			parentFacilityTypeId: "VIRTUAL_FACILITY",
+			parentFacilityTypeId_op: "equals",
+			parentFacilityTypeId_not: "Y",
+			fieldsToSelect: ["facilityId", "facilityName"],
+			pageSize: 200,
+		})
 
     if(!hasError(resp)) {
-      availableFacilities = resp.data.docs
+      availableFacilities = resp.data
     } else {
       throw resp.data;
     }
@@ -544,36 +543,42 @@ async function createOrder() {
 
   const productIds = currentOrder.value.items?.map((item: any) => item.productId);
   const productAverageCostDetail = await UtilService.fetchProductsAverageCost(productIds, currentOrder.value.originFacilityId)
-
-  const order = {
-    orderName: currentOrder.value.name.trim(),
-    orderTypeId: "TRANSFER_ORDER",
-    customerId: "COMPANY",
-    statusId: "ORDER_CREATED",
-    productStoreId: currentOrder.value.productStoreId,
-    statusFlowId: currentOrder.value.statusFlowId,
-    shipGroup: [{
-      shipGroupSeqId: "00001",
-      facilityId: currentOrder.value.originFacilityId,
-      orderFacilityId: currentOrder.value.destinationFacilityId,
-      carrierPartyId: currentOrder.value.carrierPartyId,
-      shipmentMethodTypeId: currentOrder.value.shipmentMethodTypeId,
-      estimatedShipDate: currentOrder.value.shipDate ? DateTime.fromISO(currentOrder.value.shipDate).toFormat("yyyy-mm-dd 23:59:59.000") : "",
-      estimatedDeliveryDate: currentOrder.value.deliveryDate ? DateTime.fromISO(currentOrder.value.deliveryDate).toFormat("yyyy-mm-dd 23:59:59.000") : "",
-      items: currentOrder.value.items.map((item: any) => {
-        return {
-          productId: item.productId,
-          sku: item.sku,
-          status: "ITEM_CREATED",
-          quantity: Number(item.quantity),
-          unitPrice: productAverageCostDetail[item.productId] || 0.00
-        }
-      })
-    }]
-  } as any;
+  
+	const order = {
+		orderName: currentOrder.value.name.trim(),
+		orderTypeId: "TRANSFER_ORDER",
+		customerId: "COMPANY",
+		statusId: "ORDER_CREATED",
+		productStoreId: currentOrder.value.productStoreId,
+		statusFlowId: currentOrder.value.statusFlowId,
+		orderDate: DateTime.now().toFormat("yyyy-MM-dd 23:59:59.000"),
+		entryDate: DateTime.now().toFormat("yyyy-MM-dd 23:59:59.000"),
+		originFacilityId: currentOrder.value.originFacilityId,
+		shipGroups: [
+			{
+				shipGroupSeqId: "00001",
+				facilityId: currentOrder.value.originFacilityId,
+				orderFacilityId: currentOrder.value.destinationFacilityId,
+				carrierPartyId: currentOrder.value.carrierPartyId,
+				shipmentMethodTypeId: currentOrder.value.shipmentMethodTypeId,
+				estimatedShipDate: currentOrder.value.shipDate? DateTime.fromISO(currentOrder.value.shipDate).toFormat("yyyy-MM-dd 23:59:59.000") : "",
+				estimatedDeliveryDate: currentOrder.value.deliveryDate ? DateTime.fromISO(currentOrder.value.deliveryDate).toFormat("yyyy-MM-dd 23:59:59.000"): "",
+				items: currentOrder.value.items.map((item: any) => {
+					return {
+						orderItemTypeId: "PRODUCT_ORDER_ITEM",
+						productId: item.productId,
+						sku: item.sku,
+						statusId: "ITEM_CREATED",
+						quantity: Number(item.quantity),
+						unitPrice:(Object.keys(productAverageCostDetail).length &&
+								productAverageCostDetail[item.productId]) ||0.0,
+					}
+				})
+			}]
+	} as any;
 
   let grandTotal = 0;
-  order.shipGroup[0].items.map((item: any) => {
+  order.shipGroups[0].items.map((item: any) => {
     grandTotal += Number(item.quantity) * Number(item.unitPrice)
   })
 
@@ -582,14 +587,14 @@ async function createOrder() {
   const addresses = await store.dispatch("util/fetchFacilityAddresses", [currentOrder.value.originFacilityId, currentOrder.value.destinationFacilityId])
   addresses.map((address: any) => {
     if(address.facilityId === currentOrder.value.originFacilityId) {
-      order.shipGroup[0].shipFrom = {
+      order.shipGroups[0].shipFrom = {
         postalAddress: {
           id: address.contactMechId
         }
       }
     }
     if(address.facilityId === currentOrder.value.destinationFacilityId) {
-      order.shipGroup[0].shipTo = {
+      order.shipGroups[0].shipTo = {
         postalAddress: {
           id: address.contactMechId
         }
@@ -598,7 +603,7 @@ async function createOrder() {
   })
 
   try {
-    const resp = await OrderService.createOrder({ order })
+    const resp = await OrderService.createOrder({ payload:order })
     if(!hasError(resp)) {
       router.replace(`/order-detail/${resp.data.orderId}`)
     } else {
