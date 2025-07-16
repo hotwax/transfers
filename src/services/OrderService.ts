@@ -431,18 +431,11 @@ const addOrderItem = async (payload: any): Promise<any> => {
 }
 
 const approveOrder = async (payload: any): Promise<any> => {
-  const baseURL = store.getters['user/getOmsBaseUrl'];
-  const omstoken = store.getters['user/getUserToken'];
-
-  return apiClient({
-    url: "service/approveSalesOrder",
-    method: "POST",
-    baseURL,
-    headers: {
-      "Authorization": "Bearer " + omstoken,
-      "Content-Type": "application/json"
-    },
-    data: payload
+  
+  return api({
+    url: `oms/transferOrders/${payload.orderId}/approve`,
+    method: "post",
+    data: payload.orderId
   })
 }
 
