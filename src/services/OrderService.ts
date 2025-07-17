@@ -27,48 +27,19 @@ const createOrder = async (payload: any): Promise<any> => {
   });
 }
 
-const fetchOrderItems = async (orderId: string): Promise<any> => {
-  const baseURL = store.getters['user/getOmsBaseUrl'];
-  const omstoken = store.getters['user/getUserToken'];
-  let viewIndex = 0;
-  let orderItems = [] as any, resp;
+const fetchTransferOrderDetail = async (orderId: string): Promise<any> => {
+  return api({
+    url: `/oms/transferOrders/${orderId}`,
+    method: "get",
+  });
+};
+const fetchShippedTransferShipments = async (params: any): Promise<any> => {
 
-  try {
-    do {
-      resp = await apiClient({
-        url: "performFind",
-        method: "get",
-        baseURL,
-        headers: {
-          "Authorization": "Bearer " + omstoken,
-          "Content-Type": "application/json"
-        },
-        params : {
-          "entityName": "OrderHeaderItemAndShipGroup",
-          "inputFields": {
-            "orderId": orderId,
-            "orderTypeId": "TRANSFER_ORDER"
-          },
-          "fieldList": ["orderId", "orderName", "externalId", "orderTypeId", "statusId", "orderDate", "facilityId", "orderFacilityId", "productStoreId", "carrierPartyId", "shipmentMethodTypeId", "oiStatusId", "orderItemSeqId", "quantity", "productId", "shipGroupSeqId", "oisgFacilityId", "statusFlowId", "unitPrice", "currencyUom", "grandTotal"],
-          "viewIndex": viewIndex,
-          "viewSize": 250,
-          "distinct": "Y",
-          "noConditionFind": "Y"
-        }
-      }) as any;
-
-      if (!hasError(resp) && resp.data.docs?.length) {
-        orderItems = orderItems.concat(resp.data.docs)
-        viewIndex++;
-      } else {
-        throw resp.data;
-      }
-    }
-    while (resp.data.docs.length >= 250);
-  } catch (error) {
-    logger.error(error);
-  }
-  return orderItems
+  return api({
+    url: "poorti/transferShipments",
+    method: "get",
+    params
+  });
 }
 
 const fetchOrderItem = async (payload: any): Promise<any> => {
@@ -399,17 +370,9 @@ const updateOrderStatus = async (payload: any): Promise<any> => {
 }
 
 const updateOrderItemShipGroup = async (payload: any): Promise<any> => {
-  const baseURL = store.getters['user/getOmsBaseUrl'];
-  const omstoken = store.getters['user/getUserToken'];
-
-  return apiClient({
-    url: "service/updateOrderItemShipGroup",
-    method: "POST",
-    baseURL,
-    headers: {
-      "Authorization": "Bearer " + omstoken,
-      "Content-Type": "application/json"
-    },
+  return api({
+    url: `/poorti/updateShipmentCarrierAndMethod`, //should handle the update of OISG, SRG, SPRG if needed
+    method: "PUT",
     data: payload
   })
 }
@@ -462,13 +425,14 @@ export const OrderService = {
   changeOrderItemStatus,
   createOrder,
   fetchOrderItem,
-  fetchOrderItems,
   fetchOrderItemStats,
   fetchOrderStatusHistory,
   fetchShipmentStatuses,
   fetchShipments,
   fetchShipmentItems,
   fetchShipmentTrackingDetails,
+  fetchTransferOrderDetail,
+  fetchShippedTransferShipments,
   findOrder,
   updateOrderItem,
   updateOrderItemShipGroup,

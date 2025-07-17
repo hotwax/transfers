@@ -251,7 +251,7 @@
                       <ion-label>{{ item.receivedQty || 0 }}</ion-label>
                     </ion-chip>
                   </div>
-                  <ion-badge :color="getColorByDesc(getStatusDesc(item.oiStatusId)) || getColorByDesc('default')">{{ getStatusDesc(item.oiStatusId) ? getStatusDesc(item.oiStatusId) : item.oiStatusId }}</ion-badge>
+                  <ion-badge :color="getColorByDesc(getStatusDesc(item.statusId)) || getColorByDesc('default')">{{ getStatusDesc(item.statusId) ? getStatusDesc(item.statusId) : item.statusId }}</ion-badge>
                 </template>
                 <ion-button slot="end" fill="clear" color="medium" :disabled="isOrderFinished()" @click="openOrderItemDetailActionsPopover($event, item)">
                   <ion-icon :icon="ellipsisVerticalOutline" slot="icon-only" />
@@ -305,7 +305,6 @@ const selectRef = ref("") as any;
 onIonViewWillEnter(async () => {
   isFetchingOrderDetail.value = true;
   await store.dispatch("order/fetchOrderDetails", props.orderId)
-  if(currentOrder.value.statusId !== "ORDER_CREATED") await store.dispatch("order/fetchOrderShipments", props.orderId)
   await Promise.allSettled([store.dispatch('util/fetchStatusDesc'), store.dispatch("util/fetchCarriersDetail"), fetchOrderStatusHistoryTimeline(), store.dispatch("util/fetchShipmentMethodTypeDesc")])
   generateItemsListByParent();
   isFetchingOrderDetail.value = false;

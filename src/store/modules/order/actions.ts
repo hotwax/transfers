@@ -135,61 +135,82 @@ const actions: ActionTree<OrderState, RootState> = {
   
   async fetchOrderDetails({ commit }, orderId) {
     let orderDetail = {} as any;
+    let orderResp, shipmentResp;
+    try {
+      // Fetch main transfer order details
+      orderResp = await OrderService.fetchTransferOrderDetail(orderId);
+      if (!hasError(orderResp)) {
+        orderDetail = orderResp.data.order || {};
+        // TODO: Replace hardcoded values below with actual data from fetchTransferOrderDetail response.
+        // These fields should be returned by the backend API and assigned dynamically instead of being manually set here.
+        orderDetail={
+          ...orderDetail ,
+          facilityId:"ASH_FACILITY",
+          orderFacilityId:"Miami",
+          carrierPartyId:"FEDEX_TEST",
+          shipGroupSeqId: "00001",
+          unitprice:10,
+          currencyUom:"USD",
+          shipmentMethodTypeId:"SHIP_TO_STORE",
+          statusFlowId:"RECEIVE_ONLY",
+        };
 
-    const orderItems = await OrderService.fetchOrderItems(orderId);
-    if(!orderItems.length) {
-      commit(types.ORDER_CURRENT_UPDATED, {});
-      return;
-    }
-
-    orderDetail = {
-      orderId: orderItems[0].orderId,
-      orderName: orderItems[0].orderName,
-      orderDate: orderItems[0].orderDate,
-      facilityId: orderItems[0].oisgFacilityId,
-      orderFacilityId: orderItems[0].orderFacilityId,
-      productStoreId: orderItems[0].productStoreId,
-      carrierPartyId: orderItems[0].carrierPartyId,
-      shipmentMethodTypeId: orderItems[0].shipmentMethodTypeId,
-      shipGroupSeqId: orderItems[0].shipGroupSeqId,
-      statusId: orderItems[0].statusId,
-      statusFlowId: orderItems[0].statusFlowId,
-      currencyUom: orderItems[0].currencyUom,
-      grandTotal: orderItems[0].grandTotal,
-      items: orderItems
-    }
-
-    const [facilityAddresses] = await Promise.allSettled([store.dispatch("util/fetchFacilityAddresses", [orderDetail.facilityId, orderDetail.orderFacilityId]), store.dispatch("util/fetchStoreCarrierAndMethods", orderDetail.productStoreId)])
-
-    const orderItemsList = orderItems.map((item: any) => `${item.orderId}_${item.orderItemSeqId}`);
-    const orderItemStats = await OrderService.fetchOrderItemStats(orderItemsList);
-
-    orderDetail.items.map((item: any) => {
-      item.facilityId = item.oisgFacilityId
-      if(orderItemStats[`${item.orderId}_${item.orderItemSeqId}`]) {
-        item["shippedQty"] = orderItemStats[`${item.orderId}_${item.orderItemSeqId}`].shippedQty
-        item["receivedQty"] = orderItemStats[`${item.orderId}_${item.orderItemSeqId}`].receivedQty
-      }
-    })
-
-    if(facilityAddresses.status === "fulfilled" && facilityAddresses.value?.length) {
-      facilityAddresses.value.map((address: any) => {
-        if(address.facilityId === orderDetail.facilityId) {
-          orderDetail["originFacility"] = address
-        } else {
-          orderDetail["destinationFacility"] = address
+        // Fetch additional shipment data
+        shipmentResp = await OrderService.fetchShippedTransferShipments({ orderId, shipmentStatusId: "SHIPMENT_SHIPPED" });
+        if (!hasError(shipmentResp)) {
+          const shipmentData = shipmentResp.data || {};
+          // Merge order and shipment data fields into orderDetail
+          orderDetail = {
+            ...orderDetail,
+            shipments: shipmentData.shipments || [],
+          };
         }
-      })
-    }
+        if (orderDetail.items && Array.isArray(orderDetail.items)) {
+          orderDetail.items = orderDetail.items.map((item: any) => ({
+            ...item,
+            orderedQuantity: item.quantity,
+            shippedQuantity: item.totalIssuedQuantity || 0,
+            pickedQuantity: 0
+          }));
+        }
+        const [facilityAddresses] = await Promise.allSettled([store.dispatch("util/fetchFacilityAddresses", [orderDetail.facilityId, orderDetail.orderFacilityId]), store.dispatch("util/fetchStoreCarrierAndMethods", orderDetail.productStoreId)])
 
-    const productIds = [...new Set(orderDetail.items.map((item:any) => item.productId))];
-    const batchSize = 250;
-    const productIdBatches = [];
-    while(productIds.length) {
-      productIdBatches.push(productIds.splice(0, batchSize))
+        const orderItemsList = orderDetail.items.map((item: any) => `${orderDetail.orderId}_${item.orderItemSeqId}`);
+        const orderItemStats = await OrderService.fetchOrderItemStats(orderItemsList);
+
+        orderDetail.items.map((item: any) => {
+          item.facilityId = item.oisgFacilityId
+            if(orderItemStats[`${orderDetail.orderId}_${item.orderItemSeqId}`]) {
+            item["shippedQty"] = orderItemStats[`${orderDetail.orderId}_${item.orderItemSeqId}`].shippedQty
+            item["receivedQty"] = orderItemStats[`${orderDetail.orderId}_${item.orderItemSeqId}`].receivedQty
+            }
+        })
+
+        if(facilityAddresses.status === "fulfilled" && facilityAddresses.value?.length) {
+            facilityAddresses.value.map((address: any) => {
+              if(address.facilityId === orderDetail.facilityId) {
+              orderDetail["originFacility"] = address
+              } else {
+              orderDetail["destinationFacility"] = address
+              }
+            })
+        }
+
+        const productIds = [...new Set(orderDetail.items.map((item:any) => item.productId))];
+        const batchSize = 250;
+        const productIdBatches = [];
+        while(productIds.length) {
+          productIdBatches.push(productIds.splice(0, batchSize))
+        }
+          await Promise.allSettled([productIdBatches.map(async (productIds) => await this.dispatch('product/fetchProducts', { productIds }))])
+          commit(types.ORDER_CURRENT_UPDATED, orderDetail);
+      } else {
+        throw orderResp.data;
+      }
+    }catch(err:any){
+      logger.error("error", err);
+      return Promise.reject(new Error(err));
     }
-    await Promise.allSettled([productIdBatches.map(async (productIds) => await this.dispatch('product/fetchProducts', { productIds }))])
-    commit(types.ORDER_CURRENT_UPDATED, orderDetail);
   },
 
   async fetchOrderShipments ({ commit, state }, orderId) {

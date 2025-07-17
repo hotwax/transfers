@@ -1,34 +1,19 @@
-import {api, apiClient } from '@/adapter';
-import store from '@/store';
+import {api} from '@/adapter';
 
 const fetchShipmentMethodTypeDesc = async (query: any): Promise <any>  => {
-  const baseURL = store.getters['user/getOmsBaseUrl'];
-  const omstoken = store.getters['user/getUserToken'];
-
-  return apiClient({
-    url: "performFind",
-    method: "get",
-    baseURL,
-    headers: {
-      "Authorization": "Bearer " + omstoken,
-      "Content-Type": "application/json"
-    },
+  
+  return api({
+    url: `/oms/shippingGateways/shipmentMethodTypes`,
+    method: "GET",
     params: query
   });
 }
 
 const fetchStatusDesc = async (query: any): Promise <any>  => {
-  const baseURL = store.getters['user/getOmsBaseUrl'];
-  const omstoken = store.getters['user/getUserToken'];
-
-  return apiClient({
-    url: "performFind",
-    method: "get",
-    baseURL,
-    headers: {
-      "Authorization": "Bearer " + omstoken,
-      "Content-Type": "application/json"
-    },
+  
+  return api({
+    url: `/oms/statuses`,
+    method: "GET",
     params: query
   });
 }
