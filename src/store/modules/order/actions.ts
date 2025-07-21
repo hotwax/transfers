@@ -180,20 +180,20 @@ const actions: ActionTree<OrderState, RootState> = {
 
         orderDetail.items.map((item: any) => {
           item.facilityId = item.oisgFacilityId
-            if(orderItemStats[`${orderDetail.orderId}_${item.orderItemSeqId}`]) {
+          if(orderItemStats[`${orderDetail.orderId}_${item.orderItemSeqId}`]) {
             item["shippedQty"] = orderItemStats[`${orderDetail.orderId}_${item.orderItemSeqId}`].shippedQty
             item["receivedQty"] = orderItemStats[`${orderDetail.orderId}_${item.orderItemSeqId}`].receivedQty
-            }
+          }
         })
 
         if(facilityAddresses.status === "fulfilled" && facilityAddresses.value?.length) {
-            facilityAddresses.value.map((address: any) => {
-              if(address.facilityId === orderDetail.facilityId) {
+          facilityAddresses.value.map((address: any) => {
+            if(address.facilityId === orderDetail.facilityId) {
               orderDetail["originFacility"] = address
-              } else {
+            } else {
               orderDetail["destinationFacility"] = address
-              }
-            })
+            }
+          })
         }
 
         const productIds = [...new Set(orderDetail.items.map((item:any) => item.productId))];

@@ -135,7 +135,7 @@
               </ion-card-header>
               <ion-item>
                 <ion-label>{{ translate("Shipped date") }}</ion-label>
-                <ion-label slot="end">{{ getSelectedShipment()?.shippedDate ? formatDateTime(getSelectedShipment().shippedDate) : "-" }}</ion-label>
+                <ion-label slot="end">{{ getSelectedShipment()?.shipmentShippedDate ? formatDateTime(getSelectedShipment().shipmentShippedDate) : "-" }}</ion-label>
               </ion-item>
               <ion-item>
                 <ion-label>{{ translate("Method") }}</ion-label>
@@ -147,7 +147,7 @@
               </ion-item>
               <ion-item lines="none">
                 <ion-label>{{ translate("Tracking code") }}</ion-label>
-                <ion-label slot="end">{{ getSelectedShipment()?.trackingCode ? getSelectedShipment().trackingCode : "-" }}</ion-label>
+                <ion-label slot="end">{{ getSelectedShipment()?.trackingIdNumber ? getSelectedShipment().trackingIdNumber : "-" }}</ion-label>
               </ion-item>
             </ion-card>
           </div>
