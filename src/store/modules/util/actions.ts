@@ -14,16 +14,14 @@ const actions: ActionTree<UtilState, RootState> = {
     const shipmentMethodTypeDesc = {} as any;
     try {
       const payload = {
-        "fieldList": ["shipmentMethodTypeId", "description"],
-        "entityName": "ShipmentMethodType",
-        "noConditionFind": "Y",
-        "viewSize": 200
+        shipmentMethodTypeId_op: "in",
+        fieldsToSelect: ["shipmentMethodTypeId", "description"],
+        pageSize: 200,
       }
 
       const resp = await UtilService.fetchShipmentMethodTypeDesc(payload);
-
       if(!hasError(resp)) {
-        resp.data.docs.map((shipmentMethodInformation: any) => {
+        resp.data.map((shipmentMethodInformation: any) => {
           shipmentMethodTypeDesc[shipmentMethodInformation.shipmentMethodTypeId] = shipmentMethodInformation.description
         })
 
@@ -44,20 +42,18 @@ const actions: ActionTree<UtilState, RootState> = {
 
     try {
       const payload = {
-        "inputFields": {
-          "statusTypeId": ["ORDER_STATUS", "ORDER_ITEM_STATUS", "SHIPMENT_STATUS", "PURCH_SHIP_STATUS"],
-          "statusTypeId_op": "in"
-        },
-        "fieldList": ["statusId", "description"],
+        "statusTypeId": ["ORDER_STATUS", "ORDER_ITEM_STATUS", "SHIPMENT_STATUS", "PURCH_SHIP_STATUS"],
+        "statusTypeId_op": "in",
+        // "fieldList": ["statusId", "description"],
         "entityName": "StatusItem",
-        "viewSize": 200
+        "pageSize": 200
       }
 
       const resp = await UtilService.fetchStatusDesc(payload);
 
       if(!hasError(resp)) {
         statusDesc = {}
-        resp.data.docs.map((statusItem: any) => {
+        resp.data.map((statusItem: any) => {
           statusDesc[statusItem.statusId] = statusItem.description
         })
 
