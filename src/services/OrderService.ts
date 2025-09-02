@@ -2,19 +2,19 @@ import {api,apiClient, hasError} from "@/adapter"
 import logger from "@/logger";
 import store from '@/store';
 
-const findOrder = async (payload: any): Promise<any> => {
-  const baseURL = store.getters['user/getOmsBaseUrl'];
-  const omstoken = store.getters['user/getUserToken'];
+const findTransferOrders = async (payload: any): Promise<any> => {
+  return api({
+    url: 'oms/transferOrders/grouped',
+    method: "GET",
+    params: payload
+  });
+}
 
-  return apiClient({
-    url: "/solr-query",
-    method: "post",
-    baseURL,
-    headers: {
-      "Authorization": "Bearer " + omstoken,
-      "Content-Type": "application/json"
-    },
-    data: payload
+const findTransferOrderItems = async (payload: any): Promise<any> => {
+  return api({
+    url: `oms/transferOrders/items`,
+    method: "GET",
+    params: payload
   });
 }
 
@@ -80,96 +80,6 @@ const fetchOrderItem = async (payload: any): Promise<any> => {
   }
 
   return orderItem;
-}
-
-const fetchOrderItemStats = async (orderItemsList: any): Promise<any> => {
-  const baseURL = store.getters['user/getOmsBaseUrl'];
-  const omstoken = store.getters['user/getUserToken'];
-  const orderItems = orderItemsList;
-  const shippedQtyRequests = [], receivedQtyRequests = [];
-  const orderItemStats = {} as any;
-
-  while(orderItems.length) {
-    const batch = orderItems.splice(0,100);
-    const orderIds = [] as any, orderItemSeqIds = [] as any, productIds = [] as any;
-
-    batch.map((itemMap: any) => {
-      const itemInfo = itemMap.split("_");
-      orderIds.push(itemInfo[0])
-      orderItemSeqIds.push(itemInfo[1])
-      productIds.push(itemInfo[2])
-    })
-
-    const shippedQtyParams = {
-      inputFields: {
-        orderId: orderIds,
-        orderId_op: "in",
-        orderItemSeqId: orderItemSeqIds,
-        orderItemSeqId_op: "in"
-      },
-      viewSize: 250,
-      entityName: 'ShippedItemQuantitySum',
-      fieldList: ['orderId', 'orderItemSeqId', 'shippedQuantity']
-    }
-
-    const receivedQtyParams = {
-      inputFields: {
-        orderId: orderIds,
-        orderId_op: "in",
-        orderItemSeqId: orderItemSeqIds,
-        orderItemSeqId_op: "in"
-      },
-      viewSize: 250,
-      entityName: 'ReceivedItemQuantitySum',
-      fieldList: ['orderId', 'orderItemSeqId', 'totalQuantityAccepted']
-    }
-    shippedQtyRequests.push(shippedQtyParams)
-    receivedQtyRequests.push(receivedQtyParams)
-  }
-
-  const shippedItemQtyResps = await Promise.allSettled(shippedQtyRequests.map((params) => apiClient({
-    url: 'performFind',
-    method: 'POST',
-    baseURL,
-    headers: {
-      "Authorization": "Bearer " + omstoken,
-      "Content-Type": "application/json"
-    },
-    data: params
-  })))
-
-  const receivedItemQtyResps = await Promise.allSettled(receivedQtyRequests.map((params) => apiClient({
-    url: 'performFind',
-    method: 'POST',
-    baseURL,
-    headers: {
-      "Authorization": "Bearer " + omstoken,
-      "Content-Type": "application/json"
-    },
-    data: params
-  })))
-
-  shippedItemQtyResps.map((response: any) => {
-    if(response.status === "fulfilled" && !hasError(response.value) && response.value.data?.docs?.length) {
-      response.value.data.docs.map((doc: any) => {
-        orderItemStats[`${doc.orderId}_${doc.orderItemSeqId}`] = { shippedQty: doc.shippedQuantity }
-      })
-    }
-  })
-
-  receivedItemQtyResps.map((response: any) => {
-    if(response.status === "fulfilled" && !hasError(response.value) && response.value.data?.docs?.length) {
-      response.value.data.docs.map((doc: any) => {
-        if(orderItemStats[`${doc.orderId}_${doc.orderItemSeqId}`]) {
-          orderItemStats[`${doc.orderId}_${doc.orderItemSeqId}`] = { ...orderItemStats[`${doc.orderId}_${doc.orderItemSeqId}`], receivedQty: doc.totalQuantityAccepted }
-        } else {
-          orderItemStats[`${doc.orderId}_${doc.orderItemSeqId}`] = { receivedQty: doc.totalQuantityAccepted }
-        }
-      })
-    }
-  })
-
-  return orderItemStats
 }
 
 const fetchShipments = async (params: any): Promise<any> => {
@@ -425,7 +335,6 @@ export const OrderService = {
   changeOrderItemStatus,
   createOrder,
   fetchOrderItem,
-  fetchOrderItemStats,
   fetchOrderStatusHistory,
   fetchShipmentStatuses,
   fetchShipments,
@@ -433,7 +342,8 @@ export const OrderService = {
   fetchShipmentTrackingDetails,
   fetchTransferOrderDetail,
   fetchShippedTransferShipments,
-  findOrder,
+  findTransferOrders,
+  findTransferOrderItems,
   updateOrderItem,
   updateOrderItemShipGroup,
   updateOrderStatus

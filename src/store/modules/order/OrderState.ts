@@ -1,15 +1,9 @@
 export default interface OrderState {
   list: {
     orders: any[],
-    orderCount: number,
-    itemCount: number
+    ordersCount: number,
   };
+  orderItemsList: any;
   query: any;
-  productStoreOptions: any;
-  originFacilityOptions: any;
-  destinationFacilityOptions: any;
-  orderStatuses: any;
-  carrierOptions: any;
-  shipmentMethodOptions: any;
   current: any;
 }

@@ -95,7 +95,7 @@ async function editOrderedQuantity() {
 
 function isEligibleToComplete() {
   const item = props.item
-  if(item?.oiStatusId !== "ITEM_APPROVED") return false;
+  if(item?.statusId !== "ITEM_APPROVED") return false;
 
   if(item.statusFlowId === "RECEIVE_ONLY") {
     return item.receivedQty && item.receivedQty >= item.quantity
@@ -135,7 +135,7 @@ async function completeItem() {
       const order = JSON.parse(JSON.stringify(currentOrder.value));
       order.items.find((item: any) => {
         if(item.orderId === props.item.orderId && item.orderItemSeqId === props.item.orderItemSeqId) {
-          item.oiStatusId = "ITEM_COMPLETED"
+          item.statusId = "ITEM_COMPLETED"
           return true;
         }
       })

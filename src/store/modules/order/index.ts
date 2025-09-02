@@ -10,26 +10,20 @@ const orderModule: Module<OrderState, RootState> = {
   state: {
     list: {
       orders: [],
-      orderCount: 0,
-      itemCount: 0
+      ordersCount: 0,
     },
+    orderItemsList: [],
     query: {
-      queryString: "",
-      productStore: "",
-      originFacility: "",
-      destinationFacility: "",
-      status: "",
+      orderName: "",
+      productStoreId: "",
+      facilityId: "",
+      orderFacilityId: "",
+      orderStatusId: "",
       carrierPartyId: "",
       shipmentMethodTypeId: "",
       sort: 'orderDate desc',
-      groupBy: "orderId"
+      groupBy: "ORDER_ID"
     },
-    productStoreOptions: [],
-    originFacilityOptions: [],
-    destinationFacilityOptions: [],
-    orderStatuses: [],
-    carrierOptions: [],
-    shipmentMethodOptions: [],
     current: {}
   },
   getters,

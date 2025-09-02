@@ -25,7 +25,7 @@ const showToast = async (message: string) => {
 }
 
 const formatUtcDate = (value: any, outFormat: string) => {
-  return DateTime.fromISO(value, { zone: 'utc' }).setZone(store.state.user.current.userTimeZone).toFormat(outFormat ? outFormat : 'MM-dd-yyyy')
+  return DateTime.fromMillis(value, { zone: 'utc' }).setZone(store.state.user.current.userTimeZone).toFormat(outFormat ? outFormat : 'MM-dd-yyyy')
 }
 
 function getDateWithOrdinalSuffix(time: any) {
@@ -99,8 +99,40 @@ const currentSymbol: any = {
   "JPY": "¥"
 }
 
+// formats amount into currency with symbol and two decimal places, defaults to "0.00" if invalid
 const formatCurrency = (amount: any, code: string) => {
-  return `${currentSymbol[code] || code} ${amount ? amount.toFixed(2) : "0.00"}`
+  const symbol = currentSymbol[code] || code || ""
+  if(amount == null) return "0.00"
+  return `${symbol} ${amount.toFixed(2)}`
 }
 
-export { formatUtcDate, formatCurrency, getColorByDesc, getDateWithOrdinalSuffix, jsonToCsv, JsonToCsvOption, parseCsv, showToast }
+// Utility function to build the payload for fetching transfer orders.
+// - Adds fields to select based on groupBy configuration (with special handling for ORDER_ID).
+// - Includes sorting and filters.
+// - Merges additional params into the final payload.
+function buildTransferOrderPayload(query: any, params: any = {}) {
+  const { groupBy, sort, ...filters } = query;
+  const payload: any = {}, fields = [];
+  const groupByConfig = JSON.parse(process.env.VUE_APP_TRANSFERS_ORDER_GROUPBY || "{}");
+
+  if(groupBy && groupByConfig[groupBy]) {
+    fields.push(...groupByConfig[groupBy]);
+    if(groupBy === "ORDER_ID") {
+      fields.push("orderName", "facilityId", "orderFacilityId", "orderStatusDesc");
+    }
+  }
+  payload.fieldsToSelect = fields.join(",");
+
+  if(sort) payload.orderByField = sort;
+
+  Object.entries(filters).forEach(([key, value]) => {
+    if(value != null && value !== "") {
+      payload[key] = value;
+    }
+  });
+
+  Object.assign(payload, params);
+  return payload;
+}
+
+export { buildTransferOrderPayload, formatUtcDate, formatCurrency, getColorByDesc, getDateWithOrdinalSuffix, jsonToCsv, JsonToCsvOption, parseCsv, showToast }

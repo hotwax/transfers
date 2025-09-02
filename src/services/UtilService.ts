@@ -45,6 +45,14 @@ const fetchCarriers = async (query: any): Promise <any>  => {
   });
 }
 
+const fetchFacilities = async (payload: any): Promise <any> => {
+  return api({
+    url: "oms/facilities",
+    method: "get",
+    params: payload
+  })
+}
+
 const fetchFacilityAddresses = async (params: any): Promise<any> => {
 
  return api({
@@ -108,6 +116,7 @@ const fetchProductsAverageCost = async (productIds: any, facilityId: any): Promi
 
 export const UtilService = {
   fetchCarriers,
+  fetchFacilities,
   fetchFacilityAddresses,
   fetchProductsAverageCost,
   fetchSampleProducts,
