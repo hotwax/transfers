@@ -22,7 +22,7 @@ const actions: ActionTree<OrderState, RootState> = {
         const groupByKey = state.query.groupBy
         const groupByFieldsValue = JSON.parse(process.env.VUE_APP_TRANSFERS_ORDER_GROUPBY || '{}')[groupByKey]
 
-        let orders = resp.data.orders.map((order: any) => {
+        const orders = resp.data.orders.map((order: any) => {
           if(order.productId) productIds.push(order.productId)
           return {
             ...order,
