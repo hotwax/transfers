@@ -317,14 +317,13 @@ const cancelOrder = async (payload: any): Promise<any> => {
   const omstoken = store.getters['user/getUserToken'];
 
   return apiClient({
-    url: "service/cancelSalesOrder",
+    url: `oms/transferOrders/${payload.orderId}/cancel`,
     method: "POST",
     baseURL,
     headers: {
       "Authorization": "Bearer " + omstoken,
       "Content-Type": "application/json"
-    },
-    data: payload
+    }
   })
 }
 
