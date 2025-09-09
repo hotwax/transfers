@@ -2,7 +2,7 @@
   <ion-content>
     <ion-list>
       <ion-list-header>{{ getProductIdentificationValue(productIdentificationStore.getProductIdentificationPref.primaryId, getProduct(item.productId)) || getProduct(item.productId).productName }}</ion-list-header>
-      <ion-item button :disabled="item.statusId !== 'ORDER_CREATED'" @click="editOrderedQuantity()">
+      <ion-item button :disabled="item.statusId !== 'ITEM_CREATED'" @click="editOrderedQuantity()">
         {{ translate("Edit ordered qty") }}
       </ion-item>
       <ion-item button :disabled="!isEligibleToFulfill()" @click="redirectToFulfillItem()">
@@ -53,7 +53,7 @@ async function editOrderedQuantity() {
         if(quantity !== props.item.quantity) {
           try {
             const resp = await OrderService.updateOrderItem({
-              orderId: props.item.orderId,
+              orderId: currentOrder.value.orderId,
               orderItemSeqId: props.item.orderItemSeqId,
               quantity
             })
@@ -61,7 +61,7 @@ async function editOrderedQuantity() {
             if(!hasError(resp)) {
               const order = JSON.parse(JSON.stringify(currentOrder.value));
               order.items.find((item: any) => {
-                if(item.orderId === props.item.orderId && item.orderItemSeqId === props.item.orderItemSeqId) {
+                if(item.orderItemSeqId === props.item.orderItemSeqId) {
                   item.quantity = quantity
                   return true;
                 }
@@ -134,7 +134,7 @@ async function completeItem() {
     if(!hasError(resp)) {
       const order = JSON.parse(JSON.stringify(currentOrder.value));
       order.items.find((item: any) => {
-        if(item.orderId === props.item.orderId && item.orderItemSeqId === props.item.orderItemSeqId) {
+        if(item.orderItemSeqId === props.item.orderItemSeqId) {
           item.statusId = "ITEM_COMPLETED"
           return true;
         }

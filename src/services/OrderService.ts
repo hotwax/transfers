@@ -237,12 +237,17 @@ const fetchShipmentStatuses = async (shipmentIds: any): Promise<any> => {
 }
 
 const updateOrderItem = async (payload: any): Promise<any> => {
-  const baseURL = store.getters['user/getOmsBaseUrl'];
+  const baseURL = store.getters['user/getBaseUrl'];
   const omstoken = store.getters['user/getUserToken'];
 
   return apiClient({
-    url: "service/updateOrderItem",
-    method: "post",
+    url: "oms/transferOrders/orderItem",
+    method: "PUT",
+    baseURL,
+    headers: {
+      "Authorization": "Bearer " + omstoken,
+      "Content-Type": "application/json"
+    },
     data: payload
   });
 }
@@ -288,11 +293,11 @@ const updateOrderItemShipGroup = async (payload: any): Promise<any> => {
 }
 
 const addOrderItem = async (payload: any): Promise<any> => {
-  const baseURL = store.getters['user/getOmsBaseUrl'];
+  const baseURL = store.getters['user/getBaseUrl'];
   const omstoken = store.getters['user/getUserToken'];
 
   return apiClient({
-    url: "service/orderDataSetup",
+    url: "oms/transferOrders/orderItem",
     method: "POST",
     baseURL,
     headers: {
@@ -313,7 +318,7 @@ const approveOrder = async (payload: any): Promise<any> => {
 }
 
 const cancelOrder = async (payload: any): Promise<any> => {
-  const baseURL = store.getters['user/getOmsBaseUrl'];
+  const baseURL = store.getters['user/getBaseUrl'];
   const omstoken = store.getters['user/getUserToken'];
 
   return apiClient({

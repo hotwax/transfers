@@ -143,22 +143,14 @@ async function addItemToOrder(product: any) {
 
   const newProduct = {
     orderId: order.orderId,
-    orderName: order.orderName,
-    orderTypeId: order.orderTypeId,
-    facilityId: order.facilityId,
-    productStoreId: order.productStoreId,
-    carrierPartyId: order.carrierPartyId,
-    shipmentMethodTypeId: order.shipmentMethodTypeId,
-    itemStatus: "ITEM_CREATED",
     productId: product.productId,
+    shipGroupSeqId: "00001",
     quantity: 1,
     idType: "SKU",
     idValue: product.sku,
-    customerId: "COMPANY",
     unitPrice: productAverageCostDetail[product.productId] || 0.00,
     unitListPrice: 0,
-    grandTotal: order.grandTotal,
-    itemTotalDiscount: 0
+    grandTotal: order.grandTotal
   }
 
   try {
