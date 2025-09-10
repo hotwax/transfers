@@ -149,8 +149,7 @@ async function addItemToOrder(product: any) {
     idType: "SKU",
     idValue: product.sku,
     unitPrice: productAverageCostDetail[product.productId] || 0.00,
-    unitListPrice: 0,
-    grandTotal: order.grandTotal
+    unitListPrice: 0
   }
 
   try {
