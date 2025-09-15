@@ -313,7 +313,6 @@ const approveOrder = async (payload: any): Promise<any> => {
   return api({
     url: `oms/transferOrders/${payload.orderId}/approve`,
     method: "post",
-    data: payload.orderId
   })
 }
 

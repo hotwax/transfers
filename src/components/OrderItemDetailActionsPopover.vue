@@ -55,6 +55,7 @@ async function editOrderedQuantity() {
             const resp = await OrderService.updateOrderItem({
               orderId: currentOrder.value.orderId,
               orderItemSeqId: props.item.orderItemSeqId,
+              unitPrice: props.item.unitPrice || 0,
               quantity
             })
 
