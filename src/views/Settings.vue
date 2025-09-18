@@ -36,7 +36,7 @@
 
       <section>
         <DxpOmsInstanceNavigator />
-        <DxpProductStoreSelector @updateEComStore="updateEComStore" />
+        <DxpProductStoreSelector @updateEComStore="updateProductStore" />
       </section>
 
       <hr />
@@ -78,7 +78,7 @@ async function timeZoneUpdated(tzId: string) {
   await store.dispatch("user/setUserTimeZone", tzId)
 }
 
-async function updateEComStore(selectedProductStore: any) {
+async function updateProductStore(selectedProductStore: any) {
   await useProductIdentificationStore().getIdentificationPref(selectedProductStore.productStoreId)
     .catch((error) => logger.error(error));
 }
