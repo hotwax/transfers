@@ -5,28 +5,43 @@ import OrderState from "./OrderState"
 import { hasError } from "@/adapter";
 import logger from "@/logger"
 import { OrderService } from "@/services/OrderService";
-import { buildTransferOrderPayload } from "@/utils/index"
 import store from "@/store"
 
 const actions: ActionTree<OrderState, RootState> = {
   async findTransferOrders({ commit, state }, params) {
     let resp, ordersList, ordersCount = 0;
     const productIds = [] as any;
-    const payload = buildTransferOrderPayload(state.query, params);
-    
+
+    // Build payload
+    const payload = {
+      orderByField: state.query.sort,
+      pageSize: params.pageSize,
+      pageIndex: params.pageIndex,
+      ...(params.groupByConfig?.selectFields?.length && {
+        fieldsToSelect: params.groupByConfig.selectFields.join(',')
+      })
+    } as any
+
+    // include only non-empty filters from state.query (exclude groupBy and sort)
+    Object.entries(state.query).forEach(([k, v]) => {
+      if(v != null && v !== '' && k !== 'groupBy' && k !== 'sort') {
+        payload[k] = v
+      }
+    })
+
     try {
       resp = await OrderService.findTransferOrders(payload)
       if(!hasError(resp)) {
         // groupBy cases: ORDER_ID / DESTINATION / ORIGIN → single field
         // DESTINATION_PRODUCT / ORIGIN_PRODUCT → multiple fields joined with '-'
-        const groupByKey = state.query.groupBy
-        const groupByFieldsValue = JSON.parse(process.env.VUE_APP_TRANSFERS_ORDER_GROUPBY || '{}')[groupByKey]
+        const groupFields = params.groupByConfig?.groupingFields
 
         const orders = resp.data.orders.map((order: any) => {
           if(order.productId) productIds.push(order.productId)
           return {
             ...order,
-            groupValue: groupByFieldsValue.map((field: any) => order[field]).join('-')
+            // We are using this field in ion-accordion to identify the expanded accordion
+            groupValue: groupFields.map((field: any) => order[field]).join('-')
           }
         })
 
@@ -45,60 +60,89 @@ const actions: ActionTree<OrderState, RootState> = {
     commit(types.ORDER_LIST_UPDATED, { orders: ordersList, ordersCount });
     return resp;
   },
-  
-  async findTransferOrderItems({ commit, state }, groupValues) {
-    // Remove all ids already present in state
+
+  // Fetch transfer order items, group them by orderId, accumulate quantities, and update state
+  async findTransferOrderItems({ commit, state }, { groupValues, groupByConfig }) {
+    // Filter out already fetched orderIds to avoid duplicate calls
     const newValue = groupValues.filter((value: string) => value && !state.orderItemsList[value])
     if(!newValue.length) return
-    const groupValue = newValue[0]
 
-    let resp, items = []
-    const productIds: any = new Set();
+    const groupValue = newValue[0]
+    const productIds: any = new Set()
+    const groupedItems: any = {}
+    let resp, pageIndex = 0
+    const pageSize = 100
 
     try {
-      const groupByKey = state.query.groupBy
-      const groupByFieldsValue = JSON.parse(process.env.VUE_APP_TRANSFERS_ORDER_GROUPBY || '{}')[groupByKey]
-
+      // Build API payload from grouping fields
       const values = groupValue.split('-')
       const payload: any = {}
-      // Build payload mapping fields to values
-      groupByFieldsValue.forEach((field: any, i: any) => {
-        payload[field] = values[i]
-      })
+      groupByConfig?.groupingFields.forEach((field: string, i: number) => payload[field] = values[i])
 
-      resp = await OrderService.findTransferOrderItems(payload)
+      // Fetch items in batches until last page
+      do {
+        payload.pageSize = pageSize
+        payload.pageIndex = pageIndex
+        resp = await OrderService.findTransferOrderItems(payload)
 
-      if(!hasError(resp) && resp?.data?.transferOrderItems?.length) {
-        items = resp.data.transferOrderItems.map((item: any) => {
-          if(item.productId) productIds.add(item.productId)
-          return {
-            ...item,
-            shippedQty: item.shippedQuantity,
-            receivedQty: item.receivedQuantity,
+        if(!hasError(resp) && resp?.data?.transferOrderItems?.length) {
+          // If grouping by ORDER_ID → no grouping
+          if(groupByConfig?.id === "ORDER_ID") {
+            resp.data.transferOrderItems.forEach((item: any) => {
+              if(item.productId) productIds.add(item.productId)
+              items.push({
+                ...item,
+                shippedQty: item.shippedQuantity || 0,
+                receivedQty: item.receivedQuantity || 0,
+              })
+            })
+          } else {
+            // Group items by orderId & accumulate quantities
+            resp.data.transferOrderItems.forEach((item: any) => {
+              if(item.productId) productIds.add(item.productId)
+              const key = item.orderId
+              if(!groupedItems[key]) {
+                groupedItems[key] = {
+                  ...item,
+                  shippedQty: item.shippedQuantity || 0,
+                  receivedQty: item.receivedQuantity || 0,
+                  quantity: item.quantity || 0
+                }
+              } else {
+                groupedItems[key].quantity += item.quantity || 0
+                groupedItems[key].shippedQty += item.shippedQuantity || 0
+                groupedItems[key].receivedQty += item.receivedQuantity || 0
+              }
+            })
           }
-        })
-
-        // Batch fetch product details
-        const batchSize = 250, productIdBatches = []
-        const productIdArray = [...productIds]
-        while(productIdArray.length) {
-          productIdBatches.push(productIdArray.splice(0, batchSize))
+          pageIndex++
+        } else {
+          throw resp.data
         }
-        await Promise.allSettled([productIdBatches.map(async (productIds) => await this.dispatch('product/fetchProducts', { productIds }))])
-      } else {
-        throw resp.data;
+      } while (resp?.data?.transferOrderItems?.length >= pageSize)
+
+      const items = Object.values(groupedItems)
+
+      // Fetch product details in batches (to avoid payload limit)
+      const productIdArray = [...productIds]
+      const batchSize = 250, productIdBatches = []
+      while (productIdArray.length) {
+        productIdBatches.push(productIdArray.splice(0, batchSize))
       }
-    } catch(error: any) {
+      await Promise.allSettled(productIdBatches.map((productIds) => this.dispatch('product/fetchProducts', { productIds })))
+
+      commit(types.ORDER_ITEMS_LIST_UPDATED, { groupValue, items })
+      return resp
+    } catch (error) {
       logger.error(error)
-      items = []
+      commit(types.ORDER_ITEMS_LIST_UPDATED, { groupValue, items: [] })
+      return resp
     }
-    commit(types.ORDER_ITEMS_LIST_UPDATED, { groupValue, items })
-    return resp
   },
 
-  async updateAppliedFilters({ commit, dispatch }, payload) {
-    commit(types.ORDER_FILTERS_UPDATED, payload)
-    await dispatch("findTransferOrders")
+  async updateAppliedFilters({ commit, dispatch }, { value, filterName, groupByConfig }) {
+    commit(types.ORDER_FILTERS_UPDATED, { value, filterName })
+    await dispatch("findTransferOrders", { pageSize: 20, pageIndex: 0, groupByConfig })
   },
   
   async fetchOrderDetails({ commit }, orderId) {

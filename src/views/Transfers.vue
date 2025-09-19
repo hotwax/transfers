@@ -69,7 +69,7 @@
             <ion-item lines="none">
               <ion-select :label="translate('Status')" interface="popover" :value="query.orderStatusId" @ionChange="updateAppliedFilters($event['detail'].value, 'orderStatusId')">
                 <ion-select-option value="">{{ translate("All") }}</ion-select-option>
-                <ion-select-option v-for="status in orderStatusKeys" :key="status" :value="status">{{ getStatusDesc(status) }}</ion-select-option>
+                <ion-select-option v-for="statusId in orderStatusIds" :key="statusId" :value="statusId">{{ getStatusDesc(statusId) }}</ion-select-option>
               </ion-select>
             </ion-item>
           </ion-list>
@@ -79,12 +79,8 @@
           <section class="sort">
             <ion-item lines="none">
               <ion-icon slot="start" :icon="documentTextOutline" />
-              <ion-select :label="translate('Group by')" interface="popover" :value="query.groupBy" @ionChange="updateAppliedFilters($event['detail'].value, 'groupBy')">
-                <ion-select-option value="ORDER_ID">{{ translate("Order item") }}</ion-select-option>
-                <ion-select-option value="DESTINATION">{{ translate("Destination") }}</ion-select-option>
-                <ion-select-option value="DESTINATION_PRODUCT">{{ translate("Destination and product") }}</ion-select-option>
-                <ion-select-option value="ORIGIN">{{ translate("Origin") }}</ion-select-option>
-                <ion-select-option value="ORIGIN_PRODUCT">{{ translate("Origin and product") }}</ion-select-option>
+              <ion-select :label="translate('Group by')" interface="popover" :value="selectedGroupBy.id" @ionChange="updateGroupByFilter($event.detail.value)">
+                <ion-select-option v-for="option in groupByOptions" :value="option.id" :key="option.id">{{ option.description }}</ion-select-option>
               </ion-select>
             </ion-item>
             <ion-item lines="none" button @click="updateAppliedFilters('', 'sort')">
@@ -376,11 +372,46 @@ const productIdentificationStore = useProductIdentificationStore();
 const store = useStore();
 const ecomStores = useUserStore()
 
+const groupByOptions = [
+  {
+    id: "ORDER_ID",
+    description: translate("Order item"),
+    selectFields: ["orderId", "orderName", "facilityId", "orderFacilityId", "orderStatusDesc"],
+    groupingFields: ["orderId"]
+  },
+  {
+    id: "DESTINATION",
+    description: translate("Destination"),
+    selectFields: ["orderFacilityId"],
+    groupingFields: ["orderFacilityId"]
+  },
+  {
+    id: "DESTINATION_PRODUCT",
+    description: translate("Destination and product"),
+    selectFields: ["productId", "orderFacilityId"],
+    groupingFields: ["productId", "orderFacilityId"]
+  },
+  {
+    id: "ORIGIN",
+    description: translate("Origin"),
+    selectFields: ["facilityId"],
+    groupingFields: ["facilityId"]
+  },
+  {
+    id: "ORIGIN_PRODUCT",
+    description: translate("Origin and product"),
+    selectFields: ["productId", "facilityId"],
+    groupingFields: ["productId", "facilityId"]
+  }
+]
+
+const selectedGroupBy = ref(groupByOptions[0])
+
 const orderName = ref("");
 const isFetchingOrders = ref(false);
 const productStores = ref({}) as any;
 const facilities = ref([]) as any;
-const orderStatusKeys = ["ORDER_APPROVED", "ORDER_CANCELLED", "ORDER_COMPLETED", "ORDER_CREATED"];
+const orderStatusIds = ["ORDER_APPROVED", "ORDER_CANCELLED", "ORDER_COMPLETED", "ORDER_CREATED"];
 
 const query = computed(() => store.getters["order/getQuery"])
 const getProduct = computed(() => store.getters["product/getProduct"])
@@ -394,7 +425,7 @@ const isScrollable = computed(() => store.getters["order/isScrollable"])
 onIonViewWillEnter(async () => {
   await store.dispatch("order/updateOrdersList", { orders: [], ordersCount: 0 })
   isFetchingOrders.value = true;
-  await Promise.allSettled([store.dispatch('order/findTransferOrders', { limit: 20, index: 0 }), store.dispatch('util/fetchStatusDesc'), store.dispatch("util/fetchCarriersDetail"), store.dispatch("util/fetchShipmentMethodTypeDesc")])
+  await Promise.allSettled([store.dispatch('order/findTransferOrders', { pageSize: 20, pageIndex: 0, groupByConfig: selectedGroupBy.value }), store.dispatch('util/fetchStatusDesc'), store.dispatch("util/fetchCarriersDetail"), store.dispatch("util/fetchShipmentMethodTypeDesc")])
   await fetchFacilities();
   productStores.value = await ecomStores.getEComStores();
   isFetchingOrders.value = false;
@@ -425,18 +456,27 @@ async function fetchFacilities() {
   }
 }
 
-async function updateAppliedFilters(value: string | boolean, filterName: string) {
+function updateGroupByFilter(groupById: string) {
+  const option = groupByOptions.find(value => value.id === groupById)
+  if(option) {
+    selectedGroupBy.value = option
+    updateAppliedFilters(groupById, "groupBy" , option)
+  }
+}
+
+async function updateAppliedFilters(value: string | boolean, filterName: string, groupByConfig?: any) {
   isFetchingOrders.value = true
   if(filterName === "sort") value = query.value.sort === 'orderDate desc' ? 'orderDate asc' : 'orderDate desc'
   await store.dispatch('order/updateOrdersList', { orders: [], ordersCount: 0 })
-  await store.dispatch('order/updateAppliedFilters', { value, filterName })
+  await store.dispatch('order/updateAppliedFilters', { value, filterName, groupByConfig })
   isFetchingOrders.value = false
 }
 
 async function loadMoreOrders(event: any) {
   await store.dispatch('order/findTransferOrders', {
-    limit: 20,
-    index: Math.ceil(ordersList.value.orders.length / 20).toString()
+    pageSize: 20,
+    pageIndex: Math.ceil(ordersList.value.orders.length / 20).toString(),
+    groupByConfig: selectedGroupBy.value
   }).then(async () => {
     await event.target.complete();
   })
@@ -446,7 +486,7 @@ async function showOrderItems($event: any) {
   const groupValues = $event.detail.value;
   // Only fetch items when an accordion is opened, not closed
   if(!groupValues) return
-  await store.dispatch('order/findTransferOrderItems', groupValues)
+  await store.dispatch('order/findTransferOrderItems', { groupValues, groupByConfig: selectedGroupBy.value })
 }
 
 function getFacilityName(facilityId: string) {

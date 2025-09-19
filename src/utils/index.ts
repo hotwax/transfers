@@ -106,33 +106,4 @@ const formatCurrency = (amount: any, code: string) => {
   return `${symbol} ${amount.toFixed(2)}`
 }
 
-// Utility function to build the payload for fetching transfer orders.
-// - Adds fields to select based on groupBy configuration (with special handling for ORDER_ID).
-// - Includes sorting and filters.
-// - Merges additional params into the final payload.
-function buildTransferOrderPayload(query: any, params: any = {}) {
-  const { groupBy, sort, ...filters } = query;
-  const payload: any = {}, fields = [];
-  const groupByConfig = JSON.parse(process.env.VUE_APP_TRANSFERS_ORDER_GROUPBY || "{}");
-
-  if(groupBy && groupByConfig[groupBy]) {
-    fields.push(...groupByConfig[groupBy]);
-    if(groupBy === "ORDER_ID") {
-      fields.push("orderName", "facilityId", "orderFacilityId", "orderStatusDesc");
-    }
-  }
-  payload.fieldsToSelect = fields.join(",");
-
-  if(sort) payload.orderByField = sort;
-
-  Object.entries(filters).forEach(([key, value]) => {
-    if(value != null && value !== "") {
-      payload[key] = value;
-    }
-  });
-
-  Object.assign(payload, params);
-  return payload;
-}
-
-export { buildTransferOrderPayload, formatUtcDate, formatCurrency, getColorByDesc, getDateWithOrdinalSuffix, jsonToCsv, JsonToCsvOption, parseCsv, showToast }
+export { formatUtcDate, formatCurrency, getColorByDesc, getDateWithOrdinalSuffix, jsonToCsv, JsonToCsvOption, parseCsv, showToast }
