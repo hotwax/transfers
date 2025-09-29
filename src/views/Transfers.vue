@@ -83,7 +83,7 @@
                 <ion-select-option v-for="option in groupByOptions" :value="option.id" :key="option.id">{{ option.description }}</ion-select-option>
               </ion-select>
             </ion-item>
-            <ion-item lines="none" button @click="updateAppliedFilters('', 'sort', selectedGroupBy)">
+            <ion-item lines="none" button @click="updateAppliedFilters('', 'sort')">
               <ion-icon slot="start" :icon="swapVerticalOutline" />
               <ion-label>{{ translate("Sort by") }}</ion-label>
               <ion-label>{{ translate("Created date") }}</ion-label>
@@ -449,8 +449,10 @@ async function fetchFacilities() {
         pageIndex
       });
 
-      if (!hasError(resp) && resp.data.length) {
-        facilities.value = facilities.value.concat(resp.data);
+      if (!hasError(resp)) {
+        if (resp.data.length) {
+          facilities.value = facilities.value.concat(resp.data);
+        }
       } else {
         throw resp.data;
       }
