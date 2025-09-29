@@ -102,7 +102,7 @@
                   <ion-radio :value="shipment.shipmentId" label-placement="end" justify="start">
                     <ion-label>
                       {{ shipment.shipmentId }}
-                      <p v-if="shipment.trackingCode">{{ shipment.trackingCode }}</p>
+                      <p v-if="shipment.trackingIdNumber">{{ shipment.trackingIdNumber }}</p>
                     </ion-label>
                   </ion-radio>
                   <ion-badge slot="end" class="no-pointer-events" :color="getColorByDesc(getStatusDesc(shipment.statusId)) || getColorByDesc('default')">{{ getStatusDesc(shipment.statusId) ? getStatusDesc(shipment.statusId) : shipment.statusId }}</ion-badge>
@@ -117,7 +117,7 @@
                   <ion-radio :value="shipment.shipmentId" label-placement="end" justify="start">
                     <ion-label>
                       {{ shipment.shipmentId }}
-                      <p v-if="shipment.trackingCode">{{ shipment.trackingCode }}</p>
+                      <p v-if="shipment.trackingIdNumber">{{ shipment.trackingIdNumber }}</p>
                     </ion-label>
                   </ion-radio>
                   <ion-badge slot="end" class="no-pointer-events" :color="getColorByDesc(getStatusDesc(shipment.statusId)) || getColorByDesc('default')">{{ getStatusDesc(shipment.statusId) ? getStatusDesc(shipment.statusId) : shipment.statusId }}</ion-badge>
@@ -338,8 +338,8 @@ async function changeOrderStatus(updatedStatusId: string) {
 async function updateOrderStatus(updatedStatusId: string) {
   if(currentOrder.value.statusFlowId === "RECEIVE_ONLY") {
     const itemsToUpdate = currentOrder.value.items.filter((item: any) => {
-      if(updatedStatusId === "ORDER_APPROVED" && item.oiStatusId === "ITEM_CREATED") return true;
-      if(updatedStatusId === "ORDER_CANCELLED" && (item.oiStatusId === "ITEM_CREATED" || item.oiStatusId === "ITEM_APPROVED")) return true;
+      if(updatedStatusId === "ORDER_APPROVED" && item.statusId === "ITEM_CREATED") return true;
+      if(updatedStatusId === "ORDER_CANCELLED" && (item.statusId === "ITEM_CREATED" || item.statusId === "ITEM_APPROVED")) return true;
       return false;
     })
 
@@ -386,7 +386,8 @@ function generateItemsListByParent() {
   let itemsList = [];
   if(selectedShipmentId.value) {
     const shipment = currentOrder.value.shipments.find((shipment: any) => shipment.shipmentId === selectedShipmentId.value);
-    itemsList = shipment.items
+    // Flatten all items from all packages into a single array
+    itemsList = shipment.packages.flatMap((pkg: any) => pkg.items || [])
   } else {
     itemsList = currentOrder.value.items
   }

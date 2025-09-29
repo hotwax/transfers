@@ -2,7 +2,7 @@
   <ion-content>
     <ion-list>
       <ion-list-header>{{ getProductIdentificationValue(productIdentificationStore.getProductIdentificationPref.primaryId, getProduct(item.productId)) || getProduct(item.productId).productName }}</ion-list-header>
-      <ion-item button :disabled="item.statusId !== 'ORDER_CREATED'" @click="editOrderedQuantity()">
+      <ion-item button :disabled="item.statusId !== 'ITEM_CREATED'" @click="editOrderedQuantity()">
         {{ translate("Edit ordered qty") }}
       </ion-item>
       <ion-item button :disabled="!isEligibleToFulfill()" @click="redirectToFulfillItem()">
@@ -53,15 +53,16 @@ async function editOrderedQuantity() {
         if(quantity !== props.item.quantity) {
           try {
             const resp = await OrderService.updateOrderItem({
-              orderId: props.item.orderId,
+              orderId: currentOrder.value.orderId,
               orderItemSeqId: props.item.orderItemSeqId,
+              unitPrice: props.item.unitPrice || 0,
               quantity
             })
 
             if(!hasError(resp)) {
               const order = JSON.parse(JSON.stringify(currentOrder.value));
               order.items.find((item: any) => {
-                if(item.orderId === props.item.orderId && item.orderItemSeqId === props.item.orderItemSeqId) {
+                if(item.orderItemSeqId === props.item.orderItemSeqId) {
                   item.quantity = quantity
                   return true;
                 }
@@ -95,7 +96,7 @@ async function editOrderedQuantity() {
 
 function isEligibleToComplete() {
   const item = props.item
-  if(item?.oiStatusId !== "ITEM_APPROVED") return false;
+  if(item?.statusId !== "ITEM_APPROVED") return false;
 
   if(item.statusFlowId === "RECEIVE_ONLY") {
     return item.receivedQty && item.receivedQty >= item.quantity
@@ -134,8 +135,8 @@ async function completeItem() {
     if(!hasError(resp)) {
       const order = JSON.parse(JSON.stringify(currentOrder.value));
       order.items.find((item: any) => {
-        if(item.orderId === props.item.orderId && item.orderItemSeqId === props.item.orderItemSeqId) {
-          item.oiStatusId = "ITEM_COMPLETED"
+        if(item.orderItemSeqId === props.item.orderItemSeqId) {
+          item.statusId = "ITEM_COMPLETED"
           return true;
         }
       })

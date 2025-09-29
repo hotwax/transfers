@@ -144,7 +144,7 @@ const actions: ActionTree<UtilState, RootState> = {
     if(!remainingFacilityIds?.length) return addresses;
 
     try {
-      const responses = await Promise.all(
+      const responses = await Promise.allSettled(
         remainingFacilityIds.map((facilityId: any) => UtilService.fetchFacilityAddresses({
           contactMechPurposeTypeId: "PRIMARY_LOCATION",
           contactMechTypeId: "POSTAL_ADDRESS",
