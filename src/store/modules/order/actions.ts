@@ -23,9 +23,9 @@ const actions: ActionTree<OrderState, RootState> = {
     } as any
 
     // include only non-empty filters from state.query (exclude groupBy and sort)
-    Object.entries(state.query).forEach(([k, v]) => {
-      if(v != null && v !== '' && k !== 'groupBy' && k !== 'sort') {
-        payload[k] = v
+    Object.entries(state.query).forEach(([fieldName, fieldValue]) => {
+      if(fieldValue != null && fieldValue !== '' && fieldName !== 'groupBy' && fieldName !== 'sort') {
+        payload[fieldName] = fieldValue
       }
     })
 
@@ -41,7 +41,7 @@ const actions: ActionTree<OrderState, RootState> = {
           return {
             ...order,
             // We are using this field in ion-accordion to identify the expanded accordion
-            groupValue: groupFields.map((field: any) => order[field]).join('-')
+            groupValue: groupFields?.map((field: any) => order[field]).join('-')
           }
         })
 
@@ -49,7 +49,7 @@ const actions: ActionTree<OrderState, RootState> = {
           await this.dispatch('product/fetchProducts', { productIds })
         }
 
-        ordersList = (state.list.orders).concat(orders)
+        ordersList = (state.orders).concat(orders)
         ordersCount = resp.data.ordersCount
       } else {
         throw resp.data;
@@ -62,35 +62,28 @@ const actions: ActionTree<OrderState, RootState> = {
   },
 
   // Fetch transfer order items, group them by orderId, accumulate quantities, and update state
-  async findTransferOrderItems({ commit, state }, { groupValues, groupByConfig }) {
+  async findTransferOrderItems({ commit, state }, params) {
     // Filter out already fetched orderIds to avoid duplicate calls
-    const newValue = groupValues.filter((value: string) => value && !state.orderItemsList[value])
-    if(!newValue.length) return
-
-    const groupValue = newValue[0]
+    const { groupValue, groupById, ...rest } = params;
     const productIds: any = new Set()
-    const groupedItems: any = {}
+    const groupedItems: any = [];
     let resp, pageIndex = 0
     const pageSize = 100
 
     try {
       // Build API payload from grouping fields
-      const values = groupValue.split('-')
-      const payload: any = {}
-      groupByConfig?.groupingFields.forEach((field: string, i: number) => payload[field] = values[i])
 
       // Fetch items in batches until last page
       do {
-        payload.pageSize = pageSize
-        payload.pageIndex = pageIndex
+        const payload = { ...rest, pageSize , pageIndex };
         resp = await OrderService.findTransferOrderItems(payload)
 
         if(!hasError(resp) && resp?.data?.transferOrderItems?.length) {
           // If grouping by ORDER_ID → no grouping
-          if(groupByConfig?.id === "ORDER_ID") {
+          if(groupById === "ORDER_ID") {
             resp.data.transferOrderItems.forEach((item: any) => {
               if(item.productId) productIds.add(item.productId)
-              items.push({
+              groupedItems.push({
                 ...item,
                 shippedQty: item.shippedQuantity || 0,
                 receivedQty: item.receivedQuantity || 0,
@@ -142,7 +135,7 @@ const actions: ActionTree<OrderState, RootState> = {
 
   async updateAppliedFilters({ commit, dispatch }, { value, filterName, groupByConfig }) {
     commit(types.ORDER_FILTERS_UPDATED, { value, filterName })
-    await dispatch("findTransferOrders", { pageSize: 20, pageIndex: 0, groupByConfig })
+    await dispatch("findTransferOrders", { pageSize: process.env.VUE_APP_VIEW_SIZE, pageIndex: 0, groupByConfig })
   },
   
   async fetchOrderDetails({ commit }, orderId) {

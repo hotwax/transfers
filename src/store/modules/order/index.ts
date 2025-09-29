@@ -8,10 +8,8 @@ import RootState from "@/store/RootState"
 const orderModule: Module<OrderState, RootState> = {
   namespaced: true,
   state: {
-    list: {
-      orders: [],
-      ordersCount: 0,
-    },
+    orders: [],
+    ordersCount: 0,
     orderItemsList: [],
     query: {
       orderName: "",

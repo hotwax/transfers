@@ -4,8 +4,8 @@ import * as types from "./mutation-types"
 
 const mutations: MutationTree <OrderState> = {
   [types.ORDER_LIST_UPDATED] (state, payload) {
-    state.list.orders = payload.orders
-    state.list.ordersCount = payload.ordersCount
+    state.orders = payload.orders
+    state.ordersCount = payload.ordersCount
   },
   [types.ORDER_ITEMS_LIST_UPDATED] (state, payload) {
     state.orderItemsList[payload.groupValue] = payload.items
@@ -17,10 +17,8 @@ const mutations: MutationTree <OrderState> = {
     state.current = payload
   },
   [types.ORDER_CLEARED] (state) {
-    state.list = {
-      orders: [],
-      ordersCount: 0,
-    }
+    state.orders = []
+    state.ordersCount = 0
     state.query = {
       orderName: "",
       productStoreId: "",

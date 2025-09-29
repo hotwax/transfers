@@ -25,6 +25,7 @@ const showToast = async (message: string) => {
 }
 
 const formatUtcDate = (value: any, outFormat: string) => {
+  if (!value || isNaN(Number(value))) return '-';
   return DateTime.fromMillis(value, { zone: 'utc' }).setZone(store.state.user.current.userTimeZone).toFormat(outFormat ? outFormat : 'MM-dd-yyyy')
 }
 

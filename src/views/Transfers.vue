@@ -97,11 +97,11 @@
             <ion-spinner name="crescent" />
             <p>{{ translate("Loading") }}</p>
           </div>
-          <div class="empty-state" v-else-if="!ordersList.orders?.length">
+          <div class="empty-state" v-else-if="!ordersList?.length">
             <p>{{ translate("No order found") }}</p>
           </div>
           <ion-accordion-group v-else :multiple="true" @ionChange="showOrderItems($event)">
-            <template v-for="(order, index) in ordersList?.orders" :key="index">
+            <template v-for="(order, index) in ordersList" :key="index">
               <ion-accordion :value="order.groupValue">
                 <!-- Different accordion headers and content based on groupBy value on orderId -->
                 <template v-if="query.groupBy === 'ORDER_ID'">
@@ -475,7 +475,7 @@ async function updateAppliedFilters(value: string | boolean, filterName: string,
 async function loadMoreOrders(event: any) {
   await store.dispatch('order/findTransferOrders', {
     pageSize: 20,
-    pageIndex: Math.ceil(ordersList.value.orders.length / 20).toString(),
+    pageIndex: Math.ceil(ordersList.value.length / 20).toString(),
     groupByConfig: selectedGroupBy.value
   }).then(async () => {
     await event.target.complete();
@@ -486,7 +486,20 @@ async function showOrderItems($event: any) {
   const groupValues = $event.detail.value;
   // Only fetch items when an accordion is opened, not closed
   if(!groupValues) return
-  await store.dispatch('order/findTransferOrderItems', { groupValues, groupByConfig: selectedGroupBy.value })
+
+  const newValue = groupValues.filter((value: string) => value && !store.state.order.orderItemsList[value])
+  if(!newValue.length) return
+  
+  const groupValue=newValue[0];
+  const values = groupValue.split('-')
+  const payload: any = {};
+  selectedGroupBy.value?.groupingFields.forEach(
+    (field: string, key: number) => (payload[field] = values[key])
+  );
+  payload.groupValue = groupValue;
+  payload.groupById = selectedGroupBy.value?.id;
+  
+  await store.dispatch('order/findTransferOrderItems', payload)
 }
 
 function getFacilityName(facilityId: string) {

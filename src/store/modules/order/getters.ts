@@ -4,13 +4,13 @@ import OrderState from "./OrderState";
 
 const getters: GetterTree <OrderState, RootState> = {
   getOrders (state) {
-    return state.list
+    return state.orders
   },
   getItemsByGroupId: (state) => (orderId: string) => {
     return state.orderItemsList[orderId] || []
   },
   isScrollable: (state) => {
-    return state.list.orders?.length > 0 && state.list.orders?.length < state.list.ordersCount
+    return state.orders?.length > 0 && state.orders?.length < state.ordersCount
   },
   getQuery(state) {
     return state.query;
