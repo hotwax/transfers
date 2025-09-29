@@ -329,6 +329,13 @@ const cancelOrder = async (payload: any): Promise<any> => {
     }
   })
 }
+const getOrderReceipts =async (params :any): Promise<any> => {
+  return api({
+    url: `poorti/transferOrders/${params.orderId}/receipts`,
+    method: "GET",
+    params: params
+  });
+}
 
 export const OrderService = {
   addOrderItem,
@@ -348,5 +355,6 @@ export const OrderService = {
   findTransferOrderItems,
   updateOrderItem,
   updateOrderItemShipGroup,
-  updateOrderStatus
+  updateOrderStatus,
+  getOrderReceipts
 }

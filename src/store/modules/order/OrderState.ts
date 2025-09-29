@@ -4,4 +4,5 @@ export default interface OrderState {
   orderItemsList: any;
   query: any;
   current: any;
+  orderReceipts: any[];
 }

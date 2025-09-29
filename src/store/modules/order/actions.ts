@@ -269,6 +269,31 @@ const actions: ActionTree<OrderState, RootState> = {
 
   async clearOrderState ({ commit }) {
     commit(types.ORDER_CLEARED)
+  },
+
+  async getOrderReceipts({ commit } ,orderId ){
+    const pageSize = Number(process.env.VUE_APP_VIEW_SIZE) ;
+    const payload={ 
+      orderId: orderId,
+      orderByField: "-datetimeReceived",
+      pageSize
+    }
+    let resp ;
+
+    try{
+      console.log("payload",payload)
+      resp = await OrderService.getOrderReceipts(payload);
+      if (!hasError(resp) && resp.data.length > 0) {
+        commit(types.ORDER_RECEIPTS,resp.data);
+      }else{
+        throw resp.data;
+      }
+    }catch(error:any){
+      commit(types.ORDER_RECEIPTS, [] );
+      logger.error("error", error);
+      return Promise.reject(new Error(error));
+    }
+    return resp;
   }
 }
 

@@ -19,6 +19,7 @@ const mutations: MutationTree <OrderState> = {
   [types.ORDER_CLEARED] (state) {
     state.orders = []
     state.ordersCount = 0
+    state.orderReceipts = []
     state.query = {
       orderName: "",
       productStoreId: "",
@@ -32,5 +33,8 @@ const mutations: MutationTree <OrderState> = {
     }
     state.current = {}
   },
+  [types.ORDER_RECEIPTS]( state , payload ){
+    state.orderReceipts = payload;
+  }
 }
 export default mutations;
