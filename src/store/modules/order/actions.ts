@@ -271,7 +271,7 @@ const actions: ActionTree<OrderState, RootState> = {
     commit(types.ORDER_CLEARED)
   },
 
-  async getOrderReceipts({ commit } ,orderId ){
+  async getOrderReceipts({ commit } ,orderId :string){
     const pageSize = Number(process.env.VUE_APP_VIEW_SIZE) ;
     const payload={ 
       orderId: orderId,
@@ -281,9 +281,8 @@ const actions: ActionTree<OrderState, RootState> = {
     let resp ;
 
     try{
-      console.log("payload",payload)
       resp = await OrderService.getOrderReceipts(payload);
-      if (!hasError(resp) && resp.data.length > 0) {
+      if (!hasError(resp)) {
         commit(types.ORDER_RECEIPTS,resp.data);
       }else{
         throw resp.data;
@@ -291,7 +290,7 @@ const actions: ActionTree<OrderState, RootState> = {
     }catch(error:any){
       commit(types.ORDER_RECEIPTS, [] );
       logger.error("error", error);
-      return Promise.reject(new Error(error));
+      return Promise.reject(error);
     }
     return resp;
   }
