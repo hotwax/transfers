@@ -62,9 +62,8 @@ const actions: ActionTree<OrderState, RootState> = {
   },
 
   // Fetch transfer order items, group them by orderId, accumulate quantities, and update state
-  async findTransferOrderItems({ commit, state }, params) {
+  async findTransferOrderItems({ commit, state }, { groupValue, groupByConfig}) {
     // Filter out already fetched orderIds to avoid duplicate calls
-    const { groupValue, groupById, ...rest } = params;
     const productIds: any = new Set()
     const groupedItems: any = [];
     let resp, pageIndex = 0
@@ -72,15 +71,18 @@ const actions: ActionTree<OrderState, RootState> = {
 
     try {
       // Build API payload from grouping fields
-
+      const values = groupValue.split(groupByConfig?.groupValueSeparator)
+      const payload: any = {}
+      groupByConfig?.groupingFields.forEach((field: string, key: number) => payload[field] = values[key])
       // Fetch items in batches until last page
       do {
-        const payload = { ...rest, pageSize , pageIndex };
+        payload.pageSize = pageSize
+        payload.pageIndex = pageIndex
         resp = await OrderService.findTransferOrderItems(payload)
 
         if(!hasError(resp) && resp?.data?.transferOrderItems?.length) {
           // If grouping by ORDER_ID → no grouping
-          if(groupById === "ORDER_ID") {
+          if(groupByConfig?.id === "ORDER_ID") {
             resp.data.transferOrderItems.forEach((item: any) => {
               if(item.productId) productIds.add(item.productId)
               groupedItems.push({

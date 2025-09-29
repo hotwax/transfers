@@ -83,7 +83,7 @@
                 <ion-select-option v-for="option in groupByOptions" :value="option.id" :key="option.id">{{ option.description }}</ion-select-option>
               </ion-select>
             </ion-item>
-            <ion-item lines="none" button @click="updateAppliedFilters('', 'sort')">
+            <ion-item lines="none" button @click="updateAppliedFilters('', 'sort', selectedGroupBy)">
               <ion-icon slot="start" :icon="swapVerticalOutline" />
               <ion-label>{{ translate("Sort by") }}</ion-label>
               <ion-label>{{ translate("Created date") }}</ion-label>
@@ -377,31 +377,36 @@ const groupByOptions = [
     id: "ORDER_ID",
     description: translate("Order item"),
     selectFields: ["orderId", "orderName", "facilityId", "orderFacilityId", "orderStatusDesc"],
-    groupingFields: ["orderId"]
+    groupingFields: ["orderId"],
+    groupValueSeparator: '-' 
   },
   {
     id: "DESTINATION",
     description: translate("Destination"),
     selectFields: ["orderFacilityId"],
-    groupingFields: ["orderFacilityId"]
+    groupingFields: ["orderFacilityId"],
+    groupValueSeparator: '-' 
   },
   {
     id: "DESTINATION_PRODUCT",
     description: translate("Destination and product"),
     selectFields: ["productId", "orderFacilityId"],
-    groupingFields: ["productId", "orderFacilityId"]
+    groupingFields: ["productId", "orderFacilityId"],
+    groupValueSeparator: '-' 
   },
   {
     id: "ORIGIN",
     description: translate("Origin"),
     selectFields: ["facilityId"],
-    groupingFields: ["facilityId"]
+    groupingFields: ["facilityId"],
+    groupValueSeparator: '-' 
   },
   {
     id: "ORIGIN_PRODUCT",
     description: translate("Origin and product"),
     selectFields: ["productId", "facilityId"],
-    groupingFields: ["productId", "facilityId"]
+    groupingFields: ["productId", "facilityId"],
+    groupValueSeparator: '-' 
   }
 ]
 
@@ -487,19 +492,11 @@ async function showOrderItems($event: any) {
   // Only fetch items when an accordion is opened, not closed
   if(!groupValues) return
 
-  const newValue = groupValues.filter((value: string) => value && !store.state.order.orderItemsList[value])
-  if(!newValue.length) return
-  
-  const groupValue=newValue[0];
-  const values = groupValue.split('-')
-  const payload: any = {};
-  selectedGroupBy.value?.groupingFields.forEach(
-    (field: string, key: number) => (payload[field] = values[key])
-  );
-  payload.groupValue = groupValue;
-  payload.groupById = selectedGroupBy.value?.id;
-  
-  await store.dispatch('order/findTransferOrderItems', payload)
+  const newlySelectedGroupValue = groupValues.filter((value: string) => value && !store.state.order.orderItemsList[value])
+  if(!newlySelectedGroupValue.length) return
+
+  const groupValue = newlySelectedGroupValue[0];
+  await store.dispatch('order/findTransferOrderItems', { groupValue, groupByConfig: selectedGroupBy.value })  
 }
 
 function getFacilityName(facilityId: string) {
