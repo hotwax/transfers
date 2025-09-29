@@ -469,7 +469,7 @@ function updateGroupByFilter(groupById: string) {
   }
 }
 
-async function updateAppliedFilters(value: string | boolean, filterName: string, groupByConfig?: any) {
+async function updateAppliedFilters(value: string | boolean, filterName: string, groupByConfig = selectedGroupBy.value ) {
   isFetchingOrders.value = true
   if(filterName === "sort") value = query.value.sort === 'orderDate desc' ? 'orderDate asc' : 'orderDate desc'
   await store.dispatch('order/updateOrdersList', { orders: [], ordersCount: 0 })
