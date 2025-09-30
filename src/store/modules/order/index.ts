@@ -22,7 +22,8 @@ const orderModule: Module<OrderState, RootState> = {
       sort: 'orderDate desc',
       groupBy: "ORDER_ID"
     },
-    current: {}
+    current: {},
+    orderReceipts: []
   },
   getters,
   actions,

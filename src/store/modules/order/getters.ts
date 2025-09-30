@@ -18,5 +18,8 @@ const getters: GetterTree <OrderState, RootState> = {
   getCurrent(state) {
     return state.current;
   },
+  getOrderReceipts(state){
+    return state.orderReceipts;
+  }
 }
 export default getters;
