@@ -121,7 +121,7 @@ const actions: ActionTree<UtilState, RootState> = {
 
       if (!hasError(resp)) {
         resp.data.map((carrier: any) => {
-          carrierDesc[carrier.partyId] = carrier.partyTypeId === "PERSON" ? `${carrier.firstName} ${carrier.lastName}` : carrier.groupName
+          carrierDesc[carrier.partyId] = carrier.groupName || [carrier.firstName, carrier.lastName].filter(Boolean).join(" ") || carrier.partyId;
         })
       } else {
         throw resp.data;
@@ -158,8 +158,8 @@ const actions: ActionTree<UtilState, RootState> = {
       }
 
       responses.map((response: any) => {
-        if (response.data?.facilityContactMechs?.length) {
-          response.data.facilityContactMechs.map((facilityAddress: any) => {
+        if (response.value.data?.facilityContactMechs?.length) {
+          response.value.data.facilityContactMechs.map((facilityAddress: any) => {
             facilityAddresses[facilityAddress.facilityId] = facilityAddress;
             addresses.push(facilityAddress)
           })

@@ -116,11 +116,11 @@
                     <div class="tags">
                       <ion-chip outline>
                         <ion-icon :icon="sendOutline" />
-                        <ion-label>{{ order.facilityId }}</ion-label>
+                        <ion-label>{{ order.facilityName ?? order.facilityId }}</ion-label>
                       </ion-chip>
                       <ion-chip outline>
                         <ion-icon :icon="downloadOutline" />
-                        <ion-label>{{ order.orderFacilityId }}</ion-label>
+                        <ion-label>{{ order.orderFacilityName ?? order.orderFacilityId }}</ion-label>
                       </ion-chip>
                     </div>
                     <div class="metadata">
@@ -376,35 +376,35 @@ const groupByOptions = [
   {
     id: "ORDER_ID",
     description: translate("Order item"),
-    selectFields: ["orderId", "orderName", "facilityId", "orderFacilityId", "orderStatusDesc"],
+    selectFields: ["orderId", "orderName", "facilityId", "facilityName", "orderFacilityId", "orderFacilityName", "orderStatusDesc"],
     groupingFields: ["orderId"],
     groupValueSeparator: '-' 
   },
   {
     id: "DESTINATION",
     description: translate("Destination"),
-    selectFields: ["orderFacilityId"],
+    selectFields: ["orderFacilityId", "orderFacilityName"],
     groupingFields: ["orderFacilityId"],
     groupValueSeparator: '-' 
   },
   {
     id: "DESTINATION_PRODUCT",
     description: translate("Destination and product"),
-    selectFields: ["productId", "orderFacilityId"],
+    selectFields: ["productId", "orderFacilityId", "orderFacilityName"],
     groupingFields: ["productId", "orderFacilityId"],
     groupValueSeparator: '-' 
   },
   {
     id: "ORIGIN",
     description: translate("Origin"),
-    selectFields: ["facilityId"],
+    selectFields: ["facilityId", "facilityName"],
     groupingFields: ["facilityId"],
     groupValueSeparator: '-' 
   },
   {
     id: "ORIGIN_PRODUCT",
     description: translate("Origin and product"),
-    selectFields: ["productId", "facilityId"],
+    selectFields: ["productId", "facilityId", "facilityName"],
     groupingFields: ["productId", "facilityId"],
     groupValueSeparator: '-' 
   }
