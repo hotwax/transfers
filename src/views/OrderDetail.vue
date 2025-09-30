@@ -91,7 +91,7 @@
           </div>
         </section>
 
-        <section class="header" v-if="currentOrder.shipments?.length">
+        <section class="header" v-if="currentOrder.shipments?.length || (currentOrder?.receipts && Object.keys(currentOrder?.receipts)?.length)">
           <ion-radio-group v-model="selectedShipmentId" @ionChange="generateItemsListByParent()">
             <div class="info">
               <ion-card v-if="getFilteredShipments('OUT_TRANSFER')?.length">
@@ -109,23 +109,22 @@
                 </ion-item>
               </ion-card>
               
-              <ion-card v-if="getFilteredShipments('IN_TRANSFER')?.length">
+              <ion-card v-if="currentOrder?.receipts && Object.keys(currentOrder.receipts)?.length">
                 <ion-card-header>
                   <ion-card-title>{{ translate("Receipts") }}</ion-card-title>
                 </ion-card-header>
-                <ion-item v-for="(shipment, index) in getFilteredShipments('IN_TRANSFER')" :key="index">
-                  <ion-radio :value="shipment.shipmentId" label-placement="end" justify="start">
+                <ion-item v-for="datetimeReceived in Object.keys(currentOrder.receipts)" :key="datetimeReceived">
+                  <ion-radio :value="`receipt_${datetimeReceived}`" label-placement="end" justify="start">
                     <ion-label>
-                      {{ shipment.shipmentId }}
-                      <p v-if="shipment.trackingIdNumber">{{ shipment.trackingIdNumber }}</p>
+                      {{ translate("received at") }} 
+                      <p>{{ formatDateTime(Number(datetimeReceived)) }}</p>
                     </ion-label>
                   </ion-radio>
-                  <ion-badge slot="end" class="no-pointer-events" :color="getColorByDesc(getStatusDesc(shipment.statusId)) || getColorByDesc('default')">{{ getStatusDesc(shipment.statusId) ? getStatusDesc(shipment.statusId) : shipment.statusId }}</ion-badge>
                 </ion-item>
               </ion-card>
             </div>
           </ion-radio-group>
-          <div class="timeline" v-if="selectedShipmentId">
+          <div class="timeline" v-if="selectedShipmentId && !selectedShipmentId.startsWith('receipt_')">
             <ion-card>
               <ion-card-header>
                 <ion-card-title>{{ translate("Shipment details") }}</ion-card-title>
@@ -385,9 +384,14 @@ function generateItemsListByParent() {
 
   let itemsList = [];
   if(selectedShipmentId.value) {
-    const shipment = currentOrder.value.shipments.find((shipment: any) => shipment.shipmentId === selectedShipmentId.value);
-    // Flatten all items from all packages into a single array
-    itemsList = shipment.packages.flatMap((pkg: any) => pkg.items || [])
+    if (selectedShipmentId.value.startsWith("receipt_")) {
+      const datetimeReceived = selectedShipmentId.value.replace(/^receipt_/, "");
+      itemsList = currentOrder.value.receipts[datetimeReceived]
+    } else {
+      const shipment = currentOrder.value.shipments.find((shipment: any) => shipment.shipmentId === selectedShipmentId.value);
+      // Flatten all items from all packages into a single array
+      itemsList = shipment.packages.flatMap((pkg: any) => pkg.items || [])
+    }
   } else {
     itemsList = currentOrder.value.items
   }

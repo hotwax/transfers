@@ -153,6 +153,16 @@ const actions: ActionTree<OrderState, RootState> = {
           shipGroupSeqId: orderDetail.items[0]?.shipGroupSeqId,
         };
 
+        const shipmentReceiptResp = await OrderService.fetchOrderReceipts({ orderId });
+        if (!hasError(shipmentReceiptResp) && shipmentReceiptResp.data.length) {
+          orderDetail.receipts = shipmentReceiptResp.data.reduce((groups: any, receipt: any) => {
+            if (!receipt?.datetimeReceived) return groups;
+            const key = receipt.datetimeReceived;
+            (groups[key] ||= []).push(receipt);
+            return groups;
+          }, {});
+        }
+
         // Fetch additional shipment data
         shipmentResp = await OrderService.fetchShippedTransferShipments({ orderId, shipmentStatusId: "SHIPMENT_SHIPPED" });
         if (!hasError(shipmentResp)) {
@@ -271,7 +281,7 @@ const actions: ActionTree<OrderState, RootState> = {
     commit(types.ORDER_CLEARED)
   },
 
-  async getOrderReceipts({ commit } ,orderId :string){
+  async fetchOrderReceipts({ commit }, orderId: string){
     const pageSize = Number(process.env.VUE_APP_VIEW_SIZE) ;
     const payload={ 
       orderId: orderId,
@@ -281,7 +291,7 @@ const actions: ActionTree<OrderState, RootState> = {
     let resp ;
 
     try{
-      resp = await OrderService.getOrderReceipts(payload);
+      resp = await OrderService.fetchOrderReceipts(payload);
       if (!hasError(resp)) {
         commit(types.ORDER_RECEIPTS,resp.data);
       }else{
