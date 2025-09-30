@@ -109,14 +109,15 @@
                 </ion-item>
               </ion-card>
               
-              <ion-card v-if="Object.keys(currentOrder.receipts)?.length">
+              <ion-card v-if="currentOrder?.receipts && Object.keys(currentOrder.receipts)?.length">
                 <ion-card-header>
                   <ion-card-title>{{ translate("Receipts") }}</ion-card-title>
                 </ion-card-header>
                 <ion-item v-for="datetimeReceived in Object.keys(currentOrder.receipts)" :key="datetimeReceived">
                   <ion-radio :value="`receipt_${datetimeReceived}`" label-placement="end" justify="start">
                     <ion-label>
-                      {{ translate("received at") }} {{ formatDateTime(Number(datetimeReceived)) }}
+                      {{ translate("received at") }} 
+                      <p>{{ formatDateTime(Number(datetimeReceived)) }}</p>
                     </ion-label>
                   </ion-radio>
                 </ion-item>
