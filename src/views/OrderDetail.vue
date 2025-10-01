@@ -113,7 +113,7 @@
                 <ion-card-header>
                   <ion-card-title>{{ translate("Receipts") }}</ion-card-title>
                 </ion-card-header>
-                <ion-item v-for="datetimeReceived in Object.keys(currentOrder.receipts)" :key="datetimeReceived">
+                <ion-item v-for="datetimeReceived in getReceipts()" :key="datetimeReceived">
                   <ion-radio :value="`receipt_${datetimeReceived}`" label-placement="end" justify="start">
                     <ion-label>
                       {{ translate("received at") }} 
@@ -310,6 +310,13 @@ onIonViewWillEnter(async () => {
   carrierMethods.value = shipmentMethodsByCarrier.value[currentOrder.value.carrierPartyId]
 })
 
+function getReceipts(): string[] {
+  if (!currentOrder.value?.receipts) return [];
+
+  return Object.keys(currentOrder.value.receipts)
+    .sort((a, b) => Number(b) - Number(a)); // returns sorted strings
+}
+
 async function changeOrderStatus(updatedStatusId: string) {
   if(updatedStatusId === "ORDER_APPROVED") {
     updateOrderStatus(updatedStatusId);
@@ -335,37 +342,20 @@ async function changeOrderStatus(updatedStatusId: string) {
 }
 
 async function updateOrderStatus(updatedStatusId: string) {
-  if(currentOrder.value.statusFlowId === "RECEIVE_ONLY") {
-    const itemsToUpdate = currentOrder.value.items.filter((item: any) => {
-      if(updatedStatusId === "ORDER_APPROVED" && item.statusId === "ITEM_CREATED") return true;
-      if(updatedStatusId === "ORDER_CANCELLED" && (item.statusId === "ITEM_CREATED" || item.statusId === "ITEM_APPROVED")) return true;
-      return false;
-    })
-
-    if(itemsToUpdate?.length) {
-      const responses = await  Promise.allSettled(itemsToUpdate.map((item: any) => OrderService.changeOrderItemStatus({ ...item, statusId: updatedStatusId === "ORDER_APPROVED" ? "ITEM_APPROVED" : "ITEM_CANCELLED" })))
-      const hasFailedResponse = responses.some((response: any) => response.status === "rejected")
-
-      if(hasFailedResponse) {
-        showToast(translate("Failed to update status of some items."))
-        selectRef.value.$el.value = currentOrder.value
-        return;
+  let resp;
+  try {
+    if (updatedStatusId === "ORDER_APPROVED") {
+      if (currentOrder.value.statusFlowId === "TO_Receive_Only") {
+        resp = await OrderService.approveWarehouseFulfillOrder({ orderId: currentOrder.value.orderId })
+      } else {
+        resp = await OrderService.approveOrder({ orderId: currentOrder.value.orderId })
       }
     }
-  }
-
-  let resp;
-  try{
-    if(currentOrder.value.statusFlowId === "RECEIVE_ONLY") {
-      resp = await OrderService.updateOrderStatus({
-        orderId: currentOrder.value.orderId,
-        statusId: updatedStatusId
-      }) 
-    } else {
-      resp = (updatedStatusId === "ORDER_APPROVED") ? await OrderService.approveOrder({ orderId: currentOrder.value.orderId }) : await OrderService.cancelOrder({ orderId: currentOrder.value.orderId })
+    if (updatedStatusId === "ORDER_CANCELLED") {
+      resp = await OrderService.cancelOrder({ orderId: currentOrder.value.orderId })
     }
 
-    if(!hasError(resp)) {
+    if (!hasError(resp)) {
       showToast(translate("Order status updated successfully."))
       await store.dispatch("order/fetchOrderDetails", props.orderId)
       generateItemsListByParent();

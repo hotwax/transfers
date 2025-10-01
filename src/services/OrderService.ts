@@ -252,22 +252,6 @@ const updateOrderItem = async (payload: any): Promise<any> => {
   });
 }
 
-const changeOrderItemStatus = async (payload: any): Promise<any> => {
-  const baseURL = store.getters['user/getOmsBaseUrl'];
-  const omstoken = store.getters['user/getUserToken'];
-
-  return apiClient({
-    url: "service/changeOrderItemStatus",
-    method: "post",
-    baseURL,
-    headers: {
-      "Authorization": "Bearer " + omstoken,
-      "Content-Type": "application/json"
-    },
-    data: payload
-  });
-}
-
 const updateOrderStatus = async (payload: any): Promise<any> => {
   const baseURL = store.getters['user/getOmsBaseUrl'];
   const omstoken = store.getters['user/getUserToken'];
@@ -315,6 +299,13 @@ const approveOrder = async (payload: any): Promise<any> => {
   })
 }
 
+const approveWarehouseFulfillOrder = async (payload: any): Promise<any> => { 
+  return api({
+    url: `oms/transferOrders/${payload.orderId}/whFulfillment/approve`,
+    method: "post",
+  })
+}
+
 const cancelOrder = async (payload: any): Promise<any> => {
   const baseURL = store.getters['user/getBaseUrl'];
   const omstoken = store.getters['user/getUserToken'];
@@ -340,8 +331,8 @@ const fetchOrderReceipts = async (params :any): Promise<any> => {
 export const OrderService = {
   addOrderItem,
   approveOrder,
+  approveWarehouseFulfillOrder,
   cancelOrder,
-  changeOrderItemStatus,
   createOrder,
   fetchOrderItem,
   fetchOrderStatusHistory,
