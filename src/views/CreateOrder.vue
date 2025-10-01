@@ -570,8 +570,7 @@ async function createOrder() {
 						sku: item.sku,
 						statusId: "ITEM_CREATED",
 						quantity: Number(item.quantity),
-						unitPrice:(Object.keys(productAverageCostDetail).length &&
-								productAverageCostDetail[item.productId]) ||0.0,
+						unitPrice: productAverageCostDetail[item.productId] || 0.0,
 					}
 				})
 			}]
