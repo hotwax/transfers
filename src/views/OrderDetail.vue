@@ -390,7 +390,7 @@ function generateItemsListByParent() {
     } else {
       const shipment = currentOrder.value.shipments.find((shipment: any) => shipment.shipmentId === selectedShipmentId.value);
       // Flatten all items from all packages into a single array
-      itemsList = shipment.packages.flatMap((pkg: any) => pkg.items || [])
+      itemsList = shipment?.packages.flatMap((pkg: any) => pkg.items || [])
     }
   } else {
     itemsList = currentOrder.value.items
