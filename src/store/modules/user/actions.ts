@@ -18,7 +18,7 @@ const actions: ActionTree<UserState, RootState> = {
   */
   async login ({ commit, dispatch }, payload) {
     try {
-      const { token, oms } = payload;
+      const { token, oms, omsRedirectionUrl } = payload;
       dispatch("setUserInstanceUrl", oms);
       
       // Getting the permissions list from server
@@ -29,9 +29,8 @@ const actions: ActionTree<UserState, RootState> = {
 
       const serverPermissions: Array<string> = await UserService.getUserPermissions({
         permissionIds: [...new Set(serverPermissionsFromRules)]
-      }, token);
+      }, omsRedirectionUrl, token);
       const appPermissions = prepareAppPermissions(serverPermissions);
-
 
       // Checking if the user has permission to access the app
       // If there is no configuration, the permission check is not enabled
@@ -59,6 +58,10 @@ const actions: ActionTree<UserState, RootState> = {
       await useUserStore().getEComStorePreference("SELECTED_BRAND")
       const preferredStore: any = useUserStore().getCurrentEComStore
 
+      if (omsRedirectionUrl) {
+        dispatch("setOmsRedirectionUrl", omsRedirectionUrl)
+      }
+
       updateToken(token)
       await useProductIdentificationStore().getIdentificationPref(preferredStore.productStoreId)
         .catch((error) => logger.error(error));
@@ -79,7 +82,7 @@ const actions: ActionTree<UserState, RootState> = {
   /**
    * Logout user
    */
-  async logout ({ commit }, payload) {
+  async logout ({ commit, dispatch }, payload) {
     // store the url on which we need to redirect the user after logout api completes in case of SSO enabled
     let redirectionUrl = ''
 
@@ -108,6 +111,7 @@ const actions: ActionTree<UserState, RootState> = {
     const userStore = useUserStore()
     // TODO add any other tasks if need
     commit(types.USER_END_SESSION)
+    dispatch("setOmsRedirectionUrl", "")
     await this.dispatch("order/clearOrderState")
     await this.dispatch("product/clearProductState")
     await this.dispatch("util/clearUtilState")
@@ -127,6 +131,9 @@ const actions: ActionTree<UserState, RootState> = {
     return redirectionUrl;
   },
 
+  setOmsRedirectionUrl({ commit }, payload) {
+    commit(types.USER_OMS_REDIRECTION_URL_UPDATED, payload)
+  },
 
   /**
    * Update user timeZone

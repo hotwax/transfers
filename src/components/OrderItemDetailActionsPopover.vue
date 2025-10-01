@@ -2,7 +2,7 @@
   <ion-content>
     <ion-list>
       <ion-list-header>{{ getProductIdentificationValue(productIdentificationStore.getProductIdentificationPref.primaryId, getProduct(item.productId)) || getProduct(item.productId).productName }}</ion-list-header>
-      <ion-item button :disabled="item.statusId !== 'ORDER_CREATED'" @click="editOrderedQuantity()">
+      <ion-item button :disabled="item.statusId !== 'ITEM_CREATED'" @click="editOrderedQuantity()">
         {{ translate("Edit ordered qty") }}
       </ion-item>
       <ion-item button :disabled="!isEligibleToFulfill()" @click="redirectToFulfillItem()">
@@ -11,9 +11,11 @@
       <ion-item button :disabled="!getCurrentItemInboundShipment()" @click="redirectToReceiveItem()">
         {{ translate("Receive") }}
       </ion-item>
+      <!--
+      TODO: Need to identify real workflow around the item completion for different transfer orders (fulfillment only, fulfill and receive and receive only)
       <ion-item button lines="none" :disabled="!isEligibleToComplete()" @click="completeItem()">
         {{ translate("Complete item") }}
-      </ion-item>
+      </ion-item>-->
     </ion-list>
   </ion-content>
 </template>
@@ -53,15 +55,16 @@ async function editOrderedQuantity() {
         if(quantity !== props.item.quantity) {
           try {
             const resp = await OrderService.updateOrderItem({
-              orderId: props.item.orderId,
+              orderId: currentOrder.value.orderId,
               orderItemSeqId: props.item.orderItemSeqId,
+              unitPrice: props.item.unitPrice || 0,
               quantity
             })
 
             if(!hasError(resp)) {
               const order = JSON.parse(JSON.stringify(currentOrder.value));
               order.items.find((item: any) => {
-                if(item.orderId === props.item.orderId && item.orderItemSeqId === props.item.orderItemSeqId) {
+                if(item.orderItemSeqId === props.item.orderItemSeqId) {
                   item.quantity = quantity
                   return true;
                 }
@@ -93,17 +96,6 @@ async function editOrderedQuantity() {
   alert.present()
 }
 
-function isEligibleToComplete() {
-  const item = props.item
-  if(item?.oiStatusId !== "ITEM_APPROVED") return false;
-
-  if(item.statusFlowId === "RECEIVE_ONLY") {
-    return item.receivedQty && item.receivedQty >= item.quantity
-  } else {
-    return item.shippedQty && item.shippedQty >= item.quantity
-  }
-}
-
 function isEligibleToFulfill() {
   const excludedStatuses = ["ORDER_CREATED", "ORDER_CANCELLED", "ORDER_REJECTED"];
   return !excludedStatuses.includes(currentOrder.value.statusId);
@@ -122,32 +114,5 @@ function redirectToReceiveItem() {
   const shipment = getCurrentItemInboundShipment()
   window.location.href = `${process.env.VUE_APP_RECEIVING_LOGIN_URL}?oms=${authStore.oms}&token=${authStore.token.value}&expirationTime=${authStore.token.expiration}&shipmentId=${shipment.shipmentId}&facilityId=${currentOrder.value.facilityId}`
   popoverController.dismiss()
-}
-
-async function completeItem() {
-  try {
-    const resp = await OrderService.changeOrderItemStatus({
-      ...props.item,
-      statusId: "ITEM_COMPLETED"
-    })
-
-    if(!hasError(resp)) {
-      const order = JSON.parse(JSON.stringify(currentOrder.value));
-      order.items.find((item: any) => {
-        if(item.orderId === props.item.orderId && item.orderItemSeqId === props.item.orderItemSeqId) {
-          item.oiStatusId = "ITEM_COMPLETED"
-          return true;
-        }
-      })
-      await store.dispatch("order/updateCurrent", order)
-      popoverController.dismiss({ isItemUpdated: true });
-      showToast(translate("Item status updated successfully."));
-    } else {
-      throw resp.data;
-    }
-  } catch(error) {
-    logger.error(error);
-    showToast(translate("Failed to update item status."));
-  }
 }
 </script>

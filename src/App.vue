@@ -33,7 +33,8 @@ initialise({
     queueTask: (payload: any) => {
       emitter.emit("queueTask", payload);
     }
-  }
+  },
+  systemType: "MOQUI" //Need to update oms-api to use oms token instead of api key
 })
 
 async function unauthorised() {

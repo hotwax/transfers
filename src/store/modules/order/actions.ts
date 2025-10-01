@@ -2,194 +2,212 @@ import { ActionTree } from "vuex"
 import RootState from "@/store/RootState"
 import * as types from "./mutation-types"
 import OrderState from "./OrderState"
-import { prepareOrderQuery } from "@/utils/solrHelper";
 import { hasError } from "@/adapter";
 import logger from "@/logger"
 import { OrderService } from "@/services/OrderService";
 import store from "@/store"
 
 const actions: ActionTree<OrderState, RootState> = {
-  async findOrders({ commit, state }, params) {
-    let resp, orderCount, itemCount;
-    let cachedOrders = JSON.parse(JSON.stringify(state.list.orders));
-    const shipmentMethodTypeIds: Array<string> = []
+  async findTransferOrders({ commit, state }, params) {
+    let resp, ordersList, ordersCount = 0;
+    const productIds = [] as any;
 
-    const query = prepareOrderQuery({ ...(state.query), ...params })
+    // Build payload
+    const payload = {
+      orderByField: state.query.sort,
+      pageSize: params.pageSize,
+      pageIndex: params.pageIndex,
+      ...(params.groupByConfig?.selectFields?.length && {
+        fieldsToSelect: params.groupByConfig.selectFields.join(',')
+      })
+    } as any
+
+    // include only non-empty filters from state.query (exclude groupBy and sort)
+    Object.entries(state.query).forEach(([fieldName, fieldValue]) => {
+      if(fieldValue != null && fieldValue !== '' && fieldName !== 'groupBy' && fieldName !== 'sort') {
+        payload[fieldName] = fieldValue
+      }
+    })
+
     try {
-      resp = await OrderService.findOrder(query)
-      if (!hasError(resp) && resp.data?.grouped[state.query.groupBy]?.groups?.length) {
-        let productIds: any = new Set();
-        const orderItemsList = [] as any;
-        const orders = resp.data.grouped[state.query.groupBy]?.groups.map((order: any) => {
-          const orderItem = order.doclist.docs[0];
+      resp = await OrderService.findTransferOrders(payload)
+      if(!hasError(resp)) {
+        // groupBy cases: ORDER_ID / DESTINATION / ORIGIN → single field
+        // DESTINATION_PRODUCT / ORIGIN_PRODUCT → multiple fields joined with '-'
+        const groupFields = params.groupByConfig?.groupingFields
 
-          order.orderId = orderItem.orderId
-          order.customer = {
-            name: orderItem.customerPartyName,
-            emailId: orderItem.customerEmailId,
-            phoneNumber: orderItem.customerPhoneNumber
-          },
-          order.orderName = orderItem.orderName
-          order.orderDate = orderItem.orderDate
-          order.orderStatusId = orderItem.orderStatusId
-          order.orderStatusDesc = orderItem.orderStatusDesc
-          order.originFacilityId = orderItem.facilityId
-          order.originFacilityName = orderItem.facilityName
-          order.destinationFacilityId = orderItem.orderFacilityId
-          order.destinationFacilityName = orderItem.orderFacilityName
-
-          order.shipmentMethodTypeId && shipmentMethodTypeIds.push(orderItem.shipmentMethodTypeId)
-
-          if(state.query.groupBy === "originFacilityProductId" || state.query.groupBy === "destinationFacilityProductId") {
-            order.productId = orderItem.productId
+        const orders = resp.data.orders.map((order: any) => {
+          if(order.productId) productIds.push(order.productId)
+          return {
+            ...order,
+            // We are using this field in ion-accordion to identify the expanded accordion
+            groupValue: groupFields?.map((field: any) => order[field]).join('-')
           }
-
-          order.doclist.docs.map((item: any) => {
-            orderItemsList.push(`${item.orderId}_${item.orderItemSeqId}`)
-            if(item.productId) productIds.add(item.productId)
-          })
-
-          return order
         })
 
-        orderCount = resp.data.grouped[state.query.groupBy]?.ngroups;
-        itemCount = resp.data.grouped[state.query.groupBy]?.matches;
-
-        productIds = [...productIds]
-
-        const orderItemStats = await OrderService.fetchOrderItemStats(orderItemsList);
-        orders.map((order: any) => {
-          let totalOrdered = 0, totalShipped = 0, totalReceived = 0;
-          order.doclist.docs.map((item: any) => {
-            if(orderItemStats[`${item.orderId}_${item.orderItemSeqId}`]) {
-              item["shippedQty"] = orderItemStats[`${item.orderId}_${item.orderItemSeqId}`].shippedQty
-              item["receivedQty"] = orderItemStats[`${item.orderId}_${item.orderItemSeqId}`].receivedQty
-            }
-            if(item.quantity) totalOrdered = totalOrdered + item.quantity            
-            if(item.shippedQty) totalShipped = totalShipped + item.shippedQty            
-            if(item.receivedQty) totalReceived = totalReceived + item.receivedQty            
-          })
-
-          order["totalOrdered"] = totalOrdered
-          order["totalShipped"] = totalShipped
-          order["totalReceived"] = totalReceived
-        })
-
-        if (query.json.params.start && query.json.params.start > 0) cachedOrders = cachedOrders.concat(orders)
-        else cachedOrders = orders
-        await this.dispatch("util/fetchShipmentMethodTypeDesc")
-        const batchSize = 250;
-        const productIdBatches = [];
-        while(productIds.length) {
-          productIdBatches.push(productIds.splice(0, batchSize))
+        if(productIds.length) {
+          await this.dispatch('product/fetchProducts', { productIds })
         }
-        await Promise.allSettled([productIdBatches.map(async (productIds) => await this.dispatch('product/fetchProducts', { productIds }))])
+
+        ordersList = (state.orders).concat(orders)
+        ordersCount = resp.data.ordersCount
       } else {
         throw resp.data;
       }
     } catch(error) {
       logger.error(error)
-      // If the filters are changed, we are on first index and if we got some error clear the orders
-      if(params?.isFilterUpdated && (!params?.viewIndex || params.viewIndex == 0)) {
-        cachedOrders = []
-        orderCount = 0
-        itemCount = 0
-      }
     }
-    commit(types.ORDER_LIST_UPDATED, { orders: cachedOrders, orderCount, itemCount });
+    commit(types.ORDER_LIST_UPDATED, { orders: ordersList, ordersCount });
     return resp;
   },
-  
-  async fetchOrderFilters({ commit, state }) {
-    const query = prepareOrderQuery({ ...(state.query), fetchFacets: true, viewSize: 0 })
+
+  // Fetch transfer order items, group them by orderId, accumulate quantities, and update state
+  async findTransferOrderItems({ commit, state }, { groupValue, groupByConfig}) {
+    // Filter out already fetched orderIds to avoid duplicate calls
+    const productIds: any = new Set()
+    const groupedItems: any = [];
+    let resp, pageIndex = 0
+    const pageSize = 100
 
     try {
-      const resp = await OrderService.findOrder(query);
+      // Build API payload from grouping fields
+      const values = groupValue.split(groupByConfig?.groupValueSeparator)
+      const payload: any = {}
+      groupByConfig?.groupingFields.forEach((field: string, key: number) => payload[field] = values[key])
+      // Fetch items in batches until last page
+      do {
+        payload.pageSize = pageSize
+        payload.pageIndex = pageIndex
+        resp = await OrderService.findTransferOrderItems(payload)
 
-      if(!hasError(resp)) {
-        const originFacilities = resp.data.facets?.facilityNameFacet?.buckets.map((bucket: any) => bucket.val)
-        const destinationFacilities = resp.data.facets?.orderFacilityNameFacet?.buckets.map((bucket: any) => bucket.val)
-        const productStores = resp.data.facets?.productStoreIdFacet?.buckets.map((bucket: any) => bucket.val)
-        const carriers = resp.data.facets?.carrierPartyIdFacet?.buckets.map((bucket: any) => bucket.val)
-        const shipmentMethodTypeIds = resp.data.facets?.shipmentMethodTypeIdFacet?.buckets.map((bucket: any) => bucket.val)
-        const statuses = resp.data.facets?.orderStatusDescFacet?.buckets.map((bucket: any) => bucket.val)
+        if(!hasError(resp) && resp?.data?.transferOrderItems?.length) {
+          // If grouping by ORDER_ID → no grouping
+          if(groupByConfig?.id === "ORDER_ID") {
+            resp.data.transferOrderItems.forEach((item: any) => {
+              if(item.productId) productIds.add(item.productId)
+              groupedItems.push({
+                ...item,
+                shippedQty: item.shippedQuantity || 0,
+                receivedQty: item.receivedQuantity || 0,
+              })
+            })
+          } else {
+            // Group items by orderId & accumulate quantities
+            resp.data.transferOrderItems.forEach((item: any) => {
+              if(item.productId) productIds.add(item.productId)
+              const key = item.orderId
+              if(!groupedItems[key]) {
+                groupedItems[key] = {
+                  ...item,
+                  shippedQty: item.shippedQuantity || 0,
+                  receivedQty: item.receivedQuantity || 0,
+                  quantity: item.quantity || 0
+                }
+              } else {
+                groupedItems[key].quantity += item.quantity || 0
+                groupedItems[key].shippedQty += item.shippedQuantity || 0
+                groupedItems[key].receivedQty += item.receivedQuantity || 0
+              }
+            })
+          }
+          pageIndex++
+        } else {
+          throw resp.data
+        }
+      } while (resp?.data?.transferOrderItems?.length >= pageSize)
 
-        commit(types.ORDER_PRODUCT_STORE_OPTIONS_UPDATED, productStores);
-        commit(types.ORDER_ORIGIN_FACILITY_OPTIONS_UPDATED, originFacilities);
-        commit(types.ORDER_DESTINATION_FACILITY_OPTIONS_UPDATED, destinationFacilities);
-        commit(types.ORDER_CARRIERS_OPTIONS_UPDATED, carriers);
-        commit(types.ORDER_SHIPMENT_METHODS_OPTIONS_UPDATED, shipmentMethodTypeIds);
-        commit(types.ORDER_STATUS_OPTIONS_UPDATED, statuses);
-      } else {
-        throw resp.data;
+      const items = Object.values(groupedItems)
+
+      // Fetch product details in batches (to avoid payload limit)
+      const productIdArray = [...productIds]
+      const batchSize = 250, productIdBatches = []
+      while (productIdArray.length) {
+        productIdBatches.push(productIdArray.splice(0, batchSize))
       }
-    } catch(error: any) {
+      await Promise.allSettled(productIdBatches.map((productIds) => this.dispatch('product/fetchProducts', { productIds })))
+
+      commit(types.ORDER_ITEMS_LIST_UPDATED, { groupValue, items })
+      return resp
+    } catch (error) {
       logger.error(error)
+      commit(types.ORDER_ITEMS_LIST_UPDATED, { groupValue, items: [] })
+      return resp
     }
   },
 
-  async updateAppliedFilters({ commit, dispatch }, payload) {
-    commit(types.ORDER_FILTERS_UPDATED, payload)
-    await dispatch("findOrders", { isFilterUpdated: true })
+  async updateAppliedFilters({ commit, dispatch }, { value, filterName, groupByConfig }) {
+    commit(types.ORDER_FILTERS_UPDATED, { value, filterName })
+    await dispatch("findTransferOrders", { pageSize: process.env.VUE_APP_VIEW_SIZE, pageIndex: 0, groupByConfig })
   },
   
   async fetchOrderDetails({ commit }, orderId) {
     let orderDetail = {} as any;
+    let orderResp, shipmentResp;
+    try {
+      // Fetch main transfer order details
+      orderResp = await OrderService.fetchTransferOrderDetail(orderId);
+      if (!hasError(orderResp)) {
+        orderDetail = orderResp.data.order || {};
+        orderDetail={
+          ...orderDetail,
+          shipGroupSeqId: orderDetail.items[0]?.shipGroupSeqId,
+        };
 
-    const orderItems = await OrderService.fetchOrderItems(orderId);
-    if(!orderItems.length) {
-      commit(types.ORDER_CURRENT_UPDATED, {});
-      return;
-    }
-
-    orderDetail = {
-      orderId: orderItems[0].orderId,
-      orderName: orderItems[0].orderName,
-      orderDate: orderItems[0].orderDate,
-      facilityId: orderItems[0].oisgFacilityId,
-      orderFacilityId: orderItems[0].orderFacilityId,
-      productStoreId: orderItems[0].productStoreId,
-      carrierPartyId: orderItems[0].carrierPartyId,
-      shipmentMethodTypeId: orderItems[0].shipmentMethodTypeId,
-      shipGroupSeqId: orderItems[0].shipGroupSeqId,
-      statusId: orderItems[0].statusId,
-      statusFlowId: orderItems[0].statusFlowId,
-      currencyUom: orderItems[0].currencyUom,
-      grandTotal: orderItems[0].grandTotal,
-      items: orderItems
-    }
-
-    const [facilityAddresses] = await Promise.allSettled([store.dispatch("util/fetchFacilityAddresses", [orderDetail.facilityId, orderDetail.orderFacilityId]), store.dispatch("util/fetchStoreCarrierAndMethods", orderDetail.productStoreId)])
-
-    const orderItemsList = orderItems.map((item: any) => `${item.orderId}_${item.orderItemSeqId}`);
-    const orderItemStats = await OrderService.fetchOrderItemStats(orderItemsList);
-
-    orderDetail.items.map((item: any) => {
-      item.facilityId = item.oisgFacilityId
-      if(orderItemStats[`${item.orderId}_${item.orderItemSeqId}`]) {
-        item["shippedQty"] = orderItemStats[`${item.orderId}_${item.orderItemSeqId}`].shippedQty
-        item["receivedQty"] = orderItemStats[`${item.orderId}_${item.orderItemSeqId}`].receivedQty
-      }
-    })
-
-    if(facilityAddresses.status === "fulfilled" && facilityAddresses.value?.length) {
-      facilityAddresses.value.map((address: any) => {
-        if(address.facilityId === orderDetail.facilityId) {
-          orderDetail["originFacility"] = address
-        } else {
-          orderDetail["destinationFacility"] = address
+        const shipmentReceiptResp = await OrderService.fetchOrderReceipts({ orderId });
+        if (!hasError(shipmentReceiptResp) && shipmentReceiptResp.data.length) {
+          orderDetail.receipts = shipmentReceiptResp.data.reduce((groups: any, receipt: any) => {
+            if (!receipt?.datetimeReceived) return groups;
+            const key = receipt.datetimeReceived;
+            (groups[key] ||= []).push(receipt);
+            return groups;
+          }, {});
         }
-      })
-    }
 
-    const productIds = [...new Set(orderDetail.items.map((item:any) => item.productId))];
-    const batchSize = 250;
-    const productIdBatches = [];
-    while(productIds.length) {
-      productIdBatches.push(productIds.splice(0, batchSize))
+        // Fetch additional shipment data
+        shipmentResp = await OrderService.fetchShippedTransferShipments({ orderId, shipmentStatusId: "SHIPMENT_SHIPPED" });
+        if (!hasError(shipmentResp)) {
+          const shipmentData = shipmentResp.data || {};
+          // Merge order and shipment data fields into orderDetail
+          orderDetail = {
+            ...orderDetail,
+            shipments: shipmentData.shipments || [],
+          };
+        }
+        // Add shippedQty and receivedQty to each item
+        if (orderDetail.items && Array.isArray(orderDetail.items)) {
+          orderDetail.items = orderDetail.items.map((item: any) => ({
+            ...item,
+            shippedQty: item.totalIssuedQuantity,
+            receivedQty: item.totalReceivedQuantity,
+          }));
+        }
+        const [facilityAddresses] = await Promise.allSettled([store.dispatch("util/fetchFacilityAddresses", [orderDetail.facilityId, orderDetail.orderFacilityId]), store.dispatch("util/fetchStoreCarrierAndMethods", orderDetail.productStoreId)])
+
+        if(facilityAddresses.status === "fulfilled" && facilityAddresses.value?.length) {
+          facilityAddresses.value.map((address: any) => {
+            if(address.facilityId === orderDetail.facilityId) {
+              orderDetail["originFacility"] = address
+            } else {
+              orderDetail["destinationFacility"] = address
+            }
+          })
+        }
+
+        const productIds = [...new Set(orderDetail.items.map((item:any) => item.productId))];
+        const batchSize = 250;
+        const productIdBatches = [];
+        while(productIds.length) {
+          productIdBatches.push(productIds.splice(0, batchSize))
+        }
+          await Promise.allSettled([productIdBatches.map(async (productIds) => await this.dispatch('product/fetchProducts', { productIds }))])
+          commit(types.ORDER_CURRENT_UPDATED, orderDetail);
+      } else {
+        throw orderResp.data;
+      }
+    }catch(err:any){
+      logger.error("error", err);
+      return Promise.reject(new Error(err));
     }
-    await Promise.allSettled([productIdBatches.map(async (productIds) => await this.dispatch('product/fetchProducts', { productIds }))])
-    commit(types.ORDER_CURRENT_UPDATED, orderDetail);
   },
 
   async fetchOrderShipments ({ commit, state }, orderId) {
@@ -261,6 +279,30 @@ const actions: ActionTree<OrderState, RootState> = {
 
   async clearOrderState ({ commit }) {
     commit(types.ORDER_CLEARED)
+  },
+
+  async fetchOrderReceipts({ commit }, orderId: string){
+    const pageSize = Number(process.env.VUE_APP_VIEW_SIZE) ;
+    const payload={ 
+      orderId: orderId,
+      orderByField: "-datetimeReceived",
+      pageSize
+    }
+    let resp ;
+
+    try{
+      resp = await OrderService.fetchOrderReceipts(payload);
+      if (!hasError(resp)) {
+        commit(types.ORDER_RECEIPTS,resp.data);
+      }else{
+        throw resp.data;
+      }
+    }catch(error:any){
+      commit(types.ORDER_RECEIPTS, [] );
+      logger.error("error", error);
+      return Promise.reject(error);
+    }
+    return resp;
   }
 }
 

@@ -91,7 +91,7 @@
           </div>
         </section>
 
-        <section class="header" v-if="currentOrder.shipments?.length">
+        <section class="header" v-if="currentOrder.shipments?.length || (currentOrder?.receipts && Object.keys(currentOrder?.receipts)?.length)">
           <ion-radio-group v-model="selectedShipmentId" @ionChange="generateItemsListByParent()">
             <div class="info">
               <ion-card v-if="getFilteredShipments('OUT_TRANSFER')?.length">
@@ -102,25 +102,24 @@
                   <ion-radio :value="shipment.shipmentId" label-placement="end" justify="start">
                     <ion-label>
                       {{ shipment.shipmentId }}
-                      <p v-if="shipment.trackingCode">{{ shipment.trackingCode }}</p>
+                      <p v-if="shipment.trackingIdNumber">{{ shipment.trackingIdNumber }}</p>
                     </ion-label>
                   </ion-radio>
                   <ion-badge slot="end" class="no-pointer-events" :color="getColorByDesc(getStatusDesc(shipment.statusId)) || getColorByDesc('default')">{{ getStatusDesc(shipment.statusId) ? getStatusDesc(shipment.statusId) : shipment.statusId }}</ion-badge>
                 </ion-item>
               </ion-card>
               
-              <ion-card v-if="getFilteredShipments('IN_TRANSFER')?.length">
+              <ion-card v-if="currentOrder?.receipts && Object.keys(currentOrder.receipts)?.length">
                 <ion-card-header>
                   <ion-card-title>{{ translate("Receipts") }}</ion-card-title>
                 </ion-card-header>
-                <ion-item v-for="(shipment, index) in getFilteredShipments('IN_TRANSFER')" :key="index">
-                  <ion-radio :value="shipment.shipmentId" label-placement="end" justify="start">
+                <ion-item v-for="datetimeReceived in getReceipts()" :key="datetimeReceived">
+                  <ion-radio :value="`receipt_${datetimeReceived}`" label-placement="end" justify="start">
                     <ion-label>
-                      {{ shipment.shipmentId }}
-                      <p v-if="shipment.trackingCode">{{ shipment.trackingCode }}</p>
+                      {{ translate("received at") }} 
+                      <p>{{ formatDateTime(Number(datetimeReceived)) }}</p>
                     </ion-label>
                   </ion-radio>
-                  <ion-badge slot="end" class="no-pointer-events" :color="getColorByDesc(getStatusDesc(shipment.statusId)) || getColorByDesc('default')">{{ getStatusDesc(shipment.statusId) ? getStatusDesc(shipment.statusId) : shipment.statusId }}</ion-badge>
                 </ion-item>
               </ion-card>
             </div>
@@ -135,7 +134,7 @@
               </ion-card-header>
               <ion-item>
                 <ion-label>{{ translate("Shipped date") }}</ion-label>
-                <ion-label slot="end">{{ getSelectedShipment()?.shippedDate ? formatDateTime(getSelectedShipment().shippedDate) : "-" }}</ion-label>
+                <ion-label slot="end">{{ getSelectedShipment()?.shipmentShippedDate ? formatDateTime(getSelectedShipment().shipmentShippedDate) : "-" }}</ion-label>
               </ion-item>
               <ion-item>
                 <ion-label>{{ translate("Method") }}</ion-label>
@@ -147,7 +146,7 @@
               </ion-item>
               <ion-item lines="none">
                 <ion-label>{{ translate("Tracking code") }}</ion-label>
-                <ion-label slot="end">{{ getSelectedShipment()?.trackingCode ? getSelectedShipment().trackingCode : "-" }}</ion-label>
+                <ion-label slot="end">{{ getSelectedShipment()?.trackingIdNumber ? getSelectedShipment().trackingIdNumber : "-" }}</ion-label>
               </ion-item>
             </ion-card>
           </div>
@@ -251,7 +250,7 @@
                       <ion-label>{{ item.receivedQty || 0 }}</ion-label>
                     </ion-chip>
                   </div>
-                  <ion-badge :color="getColorByDesc(getStatusDesc(item.oiStatusId)) || getColorByDesc('default')">{{ getStatusDesc(item.oiStatusId) ? getStatusDesc(item.oiStatusId) : item.oiStatusId }}</ion-badge>
+                  <ion-badge :color="getColorByDesc(getStatusDesc(item.statusId)) || getColorByDesc('default')">{{ getStatusDesc(item.statusId) ? getStatusDesc(item.statusId) : item.statusId }}</ion-badge>
                 </template>
                 <ion-button slot="end" fill="clear" color="medium" :disabled="isOrderFinished()" @click="openOrderItemDetailActionsPopover($event, item)">
                   <ion-icon :icon="ellipsisVerticalOutline" slot="icon-only" />
@@ -305,12 +304,18 @@ const selectRef = ref("") as any;
 onIonViewWillEnter(async () => {
   isFetchingOrderDetail.value = true;
   await store.dispatch("order/fetchOrderDetails", props.orderId)
-  if(currentOrder.value.statusId !== "ORDER_CREATED") await store.dispatch("order/fetchOrderShipments", props.orderId)
   await Promise.allSettled([store.dispatch('util/fetchStatusDesc'), store.dispatch("util/fetchCarriersDetail"), fetchOrderStatusHistoryTimeline(), store.dispatch("util/fetchShipmentMethodTypeDesc")])
   generateItemsListByParent();
   isFetchingOrderDetail.value = false;
   carrierMethods.value = shipmentMethodsByCarrier.value[currentOrder.value.carrierPartyId]
 })
+
+function getReceipts(): string[] {
+  if (!currentOrder.value?.receipts) return [];
+
+  return Object.keys(currentOrder.value.receipts)
+    .sort((a, b) => Number(b) - Number(a)); // returns sorted strings
+}
 
 async function changeOrderStatus(updatedStatusId: string) {
   if(updatedStatusId === "ORDER_APPROVED") {
@@ -337,37 +342,20 @@ async function changeOrderStatus(updatedStatusId: string) {
 }
 
 async function updateOrderStatus(updatedStatusId: string) {
-  if(currentOrder.value.statusFlowId === "RECEIVE_ONLY") {
-    const itemsToUpdate = currentOrder.value.items.filter((item: any) => {
-      if(updatedStatusId === "ORDER_APPROVED" && item.oiStatusId === "ITEM_CREATED") return true;
-      if(updatedStatusId === "ORDER_CANCELLED" && (item.oiStatusId === "ITEM_CREATED" || item.oiStatusId === "ITEM_APPROVED")) return true;
-      return false;
-    })
-
-    if(itemsToUpdate?.length) {
-      const responses = await  Promise.allSettled(itemsToUpdate.map((item: any) => OrderService.changeOrderItemStatus({ ...item, statusId: updatedStatusId === "ORDER_APPROVED" ? "ITEM_APPROVED" : "ITEM_CANCELLED" })))
-      const hasFailedResponse = responses.some((response: any) => response.status === "rejected")
-
-      if(hasFailedResponse) {
-        showToast(translate("Failed to update status of some items."))
-        selectRef.value.$el.value = currentOrder.value
-        return;
+  let resp;
+  try {
+    if (updatedStatusId === "ORDER_APPROVED") {
+      if (currentOrder.value.statusFlowId === "TO_Receive_Only") {
+        resp = await OrderService.approveWarehouseFulfillOrder({ orderId: currentOrder.value.orderId })
+      } else {
+        resp = await OrderService.approveOrder({ orderId: currentOrder.value.orderId })
       }
     }
-  }
-
-  let resp;
-  try{
-    if(currentOrder.value.statusFlowId === "RECEIVE_ONLY") {
-      resp = await OrderService.updateOrderStatus({
-        orderId: currentOrder.value.orderId,
-        statusId: updatedStatusId
-      }) 
-    } else {
-      resp = (updatedStatusId === "ORDER_APPROVED") ? await OrderService.approveOrder({ orderId: currentOrder.value.orderId }) : await OrderService.cancelOrder({ orderId: currentOrder.value.orderId })
+    if (updatedStatusId === "ORDER_CANCELLED") {
+      resp = await OrderService.cancelOrder({ orderId: currentOrder.value.orderId })
     }
 
-    if(!hasError(resp)) {
+    if (!hasError(resp)) {
       showToast(translate("Order status updated successfully."))
       await store.dispatch("order/fetchOrderDetails", props.orderId)
       generateItemsListByParent();
@@ -386,8 +374,14 @@ function generateItemsListByParent() {
 
   let itemsList = [];
   if(selectedShipmentId.value) {
-    const shipment = currentOrder.value.shipments.find((shipment: any) => shipment.shipmentId === selectedShipmentId.value);
-    itemsList = shipment.items
+    if (selectedShipmentId.value.startsWith("receipt_")) {
+      const datetimeReceived = selectedShipmentId.value.replace(/^receipt_/, "");
+      itemsList = currentOrder.value.receipts[datetimeReceived]
+    } else {
+      const shipment = currentOrder.value.shipments.find((shipment: any) => shipment.shipmentId === selectedShipmentId.value);
+      // Flatten all items from all packages into a single array
+      itemsList = shipment?.packages.flatMap((pkg: any) => pkg.items || [])
+    }
   } else {
     itemsList = currentOrder.value.items
   }

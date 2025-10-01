@@ -4,58 +4,37 @@ import * as types from "./mutation-types"
 
 const mutations: MutationTree <OrderState> = {
   [types.ORDER_LIST_UPDATED] (state, payload) {
-    state.list.orders = payload.orders
-    state.list.orderCount = payload.orderCount
-    state.list.itemCount = payload.itemCount
+    state.orders = payload.orders
+    state.ordersCount = payload.ordersCount
+  },
+  [types.ORDER_ITEMS_LIST_UPDATED] (state, payload) {
+    state.orderItemsList[payload.groupValue] = payload.items
   },
   [types.ORDER_FILTERS_UPDATED] (state, payload) {
     state.query[payload.filterName] = payload.value
-  },
-  [types.ORDER_PRODUCT_STORE_OPTIONS_UPDATED] (state, payload) {
-    state.productStoreOptions = payload
-  },
-  [types.ORDER_ORIGIN_FACILITY_OPTIONS_UPDATED] (state, payload) {
-    state.originFacilityOptions = payload
-  },
-  [types.ORDER_DESTINATION_FACILITY_OPTIONS_UPDATED] (state, payload) {
-    state.destinationFacilityOptions = payload
-  },
-  [types.ORDER_STATUS_OPTIONS_UPDATED] (state, payload) {
-    state.orderStatuses = payload
-  },
-  [types.ORDER_CARRIERS_OPTIONS_UPDATED] (state, payload) {
-    state.carrierOptions = payload
-  },
-  [types.ORDER_SHIPMENT_METHODS_OPTIONS_UPDATED] (state, payload) {
-    state.shipmentMethodOptions = payload
   },
   [types.ORDER_CURRENT_UPDATED] (state, payload) {
     state.current = payload
   },
   [types.ORDER_CLEARED] (state) {
-    state.list = {
-      orders: [],
-      orderCount: 0,
-      itemCount: 0
-    }
+    state.orders = []
+    state.ordersCount = 0
+    state.orderReceipts = []
     state.query = {
-      queryString: "",
-      productStore: "",
-      originFacility: "",
-      destinationFacility: "",
-      status: "",
+      orderName: "",
+      productStoreId: "",
+      facilityId: "",
+      orderFacilityId: "",
+      orderStatusId: "",
       carrierPartyId: "",
       shipmentMethodTypeId: "",
       sort: 'orderDate desc',
-      groupBy: "orderId"
+      groupBy: "ORDER_ID"
     }
-    state.productStoreOptions = []
-    state.originFacilityOptions = []
-    state.destinationFacilityOptions = []
-    state.orderStatuses = []
-    state.carrierOptions = []
-    state.shipmentMethodOptions = []
     state.current = {}
   },
+  [types.ORDER_RECEIPTS]( state , payload ){
+    state.orderReceipts = payload;
+  }
 }
 export default mutations;
