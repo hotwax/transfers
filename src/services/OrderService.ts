@@ -301,7 +301,7 @@ const approveOrder = async (payload: any): Promise<any> => {
 
 const approveWarehouseFulfillOrder = async (payload: any): Promise<any> => { 
   return api({
-    url: `oms/transferOrders/${payload.orderId}/whFulfillment/approve`,
+    url: `oms/transferOrders/${payload.orderId}/approveWhFulfill`,
     method: "post",
   })
 }
