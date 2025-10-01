@@ -124,7 +124,7 @@
               </ion-card>
             </div>
           </ion-radio-group>
-          <div class="timeline" v-if="selectedShipmentId && !selectedShipmentId.startsWith('receipt_')">
+          <div class="timeline" v-if="selectedShipmentId">
             <ion-card>
               <ion-card-header>
                 <ion-card-title>{{ translate("Shipment details") }}</ion-card-title>
