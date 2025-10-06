@@ -602,7 +602,7 @@ async function createOrder() {
   })
 
   try {
-    const resp = await OrderService.createOrder(order)
+    const resp = await OrderService.createOrder({ payload : order })
     if(!hasError(resp)) {
       router.replace(`/order-detail/${resp.data.orderId}`)
     } else {
