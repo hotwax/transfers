@@ -54,8 +54,8 @@ const actions: ActionTree<UserState, RootState> = {
         Settings.defaultZone = userProfile.timeZone;
       }
 
-      const ecomStores = await useUserStore().getEComStores()
-      useUserStore().eComStores = ecomStores
+      const productStores = await useUserStore().getEComStores()
+      useUserStore().eComStores = productStores
       await useUserStore().getEComStorePreference("SELECTED_BRAND")
       const preferredStore: any = useUserStore().getCurrentEComStore
 
