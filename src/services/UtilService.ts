@@ -1,85 +1,100 @@
-import { api } from '@/adapter';
+import {api} from '@/adapter';
 
 const fetchShipmentMethodTypeDesc = async (query: any): Promise <any>  => {
+  
   return api({
-    url: "performFind",
-    method: "get",
+    url: `/oms/shippingGateways/shipmentMethodTypes`,
+    method: "GET",
     params: query
   });
 }
 
 const fetchStatusDesc = async (query: any): Promise <any>  => {
+  
   return api({
-    url: "performFind",
-    method: "get",
+    url: `/oms/statuses`,
+    method: "GET",
     params: query
   });
 }
 
-const fetchStoreCarrierAndMethods = async (query: any): Promise <any>  => {
-  return api({
-    url: "performFind",
-    method: "get",
-    params: query
+const fetchStoreCarrierAndMethods = async (payload: any): Promise <any>  => {
+
+
+ return api({
+    url: "/oms/dataDocumentView",
+    method: "post",
+    data: payload
   });
 }
 
 const getInventoryAvailableByFacility = async (query: any): Promise <any> => {
   return api({
-    url: "service/getInventoryAvailableByFacility",
-    method: "post",
-    data: query
-  });
-}
-
-const fetchCarriers = async (query: any): Promise <any>  => {
-  return api({
-    url: "performFind",
+    url: "/poorti/getInventoryAvailableByFacility",
     method: "get",
     params: query
   });
 }
 
-const fetchFacilityAddresses = async (params: any): Promise<any> => {
+const fetchCarriers = async (query: any): Promise <any>  => {
+
   return api({
-    url: "performFind",
+    url: `/oms/shippingGateways/carrierParties`,
+    method: "get",
+    params: query
+  });
+}
+
+const fetchFacilities = async (payload: any): Promise <any> => {
+  return api({
+    url: "oms/facilities",
+    method: "get",
+    params: payload
+  })
+}
+
+const fetchFacilityAddresses = async (params: any): Promise<any> => {
+
+ return api({
+    url: `/oms/facilityContactMechs`,
     method: "get",
     params
   })
 }
 
 const fetchSampleProducts = async (params: any): Promise<any> => {
+ 
   return api({
-    url: "performFind",
+    url: `/oms/products`,
     method: "get",
     params
   })
 }
 
 const fetchProductsAverageCost = async (productIds: any, facilityId: any): Promise<any> => {
+  
   if(!productIds.length) return []
   const requests = [], productIdList = productIds, productAverageCostDetail = {} as any;
 
   while(productIdList.length) {
     const productIds = productIdList.splice(0, 100)
     const params = {
-      inputFields: {
+      customParametersMap: {
         facilityId,
         productId: productIds,
         productId_op: "in",
-        productAverageCostTypeId: "WEIGHTED_AVG_COST"
+        orderByField: "-fromDate",
+        pageIndex: 0,
+        pageSize: 100 //There should be more than one active record per product
       },
-      viewSize: 250, // maximum view size
-      entityName: 'ProductAverageCost',
-      filterByDate: "Y",
-      orderBy: "fromDate DESC",
-      fieldList: ["productId", "averageCost"]
+      dataDocumentId: "ProductWeightedAverageCost",
+      filterByDate: true
     }
     requests.push(params)
   }
 
   const productAverageCostResps = await Promise.allSettled(requests.map((params) => api({
-    url: 'performFind',
+    url: `/oms/dataDocumentView`,
     method: 'POST',
     data: params
   })))
@@ -88,8 +103,8 @@ const fetchProductsAverageCost = async (productIds: any, facilityId: any): Promi
   if(hasFailedResponse) return {};
 
   productAverageCostResps.map((response: any) => {
-    if(response.value.data?.docs?.length) {
-      response.value.data.docs.map((item: any) => {
+    if(response.value.data?.entityValueList?.length) {
+      response.value.data.entityValueList.map((item: any) => {
         if(!productAverageCostDetail[item.productId]) productAverageCostDetail[item.productId] = item.averageCost
       })
     }
@@ -101,6 +116,7 @@ const fetchProductsAverageCost = async (productIds: any, facilityId: any): Promi
 
 export const UtilService = {
   fetchCarriers,
+  fetchFacilities,
   fetchFacilityAddresses,
   fetchProductsAverageCost,
   fetchSampleProducts,

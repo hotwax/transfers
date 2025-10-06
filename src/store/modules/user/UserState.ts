@@ -4,4 +4,5 @@ export default interface UserState {
   instanceUrl: string;
   permissions: any;
   pwaState: any;
+  omsRedirectionUrl: string
 }

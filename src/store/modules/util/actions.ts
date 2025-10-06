@@ -14,16 +14,14 @@ const actions: ActionTree<UtilState, RootState> = {
     const shipmentMethodTypeDesc = {} as any;
     try {
       const payload = {
-        "fieldList": ["shipmentMethodTypeId", "description"],
-        "entityName": "ShipmentMethodType",
-        "noConditionFind": "Y",
-        "viewSize": 200
+        shipmentMethodTypeId_op: "in",
+        fieldsToSelect: ["shipmentMethodTypeId", "description"],
+        pageSize: 200,
       }
 
       const resp = await UtilService.fetchShipmentMethodTypeDesc(payload);
-
       if(!hasError(resp)) {
-        resp.data.docs.map((shipmentMethodInformation: any) => {
+        resp.data.map((shipmentMethodInformation: any) => {
           shipmentMethodTypeDesc[shipmentMethodInformation.shipmentMethodTypeId] = shipmentMethodInformation.description
         })
 
@@ -44,20 +42,18 @@ const actions: ActionTree<UtilState, RootState> = {
 
     try {
       const payload = {
-        "inputFields": {
-          "statusTypeId": ["ORDER_STATUS", "ORDER_ITEM_STATUS", "SHIPMENT_STATUS", "PURCH_SHIP_STATUS"],
-          "statusTypeId_op": "in"
-        },
-        "fieldList": ["statusId", "description"],
+        "statusTypeId": ["ORDER_STATUS", "ORDER_ITEM_STATUS", "SHIPMENT_STATUS", "PURCH_SHIP_STATUS"],
+        "statusTypeId_op": "in",
+        // "fieldList": ["statusId", "description"],
         "entityName": "StatusItem",
-        "viewSize": 200
+        "pageSize": 200
       }
 
       const resp = await UtilService.fetchStatusDesc(payload);
 
       if(!hasError(resp)) {
         statusDesc = {}
-        resp.data.docs.map((statusItem: any) => {
+        resp.data.map((statusItem: any) => {
           statusDesc[statusItem.statusId] = statusItem.description
         })
 
@@ -77,23 +73,23 @@ const actions: ActionTree<UtilState, RootState> = {
 
     try {
       const payload = {
-        "inputFields": {
+        customParametersMap: {
           productStoreId,
           "roleTypeId": "CARRIER",
           "shipmentMethodTypeId": "STOREPICKUP",
-          "shipmentMethodTypeId_op": "notEqual"
+          "shipmentMethodTypeId_op": "equals",
+          "shipmentMethodTypeId_not": "Y",
+          pageIndex: 0,
+          pageSize: 100
         },
-        "fieldList": ["description", "partyId", "shipmentMethodTypeId"],
-        "noConditionFind": "Y",
-        "entityName": "ProductStoreShipmentMethView",
-        "filterByDate": "Y",
-        "distinct": "Y"
+        dataDocumentId: "ProductStoreShipmentMethod",
+        filterByDate: true
       }
 
       const resp = await UtilService.fetchStoreCarrierAndMethods(payload);
 
       if(!hasError(resp)) {
-        const storeCarrierAndMethods = resp.data.docs;
+        const storeCarrierAndMethods = resp.data.entityValueList;
         shipmentMethodsByCarrier = storeCarrierAndMethods.reduce((shipmentMethodsByCarrier: any, storeCarrierAndMethod: any) => {
           const { partyId, shipmentMethodTypeId, description } = storeCarrierAndMethod;
 
@@ -117,18 +113,15 @@ const actions: ActionTree<UtilState, RootState> = {
 
     try {
       const resp = await UtilService.fetchCarriers({
-        "entityName": "PartyRoleAndPartyDetail",
-        "inputFields": {
-          "roleTypeId": "CARRIER"
-        },
-        "fieldList": ["partyId", "partyTypeId", "roleTypeId", "firstName", "lastName", "groupName"],
+        "roleTypeId": "CARRIER",
+        "fieldsToSelect": ["partyId", "partyTypeId", "roleTypeId", "firstName", "lastName", "groupName"],
         "distinct": "Y",
-        "noConditionFind": "Y"
+        "pageSize": 20
       });
 
       if (!hasError(resp)) {
-        resp.data.docs.map((carrier: any) => {
-          carrierDesc[carrier.partyId] = carrier.partyTypeId === "PERSON" ? `${carrier.firstName} ${carrier.lastName}` : carrier.groupName
+        resp.data.map((carrier: any) => {
+          carrierDesc[carrier.partyId] = carrier.groupName || [carrier.firstName, carrier.lastName].filter(Boolean).join(" ") || carrier.partyId;
         })
       } else {
         throw resp.data;
@@ -141,7 +134,7 @@ const actions: ActionTree<UtilState, RootState> = {
 
   async fetchFacilityAddresses ({ commit, state }, facilityIds) {
     const facilityAddresses = state.facilityAddresses ? JSON.parse(JSON.stringify(state.facilityAddresses)) : {}
-    let addresses = [] as any;
+    const addresses = [] as any;
     const remainingFacilityIds = [] as any;
 
     facilityIds.map((facilityId: string) => {
@@ -151,28 +144,27 @@ const actions: ActionTree<UtilState, RootState> = {
     if(!remainingFacilityIds?.length) return addresses;
 
     try {
-      const resp = await UtilService.fetchFacilityAddresses({
-        inputFields: {
+      const responses = await Promise.allSettled(
+        remainingFacilityIds.map((facilityId: any) => UtilService.fetchFacilityAddresses({
           contactMechPurposeTypeId: "PRIMARY_LOCATION",
           contactMechTypeId: "POSTAL_ADDRESS",
-          facilityId: remainingFacilityIds,
-          facilityId_op: "in"
-        },
-        entityName: "FacilityContactDetailByPurpose",
-        orderBy: 'fromDate DESC',
-        filterByDate: 'Y',
-        fieldList: ['address1', 'address2', 'city', 'countryGeoName', 'postalCode', 'stateGeoName', 'facilityId', 'facilityName', 'contactMechId'],
-        viewSize: 2
-      }) as any;
-  
-      if(!hasError(resp) && resp.data.docs?.length) {
-        resp.data.docs.map((facility: any) => {
-          facilityAddresses[facility.facilityId] = facility;
-        })
-        addresses = [...addresses, ...resp.data.docs]
-      } else {
-        throw resp.data;
+          facilityId,
+        }))
+      );
+
+      const hasFailedResponse = responses.some((response: any) => response.status === 'rejected')
+      if (hasFailedResponse) {
+        throw responses
       }
+
+      responses.map((response: any) => {
+        if (response.value.data?.facilityContactMechs?.length) {
+          response.value.data.facilityContactMechs.map((facilityAddress: any) => {
+            facilityAddresses[facilityAddress.facilityId] = facilityAddress;
+            addresses.push(facilityAddress)
+          })
+        }
+      })
     } catch (error) {
       logger.error(error);
     }
@@ -186,21 +178,18 @@ const actions: ActionTree<UtilState, RootState> = {
 
     try {
       const resp = await UtilService.fetchSampleProducts({
-        inputFields: {
-          internalName_op: "not-empty"
-        },
-        entityName: "Product",
-        fieldList: ["internalName", "productId"],
-        noConditionFind: "Y",
-        viewSize: 10
+        internalName_op: "empty",
+        internalName_not: "Y",
+        fieldsToSelect: ["internalName", "productId"],
+        pageSize: 10
       }) as any;
   
-      if(!hasError(resp) && resp.data.docs?.length) {
+      if(!hasError(resp) && resp.data?.length) {
         const currentEComStore = useUserStore()?.getCurrentEComStore as any;
         let fieldName = currentEComStore?.productIdentifierEnumId || "SKU";
         if(fieldName === "SHOPIFY_BARCODE") fieldName = "UPCA"
 
-        products = resp.data.docs
+        products = resp.data
         products.map((product: any) => {
           product[fieldName] = product.internalName
           product.quantity = 2
