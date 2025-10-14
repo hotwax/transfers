@@ -179,7 +179,7 @@
                 </ion-chip>
               </div>
               <ion-item>
-                <ion-input type="number" placeholder="Qty" v-model="item.quantity" />
+                <ion-input type="number" placeholder="Qty" v-model="item.quantity" :clear-input="true" />
               </ion-item>
               <div class="tablet">
                 <ion-checkbox v-model="item.isChecked" />
