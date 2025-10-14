@@ -367,6 +367,7 @@ async function updateOrderStatus(updatedStatusId: string) {
     showToast(translate("Failed to update order status."))
     selectRef.value.$el.value = currentOrder.value
   }
+  fetchOrderStatusHistoryTimeline();
 }
 
 function generateItemsListByParent() {
