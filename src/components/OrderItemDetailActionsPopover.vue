@@ -37,7 +37,6 @@ const props = defineProps(["item"]);
 
 const getProduct = computed(() => store.getters["product/getProduct"])
 const currentOrder = computed(() => store.getters["order/getCurrent"])
-const getOmsBaseUrl = computed(() => store.getters["user/getOmsBaseUrl"])
 
 async function editOrderedQuantity() {
   const alert = await alertController.create({
@@ -107,13 +106,13 @@ function getCurrentItemInboundShipment() {
 }
 
 function redirectToFulfillItem() {
-  window.location.href = `${process.env.VUE_APP_FULFILLMENT_LOGIN_URL}?oms=${getOmsBaseUrl.value}&token=${authStore.token.value}&expirationTime=${authStore.token.expiration}&orderId=${currentOrder.value.orderId}&facilityId=${currentOrder.value.facilityId}&omsRedirectionUrl=${authStore.oms}`
+  window.location.href = `${process.env.VUE_APP_FULFILLMENT_LOGIN_URL}?oms=${authStore.oms}&token=${authStore.token.value}&expirationTime=${authStore.token.expiration}&orderId=${currentOrder.value.orderId}&facilityId=${currentOrder.value.facilityId}`
   popoverController.dismiss()
 }
 
 function redirectToReceiveItem() {
   const shipment = getCurrentItemInboundShipment()
-  window.location.href = `${process.env.VUE_APP_RECEIVING_LOGIN_URL}?oms=${getOmsBaseUrl.value}&token=${authStore.token.value}&expirationTime=${authStore.token.expiration}&shipmentId=${shipment.shipmentId}&facilityId=${currentOrder.value.facilityId}&omsRedirectionUrl=${authStore.oms}`
+  window.location.href = `${process.env.VUE_APP_RECEIVING_LOGIN_URL}?oms=${authStore.oms}&token=${authStore.token.value}&expirationTime=${authStore.token.expiration}&shipmentId=${shipment.shipmentId}&facilityId=${currentOrder.value.facilityId}`
   popoverController.dismiss()
 }
 </script>
