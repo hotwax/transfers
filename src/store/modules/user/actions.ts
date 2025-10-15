@@ -58,8 +58,8 @@ const actions: ActionTree<UserState, RootState> = {
       await useUserStore().getEComStorePreference("SELECTED_BRAND")
       const preferredStore: any = useUserStore().getCurrentEComStore
 
-      if (omsRedirectionUrl) {
-        dispatch("setOmsRedirectionUrl", omsRedirectionUrl)
+      if (omsRedirectionUrl && token) {
+        dispatch("setOmsRedirectionInfo", { url: omsRedirectionUrl, token })
       }
 
       updateToken(token)
@@ -111,7 +111,7 @@ const actions: ActionTree<UserState, RootState> = {
     const userStore = useUserStore()
     // TODO add any other tasks if need
     commit(types.USER_END_SESSION)
-    dispatch("setOmsRedirectionUrl", "")
+    dispatch("setOmsRedirectionInfo", { url: "", token: "" })
     await this.dispatch("order/clearOrderState")
     await this.dispatch("product/clearProductState")
     await this.dispatch("util/clearUtilState")
@@ -131,8 +131,8 @@ const actions: ActionTree<UserState, RootState> = {
     return redirectionUrl;
   },
 
-  setOmsRedirectionUrl({ commit }, payload) {
-    commit(types.USER_OMS_REDIRECTION_URL_UPDATED, payload)
+  setOmsRedirectionInfo({ commit }, payload) {
+    commit(types.USER_OMS_REDIRECTION_INFO_UPDATED, payload)
   },
 
   /**
