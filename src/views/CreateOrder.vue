@@ -696,8 +696,8 @@ async function refetchAllItemsStock() {
   const responses = await Promise.allSettled(currentOrder.value.items.map((item: any) => fetchStock(item.productId)))
   currentOrder.value.items.map((item: any, index: any) => {
     if(responses[index].status === "fulfilled") {
-      item["qoh"] = responses[index]?.value.quantityOnHandTotal 
-      item["atp"] = responses[index]?.value.availableToPromiseTotal 
+      item["qoh"] = responses[index]?.value.qoh 
+      item["atp"] = responses[index]?.value.atp 
     }
   })
 }
