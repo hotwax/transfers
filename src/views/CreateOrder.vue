@@ -11,7 +11,7 @@
       <div class="find">
         <section class="search">
           <ion-item>
-            <ion-input :label="translate('Transfer name')" :placeholder="translate('name')" v-model="currentOrder.name" />
+            <ion-input :label="translate('Transfer name')" :placeholder="translate('Name')" v-model="currentOrder.name" />
           </ion-item>
         </section>
 
