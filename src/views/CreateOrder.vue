@@ -236,6 +236,7 @@ const stores = ref([]) as any;
 const facilities = ref([]) as any;
 const dateTimeModalOpen = ref(false);
 const selectedDateFilter = ref("");
+const currencyUom = ref("");
 const currentOrder = ref({
   name: "",
   productStoreId: "",
@@ -299,8 +300,10 @@ watch(queryString, (value) => {
 onIonViewDidEnter(async () => {
   emitter.emit("presentLoader")
   stores.value = useUserStore().eComStores
-  currentOrder.value.productStoreId = useUserStore().getCurrentEComStore?.productStoreId
+  const currentProductStoreId = useUserStore().getCurrentEComStore?.productStoreId
+  currentOrder.value.productStoreId = currentProductStoreId
   await Promise.allSettled([fetchFacilitiesByCurrentStore(), store.dispatch("util/fetchStoreCarrierAndMethods", currentOrder.value.productStoreId), store.dispatch("util/fetchCarriersDetail"), store.dispatch("util/fetchSampleProducts")])
+  await fetchProductStoreDetails(currentProductStoreId);
   if(Object.keys(shipmentMethodsByCarrier.value)?.length) {
     currentOrder.value.carrierPartyId = Object.keys(shipmentMethodsByCarrier.value)[0]
     selectUpdatedMethod()
@@ -327,6 +330,19 @@ async function parse(event: any) {
   } catch {
     content.value = []
     showToast(translate("Please upload a valid csv to continue"));
+  }
+}
+
+async function fetchProductStoreDetails(productStoreId: string) {
+  try {
+    const resp = await UtilService.fetchProductStoreDetails({ productStoreId: productStoreId });
+    if(!hasError(resp)) {
+      currencyUom.value = resp.data.defaultCurrencyUomId;
+    } else {
+      throw resp.data;
+    }
+  } catch (err) {
+    logger.error(err);
   }
 }
 
@@ -551,6 +567,7 @@ async function createOrder() {
 		statusId: "ORDER_CREATED",
 		productStoreId: currentOrder.value.productStoreId,
 		statusFlowId: currentOrder.value.statusFlowId,
+    currencyUom: currencyUom.value || 'USD',
 		orderDate: DateTime.now().toFormat("yyyy-MM-dd 23:59:59.000"),
 		entryDate: DateTime.now().toFormat("yyyy-MM-dd 23:59:59.000"),
 		originFacilityId: currentOrder.value.originFacilityId,
