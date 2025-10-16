@@ -175,7 +175,7 @@
               <div class="tablet">
                 <ion-chip outline :color="isQOHAvailable(item) ? '' : 'warning'">
                   <ion-icon slot="start" :icon="sendOutline" />
-                  <ion-label>{{ item.qoh }} {{ translate("QOH") }}</ion-label>
+                  <ion-label>{{ item.qoh ?? '-' }} {{ translate("QOH") }}</ion-label>
                 </ion-chip>
               </div>
               <ion-item>
@@ -375,7 +375,7 @@ async function findProductFromIdentifier(payload: any) {
               sku: product.sku,
             quantity:quantityField ? Number(uploadedItemsByIdValue[idValue][quantityField]) || 0:0,
             isChecked: false,
-            qoh: stock?.qoh || 0,
+            qoh: stock?.qoh ?? null,
             atp: stock?.atp || 0
           })
         }
