@@ -430,7 +430,7 @@ const isScrollable = computed(() => store.getters["order/isScrollable"])
 onIonViewWillEnter(async () => {
   await store.dispatch("order/updateOrdersList", { orders: [], ordersCount: 0 })
   isFetchingOrders.value = true;
-  await Promise.allSettled([store.dispatch('order/findTransferOrders', { pageSize: 20, pageIndex: 0, groupByConfig: selectedGroupBy.value }), store.dispatch('util/fetchStatusDesc'), store.dispatch("util/fetchCarriersDetail"), store.dispatch("util/fetchShipmentMethodTypeDesc")])
+  await Promise.allSettled([store.dispatch('order/findTransferOrders', { pageSize: process.env.VUE_APP_VIEW_SIZE, pageIndex: 0, groupByConfig: selectedGroupBy.value }), store.dispatch('util/fetchStatusDesc'), store.dispatch("util/fetchCarriersDetail"), store.dispatch("util/fetchShipmentMethodTypeDesc")])
   await fetchFacilities();
   productStores.value = await ecomStores.getEComStores();
   isFetchingOrders.value = false;
