@@ -357,9 +357,11 @@ async function updateOrderStatus(updatedStatusId: string) {
 
     if (!hasError(resp)) {
       showToast(translate("Order status updated successfully."))
-      await store.dispatch("order/fetchOrderDetails", props.orderId)
+      await Promise.all([
+        store.dispatch("order/fetchOrderDetails", props.orderId),
+        fetchOrderStatusHistoryTimeline()
+      ]);
       generateItemsListByParent();
-      fetchOrderStatusHistoryTimeline();
     } else {
       throw resp.data;
     }
