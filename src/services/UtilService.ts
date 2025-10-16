@@ -1,5 +1,4 @@
 import {api} from '@/adapter';
-import store from '@/store';
 
 const fetchShipmentMethodTypeDesc = async (query: any): Promise <any>  => {
   
