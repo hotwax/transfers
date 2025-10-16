@@ -11,7 +11,7 @@
       <div class="find">
         <section class="search">
           <ion-item>
-            <ion-input :label="translate('Transfer name')" :placeholder="translate('name')" v-model="currentOrder.name" />
+            <ion-input :label="translate('Transfer name')" :placeholder="translate('Name')" v-model="currentOrder.name" />
           </ion-item>
         </section>
 
@@ -175,11 +175,11 @@
               <div class="tablet">
                 <ion-chip outline :color="isQOHAvailable(item) ? '' : 'warning'">
                   <ion-icon slot="start" :icon="sendOutline" />
-                  <ion-label>{{ item.qoh }} {{ translate("QOH") }}</ion-label>
+                  <ion-label>{{ item.qoh ?? 0 }} {{ translate("QOH") }}</ion-label>
                 </ion-chip>
               </div>
               <ion-item>
-                <ion-input type="number" placeholder="Qty" v-model="item.quantity" />
+                <ion-input type="number" :label="translate('Qty')" label-placement="floating" min="0" v-model="item.quantity" :clear-input="true" />
               </ion-item>
               <div class="tablet">
                 <ion-checkbox v-model="item.isChecked" />
@@ -236,6 +236,7 @@ const stores = ref([]) as any;
 const facilities = ref([]) as any;
 const dateTimeModalOpen = ref(false);
 const selectedDateFilter = ref("");
+const currencyUom = ref("");
 const currentOrder = ref({
   name: "",
   productStoreId: "",
@@ -299,8 +300,10 @@ watch(queryString, (value) => {
 onIonViewDidEnter(async () => {
   emitter.emit("presentLoader")
   stores.value = useUserStore().eComStores
-  currentOrder.value.productStoreId = useUserStore().getCurrentEComStore?.productStoreId
+  const currentProductStoreId = useUserStore().getCurrentEComStore?.productStoreId
+  currentOrder.value.productStoreId = currentProductStoreId
   await Promise.allSettled([fetchFacilitiesByCurrentStore(), store.dispatch("util/fetchStoreCarrierAndMethods", currentOrder.value.productStoreId), store.dispatch("util/fetchCarriersDetail"), store.dispatch("util/fetchSampleProducts")])
+  await fetchProductStoreDetails(currentProductStoreId);
   if(Object.keys(shipmentMethodsByCarrier.value)?.length) {
     currentOrder.value.carrierPartyId = Object.keys(shipmentMethodsByCarrier.value)[0]
     selectUpdatedMethod()
@@ -327,6 +330,19 @@ async function parse(event: any) {
   } catch {
     content.value = []
     showToast(translate("Please upload a valid csv to continue"));
+  }
+}
+
+async function fetchProductStoreDetails(productStoreId: string) {
+  try {
+    const resp = await UtilService.fetchProductStoreDetails({ productStoreId: productStoreId });
+    if(!hasError(resp)) {
+      currencyUom.value = resp.data.defaultCurrencyUomId;
+    } else {
+      throw resp.data;
+    }
+  } catch (err) {
+    logger.error(err);
   }
 }
 
@@ -375,7 +391,7 @@ async function findProductFromIdentifier(payload: any) {
               sku: product.sku,
             quantity:quantityField ? Number(uploadedItemsByIdValue[idValue][quantityField]) || 0:0,
             isChecked: false,
-            qoh: stock?.qoh || 0,
+            qoh: stock?.qoh ?? null,
             atp: stock?.atp || 0
           })
         }
@@ -551,6 +567,7 @@ async function createOrder() {
 		statusId: "ORDER_CREATED",
 		productStoreId: currentOrder.value.productStoreId,
 		statusFlowId: currentOrder.value.statusFlowId,
+    currencyUom: currencyUom.value || 'USD',
 		orderDate: DateTime.now().toFormat("yyyy-MM-dd 23:59:59.000"),
 		entryDate: DateTime.now().toFormat("yyyy-MM-dd 23:59:59.000"),
 		originFacilityId: currentOrder.value.originFacilityId,
@@ -696,8 +713,8 @@ async function refetchAllItemsStock() {
   const responses = await Promise.allSettled(currentOrder.value.items.map((item: any) => fetchStock(item.productId)))
   currentOrder.value.items.map((item: any, index: any) => {
     if(responses[index].status === "fulfilled") {
-      item["qoh"] = responses[index]?.value.quantityOnHandTotal 
-      item["atp"] = responses[index]?.value.availableToPromiseTotal 
+      item["qoh"] = responses[index]?.value.qoh 
+      item["atp"] = responses[index]?.value.atp 
     }
   })
 }

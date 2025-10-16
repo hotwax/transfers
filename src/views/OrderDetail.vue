@@ -85,7 +85,7 @@
                   <p v-if="status.timeDiff">{{ status.timeDiff }}</p>
                   {{ getStatusDesc(status.statusId) ? getStatusDesc(status.statusId) : status.statusId }}
                 </ion-label>
-                <ion-note slot="end">{{ formatDateTime(status.statusDatetime) }}</ion-note>
+                <ion-note slot="end">{{ status.statusDatetime ? formatDateTime(status.statusDatetime) : '-' }}</ion-note>
               </ion-item>
             </ion-list>
           </div>
@@ -357,7 +357,10 @@ async function updateOrderStatus(updatedStatusId: string) {
 
     if (!hasError(resp)) {
       showToast(translate("Order status updated successfully."))
-      await store.dispatch("order/fetchOrderDetails", props.orderId)
+      await Promise.all([
+        store.dispatch("order/fetchOrderDetails", props.orderId),
+        fetchOrderStatusHistoryTimeline()
+      ]);
       generateItemsListByParent();
     } else {
       throw resp.data;

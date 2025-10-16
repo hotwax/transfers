@@ -29,8 +29,11 @@ const getters: GetterTree <UserState, RootState> = {
     return state.pwaState;
   },
   getOmsBaseUrl (state) {
-    const url = state.omsRedirectionUrl
+    const url = state.omsRedirectionInfo.url
     return url.startsWith('http') ? url.includes('/api') ? url : `${url}/api/` : `https://${url}.hotwax.io/api/`;
   },
+  getOmsRedirectionInfo(state) {
+    return state.omsRedirectionInfo;
+  }
 }
 export default getters;

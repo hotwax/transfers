@@ -113,12 +113,21 @@ const fetchProductsAverageCost = async (productIds: any, facilityId: any): Promi
   return productAverageCostDetail;
 }
 
+const fetchProductStoreDetails = async (payload: any): Promise<any> => {
+
+  return api({
+    url: `/oms/productStores/${payload.productStoreId}`,
+    method: "GET",
+  });
+}
+
 
 export const UtilService = {
   fetchCarriers,
   fetchFacilities,
   fetchFacilityAddresses,
   fetchProductsAverageCost,
+  fetchProductStoreDetails,
   fetchSampleProducts,
   fetchShipmentMethodTypeDesc,
   fetchStatusDesc,
