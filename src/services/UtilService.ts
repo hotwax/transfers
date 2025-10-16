@@ -1,4 +1,4 @@
-import {api, apiClient} from '@/adapter';
+import {api} from '@/adapter';
 import store from '@/store';
 
 const fetchShipmentMethodTypeDesc = async (query: any): Promise <any>  => {
@@ -115,17 +115,10 @@ const fetchProductsAverageCost = async (productIds: any, facilityId: any): Promi
 }
 
 const fetchProductStoreDetails = async (payload: any): Promise<any> => {
-  const omstoken = store.getters['user/getUserToken'];
-  const baseURL = store.getters['user/getBaseUrl'];
 
-  return apiClient({
+  return api({
     url: `/oms/productStores/${payload.productStoreId}`,
     method: "GET",
-    baseURL,
-    headers: {
-      "Authorization": "Bearer " + omstoken,
-      "Content-Type": "application/json"
-    }
   });
 }
 
