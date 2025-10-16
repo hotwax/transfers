@@ -175,7 +175,7 @@
               <div class="tablet">
                 <ion-chip outline :color="isQOHAvailable(item) ? '' : 'warning'">
                   <ion-icon slot="start" :icon="sendOutline" />
-                  <ion-label>{{ item.qoh ?? '-' }} {{ translate("QOH") }}</ion-label>
+                  <ion-label>{{ item.qoh ?? 0 }} {{ translate("QOH") }}</ion-label>
                 </ion-chip>
               </div>
               <ion-item>
