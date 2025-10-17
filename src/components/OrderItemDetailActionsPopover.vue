@@ -103,7 +103,7 @@ function isEligibleToFulfill() {
 }
 
 function getCurrentItemInboundShipment() {
-  return currentOrder.value.shipments?.find((shipment: any) => shipment.shipmentTypeId === "IN_TRANSFER" && shipment.items?.some((item: any) => item.orderItemSeqId === props.item.orderItemSeqId));
+  return currentOrder.value.shipments?.find((shipment: any) => shipment.shipmentTypeId === "IN_TRANSFER" && shipment.packages?.some((pkg: any) => pkg.items?.some((item: any) => item.orderItemSeqId === props.item.orderItemSeqId)));
 }
 
 function redirectToFulfillItem() {
