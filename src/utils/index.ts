@@ -107,4 +107,8 @@ const formatCurrency = (amount: any, code: string) => {
   return `${symbol} ${amount.toFixed(2)}`
 }
 
-export { formatUtcDate, formatCurrency, getColorByDesc, getDateWithOrdinalSuffix, jsonToCsv, JsonToCsvOption, parseCsv, showToast }
+const getCurrentTime = (zone: string, format = 't ZZZZ') => {
+  return DateTime.now().setZone(zone).toFormat(format)
+}
+
+export { formatUtcDate, formatCurrency, getColorByDesc, getCurrentTime, getDateWithOrdinalSuffix, jsonToCsv, JsonToCsvOption, parseCsv, showToast }

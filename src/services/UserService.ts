@@ -129,10 +129,27 @@ const fetchFacilitiesByCurrentStore = (payload: any): Promise <any> => {
     params: payload
   });
 }
+async function setUserTimeZone(payload: any): Promise<any> {
+  try {
+    const resp = await api({
+      url: "admin/user/profile",
+      method: "POST",
+      data: payload,
+    }) as any;
+    return Promise.resolve(resp.data);
+  } catch (error: any) {
+    return Promise.reject({
+      code: "error",
+      message: "Failed to set user time zone",
+      serverResponse: error
+    });
+  }
+}
 
 export const UserService = {
   fetchFacilitiesByCurrentStore,
   getUserProfile,
   getUserPermissions,
   login,
+  setUserTimeZone,
 }

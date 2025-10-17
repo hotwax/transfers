@@ -61,7 +61,7 @@
 
       <section>
         <DxpProductIdentifier />
-        <DxpTimeZoneSwitcher @timeZoneUpdated="timeZoneUpdated" />
+        <TimeZoneSwitcher @timeZoneUpdated="timeZoneUpdated" />
       </section>
     </ion-content>
   </ion-page>
@@ -75,6 +75,7 @@ import Image from "@/components/Image.vue";
 import { openOutline } from "ionicons/icons";
 import { goToOms, translate, useProductIdentificationStore } from "@hotwax/dxp-components";
 import logger from "@/logger";
+import TimeZoneSwitcher from "@/components/TimeZoneSwitcher.vue"
 
 const store = useStore()
 
