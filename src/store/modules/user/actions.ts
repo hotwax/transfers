@@ -139,10 +139,17 @@ const actions: ActionTree<UserState, RootState> = {
    * Update user timeZone
    */
   async setUserTimeZone ( { state, commit }, timeZoneId) {
-    const current: any = state.current;
-    current.userTimeZone = timeZoneId;
-    commit(types.USER_INFO_UPDATED, current);
-    Settings.defaultZone = current.userTimeZone;
+   const current: any = state.current;
+    try {
+      await UserService.setUserTimeZone(({ userId: current.userId, timeZone: timeZoneId }));
+      current.timeZone = timeZoneId;
+      commit(types.USER_INFO_UPDATED, current);
+      Settings.defaultZone = current.timeZone;
+      showToast(translate("Time zone updated successfully"));
+    } catch(err) {
+      logger.error(err)
+      showToast(translate("Failed to update time zone"));
+    }
   },
 
   // Set User Instance Url
