@@ -343,7 +343,7 @@ async function findProductFromIdentifier(payload: any) {
   const productIdsAlreadyAddedInList = currentOrder.value.items.map((item: any) => item.productId)
   const filterString = (idType === 'productId') ? `${idType}: (${idValues.join(' OR ')})` : `goodIdentifications: (${idValues.map((value: any) => `${idType}/${value}`).join(' OR ')})`;
   
-  emitter.emit("presentLoader", { message: "Uploading items...", backdropDismiss: true });
+  emitter.emit("presentLoader", { message: "Uploading items...", backdropDismiss: false });
 
   try {
     const resp = await ProductService.fetchProducts({
@@ -696,7 +696,7 @@ async function openSelectFacilityModal(facilityType: any) {
 }
 
 async function refetchAllItemsStock() {
-  emitter.emit("presentLoader", { message: "Updating items...", backdropDismiss: true });
+  emitter.emit("presentLoader", { message: "Updating items...", backdropDismiss: false });
   const responses = await Promise.allSettled(currentOrder.value.items.map((item: any) => fetchStock(item.productId)))
   currentOrder.value.items.map((item: any, index: any) => {
     if(responses[index].status === "fulfilled") {
