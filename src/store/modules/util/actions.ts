@@ -3,6 +3,7 @@ import RootState from '@/store/RootState'
 import UtilState from './UtilState'
 import * as types from './mutation-types'
 import { UtilService } from '@/services/UtilService'
+import { UserService } from '@/services/UserService'
 import { hasError } from '@/adapter'
 import logger from '@/logger'
 import { useUserStore } from '@hotwax/dxp-components'
@@ -130,6 +131,33 @@ const actions: ActionTree<UtilState, RootState> = {
       logger.error("error", err);
     }
     commit(types.UTIL_CARRIER_DESC_UPDATED, carrierDesc)
+  },
+
+  async fetchFacilitiesByCurrentStore({ commit }, productStoreId) {
+    let facilities = [];
+
+    try {
+      const resp = await UserService.fetchFacilitiesByCurrentStore({
+        productStoreId: productStoreId,
+        facilityTypeId: "VIRTUAL_FACILITY",
+        facilityTypeId_op: "equals",
+        facilityTypeId_not: "Y",
+        parentFacilityTypeId: "VIRTUAL_FACILITY",
+        parentFacilityTypeId_op: "equals",
+        parentFacilityTypeId_not: "Y",
+        fieldsToSelect: ["facilityId", "facilityName"],
+        pageSize: 200,
+      })
+
+      if(!hasError(resp)) {
+        facilities = resp.data
+      } else {
+        throw resp.data;
+      }
+    } catch(error: any) {
+      logger.error(error);
+    }
+    commit(types.UTIL_FACILITIES_BY_PRODUCT_STORE_UPDATED, facilities)
   },
 
   async fetchFacilityAddresses ({ commit, state }, facilityIds) {

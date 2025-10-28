@@ -3,6 +3,7 @@ export default interface UtilState {
   statusDesc: any;
   shipmentMethodsByCarrier: any;
   carrierDesc: any;
+  facilities: any;
   facilityAddresses: any;
   sampleProducts: any;
 }
