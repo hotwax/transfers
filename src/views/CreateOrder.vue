@@ -358,6 +358,8 @@ async function findProductFromIdentifier(payload: any) {
   const idValues = Object.keys(uploadedItemsByIdValue);
   const productIdsAlreadyAddedInList = currentOrder.value.items.map((item: any) => item.productId)
   const filterString = (idType === 'productId') ? `${idType}: (${idValues.join(' OR ')})` : `goodIdentifications: (${idValues.map((value: any) => `${idType}/${value}`).join(' OR ')})`;
+  
+  emitter.emit("presentLoader", { message: "Uploading items...", backdropDismiss: false });
 
   try {
     const resp = await ProductService.fetchProducts({
@@ -378,7 +380,7 @@ async function findProductFromIdentifier(payload: any) {
         }
       })
 
-      Object.entries(productsByIdValue).map(async ([idValue, product]) => {
+      for (const [idValue, product] of Object.entries(productsByIdValue)) {
         if(productIdsAlreadyAddedInList.includes(product.productId)) {
           if(quantityField) {
             const item = currentOrder.value.items.find((item: any) => item.productId === product.productId)
@@ -388,14 +390,14 @@ async function findProductFromIdentifier(payload: any) {
           const stock = await fetchStock(product.productId);
           currentOrder.value.items.push({
             productId: product.productId,
-              sku: product.sku,
-            quantity:quantityField ? Number(uploadedItemsByIdValue[idValue][quantityField]) || 0:0,
+            sku: product.sku,
+            quantity: quantityField ? Number(uploadedItemsByIdValue[idValue][quantityField]) || 0 : 0,
             isChecked: false,
             qoh: stock?.qoh ?? null,
             atp: stock?.atp || 0
           })
         }
-      })
+      }
     } else {
       throw resp.data;
     }
@@ -403,6 +405,7 @@ async function findProductFromIdentifier(payload: any) {
     logger.error(error)
     showToast(translate("Failed to add items to the order due to incorrect SKU mapping or invalid SKUs."))
   }
+  emitter.emit("dismissLoader")
 }
 
 async function addProductToCount() {
@@ -710,6 +713,7 @@ async function openSelectFacilityModal(facilityType: any) {
 }
 
 async function refetchAllItemsStock() {
+  emitter.emit("presentLoader", { message: "Updating items...", backdropDismiss: false });
   const responses = await Promise.allSettled(currentOrder.value.items.map((item: any) => fetchStock(item.productId)))
   currentOrder.value.items.map((item: any, index: any) => {
     if(responses[index].status === "fulfilled") {
@@ -717,6 +721,7 @@ async function refetchAllItemsStock() {
       item["atp"] = responses[index]?.value.atp 
     }
   })
+  emitter.emit("dismissLoader")
 }
 
 function isProductAvailableInOrder() {

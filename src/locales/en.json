@@ -55,6 +55,7 @@
   "Items": "Items",
   "Lifecycle": "Lifecycle",
   "Loading": "Loading",
+  "Loading...": "Loading...",
   "Location": "Location",
   "Login": "Login",
   "Logging in...": "Logging in...",
@@ -138,5 +139,7 @@
   "Transfers": "Transfers",
   "Upload": "Upload",
   "Username": "Username",
-  "Version: ": "Version: {appVersion}"  
+  "Version: ": "Version: {appVersion}",
+  "Select a different time zone": "Select a different time zone",
+  "Browser time zone": "Browser time zone"
 }
