@@ -433,7 +433,7 @@ async function productStoreUpdated() {
   if(isFacilityUpdated) {
     currentOrder.value.originFacilityId = facilities.value[0]?.facilityId;
     currentOrder.value.destinationFacilityId = "";
-    refetchAllItemsStock()
+    if(currentOrder.value.items.length) refetchAllItemsStock()
   }
   await store.dispatch("util/fetchStoreCarrierAndMethods", currentOrder.value.productStoreId);
   if(Object.keys(shipmentMethodsByCarrier.value)?.length) {
@@ -704,7 +704,7 @@ async function openSelectFacilityModal(facilityType: any) {
     if(result.data?.selectedFacilityId) {
       currentOrder.value[facilityType] = result.data.selectedFacilityId
       if(facilityType === "originFacilityId") {
-        refetchAllItemsStock()
+        if(currentOrder.value.items.length) refetchAllItemsStock()
       }
     }
   })
