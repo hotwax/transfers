@@ -433,7 +433,7 @@ function getSelectedShipment() {
 }
 
 function getFacilityName(facilityId: string) {
-  const facility = facilities.value.find((facility: any) => facility.facilityId === facilityId)
+  const facility = facilities.value?.find((facility: any) => facility.facilityId === facilityId)
   return facility ? facility.facilityName || facility.facilityId : facilityId
 }
 

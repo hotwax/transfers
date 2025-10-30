@@ -455,7 +455,7 @@ function getCarrierShipmentMethods() {
 }
 
 function getFacilityName(facilityId: any) {
-  return facilities.value.find((facility: any) => facility.facilityId === facilityId)?.facilityName
+  return facilities.value?.find((facility: any) => facility.facilityId === facilityId)?.facilityName
 }
 
 async function updateBulkOrderItemQuantity(action: any) {
