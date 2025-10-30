@@ -32,9 +32,9 @@
           <div class="info">
             <ion-card>
               <ion-card-header>
-                <ion-card-title>{{ currentOrder.originFacility?.facilityName ? currentOrder.originFacility.facilityName : currentOrder.facilityId }}</ion-card-title>
+                <ion-card-title>{{ currentOrder.originFacility?.facilityName ? currentOrder.originFacility.facilityName : getFacilityName(currentOrder.facilityId) }}</ion-card-title>
               </ion-card-header>
-              <ion-item lines="none">
+              <ion-item v-if="currentOrder?.originFacility" lines="none">
                 <ion-icon :icon="sendOutline" slot="start" />
                 <ion-label>
                   <h3 v-if="currentOrder.originFacility?.address1">{{ currentOrder.originFacility.address1 }}</h3>
@@ -61,9 +61,9 @@
 
             <ion-card>
               <ion-card-header>
-                <ion-card-title>{{ currentOrder.destinationFacility?.facilityName ? currentOrder.destinationFacility.facilityName : currentOrder.orderFacilityId }}</ion-card-title>
+                <ion-card-title>{{ currentOrder.destinationFacility?.facilityName ? currentOrder.destinationFacility.facilityName : getFacilityName(currentOrder.orderFacilityId) }}</ion-card-title>
               </ion-card-header>
-              <ion-item lines="none">
+              <ion-item v-if="currentOrder?.destinationFacility" lines="none">
                 <ion-icon :icon="downloadOutline" slot="start" />
                 <ion-label>
                   <h3 v-if="currentOrder.destinationFacility?.address1">{{ currentOrder.destinationFacility.address1 }}</h3>
@@ -292,6 +292,7 @@ const shipmentMethodsByCarrier = computed(() => store.getters["util/getShipmentM
 const getProduct = computed(() => store.getters["product/getProduct"])
 const getCarrierDesc = computed(() => store.getters["util/getCarrierDesc"])
 const getShipmentMethodDesc = computed(() => store.getters["util/getShipmentMethodDesc"])
+const facilities = computed(() => store.getters["util/getFacilitiesByProductStore"])
 
 const isFetchingOrderDetail = ref(false);
 const selectedShipmentId = ref("");
@@ -304,7 +305,7 @@ const selectRef = ref("") as any;
 onIonViewWillEnter(async () => {
   isFetchingOrderDetail.value = true;
   await store.dispatch("order/fetchOrderDetails", props.orderId)
-  await Promise.allSettled([store.dispatch('util/fetchStatusDesc'), store.dispatch("util/fetchCarriersDetail"), fetchOrderStatusHistoryTimeline(), store.dispatch("util/fetchShipmentMethodTypeDesc")])
+  await Promise.allSettled([store.dispatch("util/fetchFacilitiesByCurrentStore", currentOrder.value.productStoreId), store.dispatch('util/fetchStatusDesc'), store.dispatch("util/fetchCarriersDetail"), fetchOrderStatusHistoryTimeline(), store.dispatch("util/fetchShipmentMethodTypeDesc")])
   generateItemsListByParent();
   isFetchingOrderDetail.value = false;
   carrierMethods.value = shipmentMethodsByCarrier.value[currentOrder.value.carrierPartyId]
@@ -429,6 +430,11 @@ function getFilteredShipments(shipmentTypeId: string) {
 
 function getSelectedShipment() {
   return currentOrder.value.shipments.find((shipment: any) => shipment.shipmentId === selectedShipmentId.value)
+}
+
+function getFacilityName(facilityId: string) {
+  const facility = facilities.value?.find((facility: any) => facility.facilityId === facilityId)
+  return facility ? facility.facilityName || facility.facilityId : facilityId
 }
 
 async function updateCarrierAndShipmentMethod(event: any, carrierPartyId: any, shipmentMethodTypeId: any) {
