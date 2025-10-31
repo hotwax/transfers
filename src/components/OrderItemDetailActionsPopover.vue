@@ -5,7 +5,7 @@
       <ion-item button :disabled="item.statusId !== 'ITEM_CREATED'" @click="editOrderedQuantity()">
         {{ translate("Edit ordered qty") }}
       </ion-item>
-      <ion-item button :disabled="!isEligibleToFulfill()" @click="redirectToFulfillItem()">
+      <ion-item button :disabled="!isEligibleToFulfill(item)" @click="redirectToFulfillItem()">
         {{ translate("Fulfill") }}
       </ion-item>
       <ion-item button :disabled="!getCurrentItemInboundShipment()" @click="redirectToReceiveItem()">
@@ -97,9 +97,19 @@ async function editOrderedQuantity() {
   alert.present()
 }
 
-function isEligibleToFulfill() {
-  const excludedStatuses = ["ORDER_CREATED", "ORDER_CANCELLED", "ORDER_REJECTED"];
-  return !excludedStatuses.includes(currentOrder.value.statusId);
+// Determines if a transfer order item is eligible for fulfillment
+function isEligibleToFulfill(item: any) {
+  const excludedItemStatuses = ["ITEM_PENDING_RECEIPT", "ITEM_COMPLETED"];
+  const order = currentOrder.value;
+
+  // Disable if order is in CREATED state or has RECEIVE_ONLY flow
+  if (order.statusId === "ORDER_CREATED" || order.statusFlowId === "TO_Receive_Only") return false;
+
+  // Disable if the item is in PENDING_RECEIPT or COMPLETED state
+  const orderItem = order.items?.find((orderItem: any) => orderItem.orderItemSeqId === item.orderItemSeqId);
+  if (orderItem && excludedItemStatuses.includes(orderItem.statusId)) return false;
+
+  return true;
 }
 
 function getCurrentItemInboundShipment() {
