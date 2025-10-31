@@ -99,13 +99,13 @@ async function editOrderedQuantity() {
 
 // Determines if a transfer order item is eligible for fulfillment
 function isEligibleToFulfill(item: any) {
-  const excludedOrderStatuses = ["ORDER_CREATED", "ORDER_CANCELLED", "ORDER_REJECTED"];
   const excludedItemStatuses = ["ITEM_PENDING_RECEIPT", "ITEM_COMPLETED"];
   const order = currentOrder.value;
 
-  // Check if the order has a CREATED, CANCELLED, REJECTED state or RECEIVE_ONLY flow
-  if (excludedOrderStatuses.includes(order.statusId) || order.statusFlowId === "TO_Receive_Only") return false;
-  // Check if the item has a PENDING_RECEIPT or COMPLETED status
+  // Disable if order is in CREATED state or has RECEIVE_ONLY flow
+  if (order.statusId === "ORDER_CREATED" || order.statusFlowId === "TO_Receive_Only") return false;
+
+  // Disable if the item is in PENDING_RECEIPT or COMPLETED state
   const orderItem = order.items?.find((orderItem: any) => orderItem.orderItemSeqId === item.orderItemSeqId);
   if (orderItem && excludedItemStatuses.includes(orderItem.statusId)) return false;
 
