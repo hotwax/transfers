@@ -42,46 +42,6 @@ const fetchShippedTransferShipments = async (params: any): Promise<any> => {
   });
 }
 
-const fetchOrderItem = async (payload: any): Promise<any> => {
-  const baseURL = store.getters['user/getOmsBaseUrl'];
-  const omstoken = store.getters['user/getUserToken'];
-  let orderItem = {};
-
-  try {
-    const resp = await apiClient({
-      url: "performFind",
-      method: "get",
-      baseURL,
-      headers: {
-        "Authorization": "Bearer " + omstoken,
-        "Content-Type": "application/json"
-      },
-      params : {
-        "entityName": "OrderHeaderItemAndShipGroup",
-        "inputFields": {
-          "orderId": payload.orderId,
-          "orderTypeId": "TRANSFER_ORDER",
-          "productId": payload.productId
-        },
-        "fieldList": ["orderId", "orderName", "externalId", "orderTypeId", "statusId", "orderDate", "facilityId", "orderFacilityId", "productStoreId", "carrierPartyId", "shipmentMethodTypeId", "oiStatusId", "orderItemSeqId", "quantity", "productId", "shipGroupSeqId", "oisgFacilityId", "statusFlowId"],
-        "viewSize": 1,
-        "distinct": "Y",
-        "noConditionFind": "Y"
-      }
-    })
-
-    if(!hasError(resp) && resp?.data.docs?.length) {
-      orderItem = resp.data.docs[0]
-    } else {
-      throw resp?.data
-    }
-  } catch(error: any) {
-    logger.error(error)
-  }
-
-  return orderItem;
-}
-
 const fetchShipments = async (params: any): Promise<any> => {
   const baseURL = store.getters['user/getOmsBaseUrl'];
   const omstoken = store.getters['user/getUserToken'];
@@ -334,7 +294,6 @@ export const OrderService = {
   approveWarehouseFulfillOrder,
   cancelOrder,
   createOrder,
-  fetchOrderItem,
   fetchOrderStatusHistory,
   fetchShipmentStatuses,
   fetchShipments,
