@@ -420,8 +420,19 @@ function generateItemsListByParent() {
   itemsByParentProductId.value = itemsById
 }
 
-function isOrderFinished() {
-  return ["ORDER_COMPLETED", "ORDER_REJECTED", "ORDER_CANCELLED"].includes(currentOrder.value.statusId)
+function isOrderFinished(item?: any) {
+  const order = currentOrder.value;
+  const excludedOrderStatuses = ["ORDER_COMPLETED", "ORDER_REJECTED", "ORDER_CANCELLED"];
+  const excludedItemStatuses = ["ITEM_CANCELLED", "ITEM_COMPLETED"];
+
+  // Disable if order is in finished state
+  if (excludedOrderStatuses.includes(order.statusId)) return true;
+  // Disable if the item is in finished state
+  if (item) {
+    const orderItem = order.items?.find((orderItem: any) => orderItem.orderItemSeqId === item.orderItemSeqId);
+    if (orderItem && excludedItemStatuses.includes(orderItem.statusId)) return true;
+  }
+  return false;
 }
 
 function getFilteredShipments(shipmentTypeId: string) {
