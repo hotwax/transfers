@@ -105,7 +105,7 @@
                       <p v-if="shipment.trackingIdNumber">{{ shipment.trackingIdNumber }}</p>
                     </ion-label>
                   </ion-radio>
-                  <ion-badge slot="end" class="no-pointer-events" :color="getColorByDesc(getStatusDesc(shipment.statusId)) || getColorByDesc('default')">{{ getStatusDesc(shipment.statusId) ? getStatusDesc(shipment.statusId) : shipment.statusId }}</ion-badge>
+                  <ion-badge slot="end" class="no-pointer-events" :color="getColorByDesc(getStatusDesc(shipment.shipmentStatusId)) || getColorByDesc('default')">{{ getStatusDesc(shipment.shipmentStatusId) ? getStatusDesc(shipment.shipmentStatusId) : shipment.shipmentStatusId }}</ion-badge>
                 </ion-item>
               </ion-card>
               
