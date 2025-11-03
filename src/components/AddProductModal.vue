@@ -157,8 +157,7 @@ async function addItemToOrder(product: any) {
     const resp = await OrderService.addOrderItem(newProduct)
 
     if(!hasError(resp)) {
-      const newItem  = await OrderService.fetchOrderItem({ orderId: newProduct.orderId, productId: newProduct.productId })
-      order.items.push({ ...newProduct, oiStatusId: "ITEM_CREATED", statusId: "ORDER_CREATED", orderItemSeqId: newItem?.orderItemSeqId, unitPrice: productAverageCostDetail[product.productId] || 0.00 });
+      order.items.push({ ...newProduct, statusId: "ITEM_CREATED", orderItemSeqId: resp.data?.orderItemSeqId });
 
       await store.dispatch("order/updateCurrent", order)
       emitter.emit("generateItemsListByParent", product.productId)
