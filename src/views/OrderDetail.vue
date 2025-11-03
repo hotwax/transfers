@@ -252,7 +252,7 @@
                   </div>
                   <ion-badge :color="getColorByDesc(getStatusDesc(item.statusId)) || getColorByDesc('default')">{{ getStatusDesc(item.statusId) ? getStatusDesc(item.statusId) : item.statusId }}</ion-badge>
                 </template>
-                <ion-button slot="end" fill="clear" color="medium" :disabled="isOrderFinished()" @click="openOrderItemDetailActionsPopover($event, item)">
+                <ion-button slot="end" fill="clear" color="medium" :disabled="isOrderFinished(item)" @click="openOrderItemDetailActionsPopover($event, item)">
                   <ion-icon :icon="ellipsisVerticalOutline" slot="icon-only" />
                 </ion-button>
               </div>
@@ -428,9 +428,8 @@ function isOrderFinished(item?: any) {
   // Disable if order is in finished state
   if (excludedOrderStatuses.includes(order.statusId)) return true;
   // Disable if the item is in finished state
-  if (item) {
-    const orderItem = order.items?.find((orderItem: any) => orderItem.orderItemSeqId === item.orderItemSeqId);
-    if (orderItem && excludedItemStatuses.includes(orderItem.statusId)) return true;
+  if (item && excludedItemStatuses.includes(item.statusId)) {
+    return true;
   }
   return false;
 }
