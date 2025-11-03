@@ -252,7 +252,7 @@
                   </div>
                   <ion-badge :color="getColorByDesc(getStatusDesc(item.statusId)) || getColorByDesc('default')">{{ getStatusDesc(item.statusId) ? getStatusDesc(item.statusId) : item.statusId }}</ion-badge>
                 </template>
-                <ion-button slot="end" fill="clear" color="medium" :disabled="isOrderFinished()" @click="openOrderItemDetailActionsPopover($event, item)">
+                <ion-button slot="end" fill="clear" color="medium" :disabled="isOrderFinished(item)" @click="openOrderItemDetailActionsPopover($event, item)">
                   <ion-icon :icon="ellipsisVerticalOutline" slot="icon-only" />
                 </ion-button>
               </div>
@@ -420,8 +420,18 @@ function generateItemsListByParent() {
   itemsByParentProductId.value = itemsById
 }
 
-function isOrderFinished() {
-  return ["ORDER_COMPLETED", "ORDER_REJECTED", "ORDER_CANCELLED"].includes(currentOrder.value.statusId)
+function isOrderFinished(item?: any) {
+  const order = currentOrder.value;
+  const excludedOrderStatuses = ["ORDER_COMPLETED", "ORDER_REJECTED", "ORDER_CANCELLED"];
+  const excludedItemStatuses = ["ITEM_CANCELLED", "ITEM_COMPLETED"];
+
+  // Disable if order is in finished state
+  if (excludedOrderStatuses.includes(order.statusId)) return true;
+  // Disable if the item is in finished state
+  if (item && excludedItemStatuses.includes(item.statusId)) {
+    return true;
+  }
+  return false;
 }
 
 function getFilteredShipments(shipmentTypeId: string) {

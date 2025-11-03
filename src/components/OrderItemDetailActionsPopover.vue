@@ -131,7 +131,7 @@ function redirectToFulfillItem() {
 }
 
 function redirectToReceiveItem() {
-  window.location.href = `${process.env.VUE_APP_RECEIVING_LOGIN_URL}?oms=${getOmsBaseUrl.value}&token=${authStore.token.value}&expirationTime=${authStore.token.expiration}&orderId=${currentOrder.value.orderId}&facilityId=${currentOrder.value.facilityId}&omsRedirectionUrl=${authStore.oms}`
+  window.location.href = `${process.env.VUE_APP_RECEIVING_LOGIN_URL}?oms=${getOmsBaseUrl.value}&token=${authStore.token.value}&expirationTime=${authStore.token.expiration}&orderId=${currentOrder.value.orderId}&facilityId=${currentOrder.value.orderFacilityId}&omsRedirectionUrl=${authStore.oms}`
   popoverController.dismiss()
 }
 </script>
