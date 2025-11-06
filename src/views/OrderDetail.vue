@@ -21,7 +21,7 @@
               <ion-label>
                 <h1>{{ currentOrder.orderName ? currentOrder.orderName : currentOrder.orderId }}</h1>
               </ion-label>
-              <ion-badge :color="getColorByDesc(getStatusDesc(currentOrder.statusId)) || getColorByDesc('default')" slot="end">{{ getStatusDesc(currentOrder.statusId) ? getStatusDesc(currentOrder.statusId) : currentOrder.statusId }}</ion-badge>
+              <ion-badge :color="getColorByDesc(getStatusDesc(currentOrder.statusId)) || getColorByDesc('default')" slot="end">{{ getStatusDesc(currentOrder.statusId) }}</ion-badge>
               <ion-select v-if="currentOrder.statusId === 'ORDER_CREATED' || currentOrder.statusId === 'ORDER_APPROVED'" ref="selectRef" slot="end" aria-label="status" :value="currentOrder.statusId" selected-text=" " interface="popover" @ionChange="changeOrderStatus($event.detail.value)">
                 <ion-select-option v-if="currentOrder.statusId === 'ORDER_CREATED'" value="ORDER_APPROVED">{{ translate("Approve") }}</ion-select-option>
                 <ion-select-option value="ORDER_CANCELLED">{{ translate("Cancel") }}</ion-select-option>
@@ -83,7 +83,7 @@
               <ion-item v-for="(status, index) in orderTimeline" :key="index">
                 <ion-label>
                   <p v-if="status.timeDiff">{{ status.timeDiff }}</p>
-                  {{ getStatusDesc(status.statusId) ? getStatusDesc(status.statusId) : status.statusId }}
+                  {{ getStatusDesc(status.statusId) }}
                 </ion-label>
                 <ion-note slot="end">{{ status.statusDatetime ? formatDateTime(status.statusDatetime) : '-' }}</ion-note>
               </ion-item>
@@ -105,7 +105,7 @@
                       <p v-if="shipment.trackingIdNumber">{{ shipment.trackingIdNumber }}</p>
                     </ion-label>
                   </ion-radio>
-                  <ion-badge slot="end" class="no-pointer-events" :color="getColorByDesc(getStatusDesc(shipment.shipmentStatusId)) || getColorByDesc('default')">{{ getStatusDesc(shipment.shipmentStatusId) ? getStatusDesc(shipment.shipmentStatusId) : shipment.shipmentStatusId }}</ion-badge>
+                  <ion-badge slot="end" class="no-pointer-events" :color="getColorByDesc(getStatusDesc(shipment.shipmentStatusId)) || getColorByDesc('default')">{{ getStatusDesc(shipment.shipmentStatusId) }}</ion-badge>
                 </ion-item>
               </ion-card>
               
@@ -250,7 +250,7 @@
                       <ion-label>{{ item.receivedQty || 0 }}</ion-label>
                     </ion-chip>
                   </div>
-                  <ion-badge :color="getColorByDesc(getStatusDesc(item.statusId)) || getColorByDesc('default')">{{ getStatusDesc(item.statusId) ? getStatusDesc(item.statusId) : item.statusId }}</ion-badge>
+                  <ion-badge :color="getColorByDesc(getStatusDesc(item.statusId)) || getColorByDesc('default')">{{ getStatusDesc(item.statusId) }}</ion-badge>
                 </template>
                 <ion-button slot="end" fill="clear" color="medium" :disabled="isOrderFinished()" @click="openOrderItemDetailActionsPopover($event, item)">
                   <ion-icon :icon="ellipsisVerticalOutline" slot="icon-only" />
