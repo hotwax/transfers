@@ -5,10 +5,10 @@
       <ion-item button :disabled="item.statusId !== 'ITEM_CREATED'" @click="editOrderedQuantity()">
         {{ translate("Edit ordered qty") }}
       </ion-item>
-      <ion-item button :disabled="!isEligibleToFulfill()" @click="redirectToFulfillItem()">
+      <ion-item button :disabled="!isEligibleToFulfill(item)" @click="redirectToFulfillItem()">
         {{ translate("Fulfill") }}
       </ion-item>
-      <ion-item button :disabled="!getCurrentItemInboundShipment()" @click="redirectToReceiveItem()">
+      <ion-item button :disabled="!isEligibleToReceive(item)" @click="redirectToReceiveItem()">
         {{ translate("Receive") }}
       </ion-item>
       <!--
@@ -97,13 +97,32 @@ async function editOrderedQuantity() {
   alert.present()
 }
 
-function isEligibleToFulfill() {
-  const excludedStatuses = ["ORDER_CREATED", "ORDER_CANCELLED", "ORDER_REJECTED"];
-  return !excludedStatuses.includes(currentOrder.value.statusId);
+// Determines if a transfer order item is eligible for fulfillment
+function isEligibleToFulfill(item: any) {
+  const excludedItemStatuses = ["ITEM_PENDING_RECEIPT", "ITEM_COMPLETED"];
+  const order = currentOrder.value;
+
+  // Disable if order is in CREATED state or has RECEIVE_ONLY flow
+  if (order.statusId === "ORDER_CREATED" || order.statusFlowId === "TO_Receive_Only") return false;
+
+  // Disable if the item is in PENDING_RECEIPT or COMPLETED state
+  const orderItem = order.items?.find((orderItem: any) => orderItem.orderItemSeqId === item.orderItemSeqId);
+  if (orderItem && excludedItemStatuses.includes(orderItem.statusId)) return false;
+
+  return true;
 }
 
-function getCurrentItemInboundShipment() {
-  return currentOrder.value.shipments?.find((shipment: any) => shipment.shipmentTypeId === "IN_TRANSFER" && shipment.items?.some((item: any) => item.orderItemSeqId === props.item.orderItemSeqId));
+function isEligibleToReceive(item: any) {
+  const order = currentOrder.value;
+
+  // Disable if order is created or has Fulfill-Only flow
+  if (order.statusId === "ORDER_CREATED" || order.statusFlowId === "TO_Fulfill_Only") return false;
+
+  // Disable if the item is completed
+  const orderItem = order.items?.find((orderItem: any) => orderItem.orderItemSeqId === item.orderItemSeqId);
+  if (orderItem?.statusId === "ITEM_COMPLETED") return false;
+
+  return true;
 }
 
 function redirectToFulfillItem() {
@@ -112,8 +131,7 @@ function redirectToFulfillItem() {
 }
 
 function redirectToReceiveItem() {
-  const shipment = getCurrentItemInboundShipment()
-  window.location.href = `${process.env.VUE_APP_RECEIVING_LOGIN_URL}?oms=${getOmsBaseUrl.value}&token=${authStore.token.value}&expirationTime=${authStore.token.expiration}&shipmentId=${shipment.shipmentId}&facilityId=${currentOrder.value.facilityId}&omsRedirectionUrl=${authStore.oms}`
+  window.location.href = `${process.env.VUE_APP_RECEIVING_LOGIN_URL}?oms=${getOmsBaseUrl.value}&token=${authStore.token.value}&expirationTime=${authStore.token.expiration}&orderId=${currentOrder.value.orderId}&facilityId=${currentOrder.value.orderFacilityId}&omsRedirectionUrl=${authStore.oms}`
   popoverController.dismiss()
 }
 </script>

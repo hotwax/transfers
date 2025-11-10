@@ -217,7 +217,6 @@ import OrderItemActionsPopover from '@/components/OrderItemActionsPopover.vue';
 import SelectFacilityModal from '@/components/SelectFacilityModal.vue';
 import ImportCsvModal from '@/components/ImportCsvModal.vue';
 import { ProductService } from '@/services/ProductService';
-import { UserService } from '@/services/UserService';
 import { UtilService } from '@/services/UtilService';
 import { OrderService } from '@/services/OrderService';
 import router from '@/router';
@@ -233,7 +232,6 @@ const isSearchingProduct = ref(false);
 const searchedProduct = ref({}) as any;
 const queryString = ref("");
 const stores = ref([]) as any;
-const facilities = ref([]) as any;
 const dateTimeModalOpen = ref(false);
 const selectedDateFilter = ref("");
 const currencyUom = ref("");
@@ -272,6 +270,7 @@ const getProduct = computed(() => store.getters["product/getProduct"])
 const shipmentMethodsByCarrier = computed(() => store.getters["util/getShipmentMethodsByCarrier"])
 const getCarrierDesc = computed(() => store.getters["util/getCarrierDesc"])
 const sampleProducts = computed(() => store.getters["util/getSampleProducts"])
+const facilities = computed(() => store.getters["util/getFacilitiesByProductStore"])
 
 // Implemented watcher to display the search spinner correctly. Mainly the watcher is needed to not make the findProduct call always and to create the debounce effect.
 // Previously we were using the `debounce` property of ion-input but it was updating the searchedString and making other related effects after the debounce effect thus the spinner is also displayed after the debounce
@@ -302,7 +301,7 @@ onIonViewDidEnter(async () => {
   stores.value = useUserStore().eComStores
   const currentProductStoreId = useUserStore().getCurrentEComStore?.productStoreId
   currentOrder.value.productStoreId = currentProductStoreId
-  await Promise.allSettled([fetchFacilitiesByCurrentStore(), store.dispatch("util/fetchStoreCarrierAndMethods", currentOrder.value.productStoreId), store.dispatch("util/fetchCarriersDetail"), store.dispatch("util/fetchSampleProducts")])
+  await Promise.allSettled([store.dispatch("util/fetchFacilitiesByCurrentStore", currentOrder.value.productStoreId), store.dispatch("util/fetchStoreCarrierAndMethods", currentOrder.value.productStoreId), store.dispatch("util/fetchCarriersDetail"), store.dispatch("util/fetchSampleProducts")])
   await fetchProductStoreDetails(currentProductStoreId);
   if(Object.keys(shipmentMethodsByCarrier.value)?.length) {
     currentOrder.value.carrierPartyId = Object.keys(shipmentMethodsByCarrier.value)[0]
@@ -428,12 +427,12 @@ async function addProductToCount() {
 }
 
 async function productStoreUpdated() {
-  await fetchFacilitiesByCurrentStore();
+  await store.dispatch("util/fetchFacilitiesByCurrentStore", currentOrder.value.productStoreId);
   const isFacilityUpdated = currentOrder.value.originFacilityId !== facilities.value[0]?.facilityId
   if(isFacilityUpdated) {
     currentOrder.value.originFacilityId = facilities.value[0]?.facilityId;
     currentOrder.value.destinationFacilityId = "";
-    refetchAllItemsStock()
+    if(currentOrder.value.items.length) refetchAllItemsStock()
   }
   await store.dispatch("util/fetchStoreCarrierAndMethods", currentOrder.value.productStoreId);
   if(Object.keys(shipmentMethodsByCarrier.value)?.length) {
@@ -455,35 +454,8 @@ function getCarrierShipmentMethods() {
   return currentOrder.value.carrierPartyId && shipmentMethodsByCarrier.value[currentOrder.value.carrierPartyId]
 }
 
-async function fetchFacilitiesByCurrentStore() {
-  let availableFacilities = [];
-
-  try {
-    const resp = await UserService.fetchFacilitiesByCurrentStore({
-			productStoreId: currentOrder.value.productStoreId,
-			facilityTypeId: "VIRTUAL_FACILITY",
-			facilityTypeId_op: "equals",
-			facilityTypeId_not: "Y",
-			parentFacilityTypeId: "VIRTUAL_FACILITY",
-			parentFacilityTypeId_op: "equals",
-			parentFacilityTypeId_not: "Y",
-			fieldsToSelect: ["facilityId", "facilityName"],
-			pageSize: 200,
-		})
-
-    if(!hasError(resp)) {
-      availableFacilities = resp.data
-    } else {
-      throw resp.data;
-    }
-  } catch(error: any) {
-    logger.error(error);
-  }
-  facilities.value = availableFacilities
-}
-
 function getFacilityName(facilityId: any) {
-  return facilities.value.find((facility: any) => facility.facilityId === facilityId)?.facilityName
+  return facilities.value?.find((facility: any) => facility.facilityId === facilityId)?.facilityName
 }
 
 async function updateBulkOrderItemQuantity(action: any) {
@@ -704,7 +676,7 @@ async function openSelectFacilityModal(facilityType: any) {
     if(result.data?.selectedFacilityId) {
       currentOrder.value[facilityType] = result.data.selectedFacilityId
       if(facilityType === "originFacilityId") {
-        refetchAllItemsStock()
+        if(currentOrder.value.items.length) refetchAllItemsStock()
       }
     }
   })

@@ -21,7 +21,7 @@
               <ion-label>
                 <h1>{{ currentOrder.orderName ? currentOrder.orderName : currentOrder.orderId }}</h1>
               </ion-label>
-              <ion-badge :color="getColorByDesc(getStatusDesc(currentOrder.statusId)) || getColorByDesc('default')" slot="end">{{ getStatusDesc(currentOrder.statusId) ? getStatusDesc(currentOrder.statusId) : currentOrder.statusId }}</ion-badge>
+              <ion-badge :color="getColorByDesc(getStatusDesc(currentOrder.statusId)) || getColorByDesc('default')" slot="end">{{ getStatusDesc(currentOrder.statusId) }}</ion-badge>
               <ion-select v-if="currentOrder.statusId === 'ORDER_CREATED' || currentOrder.statusId === 'ORDER_APPROVED'" ref="selectRef" slot="end" aria-label="status" :value="currentOrder.statusId" selected-text=" " interface="popover" @ionChange="changeOrderStatus($event.detail.value)">
                 <ion-select-option v-if="currentOrder.statusId === 'ORDER_CREATED'" value="ORDER_APPROVED">{{ translate("Approve") }}</ion-select-option>
                 <ion-select-option value="ORDER_CANCELLED">{{ translate("Cancel") }}</ion-select-option>
@@ -32,9 +32,9 @@
           <div class="info">
             <ion-card>
               <ion-card-header>
-                <ion-card-title>{{ currentOrder.originFacility?.facilityName ? currentOrder.originFacility.facilityName : currentOrder.facilityId }}</ion-card-title>
+                <ion-card-title>{{ currentOrder.originFacility?.facilityName ? currentOrder.originFacility.facilityName : getFacilityName(currentOrder.facilityId) }}</ion-card-title>
               </ion-card-header>
-              <ion-item lines="none">
+              <ion-item v-if="currentOrder?.originFacility" lines="none">
                 <ion-icon :icon="sendOutline" slot="start" />
                 <ion-label>
                   <h3 v-if="currentOrder.originFacility?.address1">{{ currentOrder.originFacility.address1 }}</h3>
@@ -61,9 +61,9 @@
 
             <ion-card>
               <ion-card-header>
-                <ion-card-title>{{ currentOrder.destinationFacility?.facilityName ? currentOrder.destinationFacility.facilityName : currentOrder.orderFacilityId }}</ion-card-title>
+                <ion-card-title>{{ currentOrder.destinationFacility?.facilityName ? currentOrder.destinationFacility.facilityName : getFacilityName(currentOrder.orderFacilityId) }}</ion-card-title>
               </ion-card-header>
-              <ion-item lines="none">
+              <ion-item v-if="currentOrder?.destinationFacility" lines="none">
                 <ion-icon :icon="downloadOutline" slot="start" />
                 <ion-label>
                   <h3 v-if="currentOrder.destinationFacility?.address1">{{ currentOrder.destinationFacility.address1 }}</h3>
@@ -83,7 +83,7 @@
               <ion-item v-for="(status, index) in orderTimeline" :key="index">
                 <ion-label>
                   <p v-if="status.timeDiff">{{ status.timeDiff }}</p>
-                  {{ getStatusDesc(status.statusId) ? getStatusDesc(status.statusId) : status.statusId }}
+                  {{ getStatusDesc(status.statusId) }}
                 </ion-label>
                 <ion-note slot="end">{{ status.statusDatetime ? formatDateTime(status.statusDatetime) : '-' }}</ion-note>
               </ion-item>
@@ -105,7 +105,7 @@
                       <p v-if="shipment.trackingIdNumber">{{ shipment.trackingIdNumber }}</p>
                     </ion-label>
                   </ion-radio>
-                  <ion-badge slot="end" class="no-pointer-events" :color="getColorByDesc(getStatusDesc(shipment.statusId)) || getColorByDesc('default')">{{ getStatusDesc(shipment.statusId) ? getStatusDesc(shipment.statusId) : shipment.statusId }}</ion-badge>
+                  <ion-badge slot="end" class="no-pointer-events" :color="getColorByDesc(getStatusDesc(shipment.shipmentStatusId)) || getColorByDesc('default')">{{ getStatusDesc(shipment.shipmentStatusId) }}</ion-badge>
                 </ion-item>
               </ion-card>
               
@@ -250,9 +250,9 @@
                       <ion-label>{{ item.receivedQty || 0 }}</ion-label>
                     </ion-chip>
                   </div>
-                  <ion-badge :color="getColorByDesc(getStatusDesc(item.statusId)) || getColorByDesc('default')">{{ getStatusDesc(item.statusId) ? getStatusDesc(item.statusId) : item.statusId }}</ion-badge>
+                  <ion-badge :color="getColorByDesc(getStatusDesc(item.statusId)) || getColorByDesc('default')">{{ getStatusDesc(item.statusId) }}</ion-badge>
                 </template>
-                <ion-button slot="end" fill="clear" color="medium" :disabled="isOrderFinished()" @click="openOrderItemDetailActionsPopover($event, item)">
+                <ion-button slot="end" fill="clear" color="medium" :disabled="isOrderFinished(item)" @click="openOrderItemDetailActionsPopover($event, item)">
                   <ion-icon :icon="ellipsisVerticalOutline" slot="icon-only" />
                 </ion-button>
               </div>
@@ -292,6 +292,7 @@ const shipmentMethodsByCarrier = computed(() => store.getters["util/getShipmentM
 const getProduct = computed(() => store.getters["product/getProduct"])
 const getCarrierDesc = computed(() => store.getters["util/getCarrierDesc"])
 const getShipmentMethodDesc = computed(() => store.getters["util/getShipmentMethodDesc"])
+const facilities = computed(() => store.getters["util/getFacilitiesByProductStore"])
 
 const isFetchingOrderDetail = ref(false);
 const selectedShipmentId = ref("");
@@ -304,7 +305,7 @@ const selectRef = ref("") as any;
 onIonViewWillEnter(async () => {
   isFetchingOrderDetail.value = true;
   await store.dispatch("order/fetchOrderDetails", props.orderId)
-  await Promise.allSettled([store.dispatch('util/fetchStatusDesc'), store.dispatch("util/fetchCarriersDetail"), fetchOrderStatusHistoryTimeline(), store.dispatch("util/fetchShipmentMethodTypeDesc")])
+  await Promise.allSettled([store.dispatch("util/fetchFacilitiesByCurrentStore", currentOrder.value.productStoreId), store.dispatch('util/fetchStatusDesc'), store.dispatch("util/fetchCarriersDetail"), fetchOrderStatusHistoryTimeline(), store.dispatch("util/fetchShipmentMethodTypeDesc")])
   generateItemsListByParent();
   isFetchingOrderDetail.value = false;
   carrierMethods.value = shipmentMethodsByCarrier.value[currentOrder.value.carrierPartyId]
@@ -419,8 +420,18 @@ function generateItemsListByParent() {
   itemsByParentProductId.value = itemsById
 }
 
-function isOrderFinished() {
-  return ["ORDER_COMPLETED", "ORDER_REJECTED", "ORDER_CANCELLED"].includes(currentOrder.value.statusId)
+function isOrderFinished(item?: any) {
+  const order = currentOrder.value;
+  const excludedOrderStatuses = ["ORDER_COMPLETED", "ORDER_REJECTED", "ORDER_CANCELLED"];
+  const excludedItemStatuses = ["ITEM_CANCELLED", "ITEM_COMPLETED"];
+
+  // Disable if order is in finished state
+  if (excludedOrderStatuses.includes(order.statusId)) return true;
+  // Disable if the item is in finished state
+  if (item && excludedItemStatuses.includes(item.statusId)) {
+    return true;
+  }
+  return false;
 }
 
 function getFilteredShipments(shipmentTypeId: string) {
@@ -429,6 +440,11 @@ function getFilteredShipments(shipmentTypeId: string) {
 
 function getSelectedShipment() {
   return currentOrder.value.shipments.find((shipment: any) => shipment.shipmentId === selectedShipmentId.value)
+}
+
+function getFacilityName(facilityId: string) {
+  const facility = facilities.value?.find((facility: any) => facility.facilityId === facilityId)
+  return facility ? facility.facilityName || facility.facilityId : facilityId
 }
 
 async function updateCarrierAndShipmentMethod(event: any, carrierPartyId: any, shipmentMethodTypeId: any) {
