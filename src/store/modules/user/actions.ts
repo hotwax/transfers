@@ -55,7 +55,7 @@ const actions: ActionTree<UserState, RootState> = {
 
       const ecomStores = await useUserStore().getEComStores()
       useUserStore().eComStores = ecomStores
-      await useUserStore().getEComStorePreference("SELECTED_BRAND")
+      await useUserStore().getEComStorePreference("SELECTED_BRAND",userProfile.userId)
       const preferredStore: any = useUserStore().getCurrentEComStore
 
       if (omsRedirectionUrl && token) {
