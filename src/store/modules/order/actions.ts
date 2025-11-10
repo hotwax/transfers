@@ -31,7 +31,6 @@ const actions: ActionTree<OrderState, RootState> = {
 
     try {
       resp = await OrderService.findTransferOrders(payload)
-      console.log("🚀 ~ resp:", resp.data)
       if(!hasError(resp)) {
         // groupBy cases: ORDER_ID / DESTINATION / ORIGIN → single field
         // DESTINATION_PRODUCT / ORIGIN_PRODUCT → multiple fields joined with '-'
@@ -80,7 +79,6 @@ const actions: ActionTree<OrderState, RootState> = {
         payload.pageSize = pageSize
         payload.pageIndex = pageIndex
         resp = await OrderService.findTransferOrderItems(payload)
-        console.log("🚀 ~ resp:", resp.data)
 
         if(!hasError(resp) && resp?.data?.transferOrderItems?.length) {
           // If grouping by ORDER_ID → no grouping
