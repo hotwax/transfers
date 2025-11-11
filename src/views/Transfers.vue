@@ -125,7 +125,7 @@
                     </div>
                     <div class="metadata">
                       <ion-note>{{ translate("Created on") }} {{ formatUtcDate(order.orderDate, "dd LLL yyyy") }}</ion-note>
-                      <ion-badge :color="getColorByDesc(order.orderStatusDesc) || getColorByDesc('default')">
+                      <ion-badge :color="STATUSCOLOR[order.orderStatusDesc] || 'medium'">
                         {{ order.orderStatusDesc }}
                       </ion-badge>
                     </div>
@@ -169,7 +169,7 @@
                         </ion-label>
                       </div>
                       <ion-item lines="none">
-                        <ion-badge slot="end" :color="getColorByDesc(item.orderItemStatusDesc) || getColorByDesc('default')">{{ getStatusDesc(item.itemStatusId) }}</ion-badge>
+                        <ion-badge slot="end" :color="STATUSCOLOR[item.itemStatusId] || 'medium'">{{ getStatusDesc(item.itemStatusId) }}</ion-badge>
                       </ion-item>
                     </div>
                   </div>
@@ -247,7 +247,7 @@
                       </div>
                       <div class="metadata ion-padding-end">
                         <ion-note>{{ translate("Created on") }} {{ formatUtcDate(item.orderDate, "dd LLL yyyy") }}</ion-note>
-                        <ion-badge slot="end" :color="getColorByDesc(getStatusDesc(item.itemStatusId)) || getColorByDesc('default')">{{ getStatusDesc(item.itemStatusId) }}</ion-badge>
+                        <ion-badge slot="end" :color="STATUSCOLOR[item.itemStatusId] || 'medium'">{{ getStatusDesc(item.itemStatusId) }}</ion-badge>
                       </div>
                     </div>
                   </div>
@@ -330,7 +330,7 @@
                       </div>
                       <div class="metadata ion-padding-end">
                         <ion-note>{{ translate("Created on") }} {{ formatUtcDate(item.orderDate, "dd LLL yyyy") }}</ion-note>
-                        <ion-badge slot="end" :color="getColorByDesc(getStatusDesc(item.itemStatusId)) || getColorByDesc('default')">{{ getStatusDesc(item.itemStatusId) }}</ion-badge>
+                        <ion-badge slot="end" :color="STATUSCOLOR[item.itemStatusId] || 'medium'">{{ getStatusDesc(item.itemStatusId) }}</ion-badge>
                       </div>
                     </div>
                   </div>
@@ -367,6 +367,7 @@ import { computed, ref } from "vue";
 import { hasError } from "@/adapter";
 import { formatUtcDate, getColorByDesc } from "@/utils"
 import { UtilService } from '@/services/UtilService';
+import { STATUSCOLOR } from '@hotwax/oms-api';
 
 const productIdentificationStore = useProductIdentificationStore();
 const store = useStore();
