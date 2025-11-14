@@ -409,10 +409,11 @@ async function findProductFromIdentifier(payload: any) {
 }
 
 async function addProductToCount() {
-  if(isAddingProduct.value) return
-  isAddingProduct.value = true
   if (!searchedProduct.value.productId || !queryString.value) return;
   if (isProductAvailableInOrder()) return;
+
+  if (isAddingProduct.value) return
+  isAddingProduct.value = true
 
   let newProduct = { 
     productId: searchedProduct.value.productId,
