@@ -281,6 +281,7 @@ import { DateTime } from "luxon";
 import { getColorByDesc, showToast} from "@/utils";
 import emitter from "@/event-bus";
 import { formatCurrency } from "@/utils";
+import router from "@/router";
 
 const store = useStore();
 const productIdentificationStore = useProductIdentificationStore();
@@ -354,6 +355,7 @@ async function updateOrderStatus(updatedStatusId: string) {
     }
     if (updatedStatusId === "ORDER_CANCELLED") {
       resp = await OrderService.cancelOrder({ orderId: currentOrder.value.orderId })
+      router.replace('/tabs/transfers');
     }
 
     if (!hasError(resp)) {
