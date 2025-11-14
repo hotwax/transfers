@@ -10,6 +10,7 @@
     </ion-toolbar>
   </ion-header>
   <ion-content>
+    <ion-searchbar @ionFocus="selectSearchBarText($event)" :placeholder="$t('Search facilities')" v-model="queryString" @keyup.enter="queryString = $event.target.value; findFacility()" @keydown="preventSpecialCharacters($event)"/>
     <ion-radio-group v-model="selectedFacilityIdValue">
       <ion-item v-for="facility in facilities" :key="facility.facilityId">
         <ion-radio label-placement="end" justify="start" :value="facility.facilityId">
@@ -38,10 +39,34 @@ import { translate } from '@hotwax/dxp-components'
 const props = defineProps(["selectedFacilityId", "facilities"]);
 
 const selectedFacilityIdValue = ref("");
+const facilities = ref([]);
+const queryString = ref("");
 
 onMounted(() => {
   selectedFacilityIdValue.value = props.selectedFacilityId
+  facilities.value=props.facilities;
 })
+
+const findFacility = () => {
+  const searchedString = queryString.value.trim().toLowerCase();
+  if (searchedString) {
+      facilities.value = props.facilities.filter((facility: any) =>
+      facility.facilityName?.toLowerCase().includes(searchedString) ||
+      facility.facilityId?.toLowerCase().includes(searchedString)
+    );
+  } else {
+    facilities.value = props.facilities;
+  }
+};
+
+async function selectSearchBarText(event: any) {
+  const element = await event.target.getInputElement();
+  element.select();
+}
+
+function preventSpecialCharacters($event: any) {
+  if (/[`!@#$%^&*()_+\-=\\|,.<>?~]/.test($event.key)) $event.preventDefault();
+}
 
 function closeModal(payload = {}) {
   modalController.dismiss({ ...payload });
