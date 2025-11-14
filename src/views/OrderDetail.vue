@@ -355,10 +355,10 @@ async function updateOrderStatus(updatedStatusId: string) {
     }
     if (updatedStatusId === "ORDER_CANCELLED") {
       resp = await OrderService.cancelOrder({ orderId: currentOrder.value.orderId })
-      router.replace('/tabs/transfers');
     }
 
     if (!hasError(resp)) {
+      if(updatedStatusId === "ORDER_CANCELLED")router.replace('/tabs/transfers');
       showToast(translate("Order status updated successfully."))
       await Promise.all([
         store.dispatch("order/fetchOrderDetails", props.orderId),
