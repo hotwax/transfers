@@ -5,7 +5,6 @@ import { UtilService } from '@/services/UtilService';
 import { showToast } from '@/utils';
 import { hasError } from "@/adapter";
 import { translate } from "@hotwax/dxp-components";
-import emitter from '@/event-bus';
 import logger from '@/logger';
 
 /**
@@ -127,14 +126,19 @@ export function useOrderQueue() {
       const resp = await OrderService.addOrderItem(newProduct);
 
       if (!hasError(resp)) {
-        const order = JSON.parse(JSON.stringify(currentOrder.value));
-        order.items.push({ 
-          ...newProduct, 
-          statusId: "ITEM_CREATED", 
-          orderItemSeqId: resp.data?.orderItemSeqId 
-        });
+        // Create the complete item without mutating newProduct
+        const newItem = {
+          ...newProduct,
+          statusId: "ITEM_CREATED",
+          orderItemSeqId: resp.data?.orderItemSeqId
+        };
 
-        await store.dispatch("order/updateCurrent", order);
+        const updatedOrder = {
+          ...currentOrder.value,
+          items: [...currentOrder.value.items, newItem]
+        }
+
+        await store.dispatch("order/updateCurrent", updatedOrder);
         // Emit event after successful addition
         onSuccess?.();
       } else {

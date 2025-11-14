@@ -66,7 +66,6 @@ import { computed, onUnmounted, ref, defineProps } from "vue";
 import { closeOutline, checkmarkCircle } from "ionicons/icons";
 import store from "@/store";
 import { getProductIdentificationValue, translate, useProductIdentificationStore } from "@hotwax/dxp-components";
-import emitter from "@/event-bus";
 import Image from "@/components/Image.vue"
 import logger from "@/logger";
 import { ProductService } from "@/services/ProductService";
