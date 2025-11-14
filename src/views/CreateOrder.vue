@@ -137,7 +137,7 @@
                 <p class="overline">{{ translate("Search result") }}</p>
                 {{ searchedProduct.internalName || searchedProduct.sku || searchedProduct.productId }}
               </ion-label>
-              <ion-button size="default" slot="end" fill="clear" @click="addProductToCount" :color="isProductAvailableInOrder() ? 'success' : 'primary'">
+              <ion-button :disabled="isAddingProduct" size="default" slot="end" fill="clear" @click="addProductToCount" :color="isProductAvailableInOrder() ? 'success' : 'primary'">
                 <ion-icon slot="icon-only" :icon="isProductAvailableInOrder() ? checkmarkCircle : addCircleOutline"/>
               </ion-button>
             </ion-item>
@@ -233,6 +233,7 @@ const searchedProduct = ref({}) as any;
 const queryString = ref("");
 const stores = ref([]) as any;
 const dateTimeModalOpen = ref(false);
+const isAddingProduct = ref(false)
 const selectedDateFilter = ref("");
 const currencyUom = ref("");
 const currentOrder = ref({
@@ -408,7 +409,9 @@ async function findProductFromIdentifier(payload: any) {
 }
 
 async function addProductToCount() {
-  if (!searchedProduct.value.productId ||!queryString.value) return;
+  if(isAddingProduct.value) return
+  isAddingProduct.value = true
+  if (!searchedProduct.value.productId || !queryString.value) return;
   if (isProductAvailableInOrder()) return;
 
   let newProduct = { 
@@ -424,6 +427,7 @@ async function addProductToCount() {
   }
 
   currentOrder.value.items.push(newProduct);
+  isAddingProduct.value = false
 }
 
 async function productStoreUpdated() {

@@ -22,8 +22,10 @@
             <h2>{{ getProductIdentificationValue(productIdentificationStore.getProductIdentificationPref.primaryId, product) || getProduct(product.productId).productName }}</h2>
             <p>{{ getProductIdentificationValue(productIdentificationStore.getProductIdentificationPref.secondaryId, product) }}</p>
           </ion-label>
-          <ion-icon v-if="isProductAvailableInCurrentOrder(product.productId)" color="success" :icon="checkmarkCircle" />
-          <ion-button v-else fill="outline" @click="addItemToOrder(product)">{{ translate("Add to order") }}</ion-button>
+          <ion-icon v-if="isProductInOrder(product.productId)" color="success" :icon="checkmarkCircle" />
+          <ion-button v-else fill="outline" @click="addItemToOrder(product)" :disabled="pendingProductIds.has(product.productId)">
+            {{ pendingProductIds.has(product.productId) ? translate("Adding...") : translate("Add to order") }}
+          </ion-button>
         </ion-item>
       </ion-list>
 
@@ -60,7 +62,7 @@ import {
   IonToolbar,
   modalController,
 } from "@ionic/vue";
-import { computed, onUnmounted, ref } from "vue";
+import { computed, onUnmounted, ref, defineProps } from "vue";
 import { closeOutline, checkmarkCircle } from "ionicons/icons";
 import store from "@/store";
 import { getProductIdentificationValue, translate, useProductIdentificationStore } from "@hotwax/dxp-components";
@@ -69,8 +71,8 @@ import Image from "@/components/Image.vue"
 import logger from "@/logger";
 import { ProductService } from "@/services/ProductService";
 import { hasError } from "@/adapter";
-import { OrderService } from "@/services/OrderService";
-import { UtilService } from "@/services/UtilService";
+
+const props = defineProps(["addProductToQueue", "pendingProductIds", "isProductInOrder", "onProductAdded"])
 
 const productIdentificationStore = useProductIdentificationStore();
 
@@ -138,35 +140,19 @@ async function loadMoreProducts(event: any) {
   })
 }
 
-async function addItemToOrder(product: any) {
-  const order = JSON.parse(JSON.stringify(currentOrder.value))
-  const productAverageCostDetail = await UtilService.fetchProductsAverageCost([product.productId], order.facilityId)
-
-  const newProduct = {
-    orderId: order.orderId,
-    productId: product.productId,
-    shipGroupSeqId: "00001",
-    quantity: 1,
-    idType: "SKU",
-    idValue: product.sku,
-    unitPrice: productAverageCostDetail[product.productId] || 0.00,
-    unitListPrice: 0
-  }
-
-  try {
-    const resp = await OrderService.addOrderItem(newProduct)
-
-    if(!hasError(resp)) {
-      order.items.push({ ...newProduct, statusId: "ITEM_CREATED", orderItemSeqId: resp.data?.orderItemSeqId });
-
-      await store.dispatch("order/updateCurrent", order)
-      emitter.emit("generateItemsListByParent", product.productId)
-    } else {
-      throw resp.data;
+function addItemToOrder(product: any) {
+  const itemToAdd = {
+    product: product,
+    orderId: currentOrder.value.orderId,
+    facilityId: currentOrder.value.facilityId,
+    onSuccess: () => {
+      props.onProductAdded?.();
+    },
+    onError: (product: any, error: any) => {
+      logger.error(`Failed to add product ${product.productId}:`, error);
     }
-  } catch(error) {
-    logger.error(error);
   }
+  props.addProductToQueue(itemToAdd);
 }
 
 function closeModal() {
@@ -178,9 +164,5 @@ function handleInput() {
     isSearching.value = false;
     products.value = []
   }
-}
-
-function isProductAvailableInCurrentOrder(id: string) {
-  return currentOrder.value.items.some((item: any) => item.productId === id)
 }
 </script>
