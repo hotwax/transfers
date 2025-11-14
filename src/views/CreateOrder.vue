@@ -307,7 +307,6 @@ onIonViewDidEnter(async () => {
     currentOrder.value.carrierPartyId = Object.keys(shipmentMethodsByCarrier.value)[0]
     selectUpdatedMethod()
   }
-  currentOrder.value.originFacilityId = facilities.value[0]?.facilityId
   uploadedFile.value = {}
   content.value = []
   emitter.emit("dismissLoader")
@@ -430,7 +429,7 @@ async function productStoreUpdated() {
   await store.dispatch("util/fetchFacilitiesByCurrentStore", currentOrder.value.productStoreId);
   const isFacilityUpdated = currentOrder.value.originFacilityId !== facilities.value[0]?.facilityId
   if(isFacilityUpdated) {
-    currentOrder.value.originFacilityId = facilities.value[0]?.facilityId;
+    currentOrder.value.originFacilityId = "";
     currentOrder.value.destinationFacilityId = "";
     if(currentOrder.value.items.length) refetchAllItemsStock()
   }
