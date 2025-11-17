@@ -385,15 +385,14 @@ async function findProductFromIdentifier(payload: any) {
             item.quantity = Number(item.quantity) + (Number(uploadedItemsByIdValue[idValue][quantityField]) || 0)
           }
         } else {
-          const stock = await fetchStock(product.productId);
-          currentOrder.value.items.push({
-            productId: product.productId,
-            sku: product.sku,
-            quantity: quantityField ? Number(uploadedItemsByIdValue[idValue][quantityField]) || 0 : 0,
-            isChecked: false,
-            qoh: stock?.qoh ?? null,
-            atp: stock?.atp || 0
-          })
+            const stock = currentOrder.value.originFacilityId ?  await fetchStock(product.productId) : null;            currentOrder.value.items.push({
+              productId: product.productId,
+              sku: product.sku,
+              quantity: quantityField ? Number(uploadedItemsByIdValue[idValue][quantityField]) || 0 : 0,
+              isChecked: false,
+              qoh: stock?.qoh ?? null,
+              atp: stock?.atp || 0
+            })
         }
       }
     } else {
@@ -688,8 +687,8 @@ async function refetchAllItemsStock() {
   const responses = await Promise.allSettled(currentOrder.value.items.map((item: any) => fetchStock(item.productId)))
   currentOrder.value.items.map((item: any, index: any) => {
     if(responses[index].status === "fulfilled") {
-      item["qoh"] = responses[index]?.value.qoh 
-      item["atp"] = responses[index]?.value.atp 
+      item["qoh"] = responses[index]?.value?.qoh
+      item["atp"] = responses[index]?.value?.atp
     }
   })
   emitter.emit("dismissLoader")
