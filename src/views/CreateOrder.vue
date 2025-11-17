@@ -542,8 +542,8 @@ async function createOrder() {
 		productStoreId: currentOrder.value.productStoreId,
 		statusFlowId: currentOrder.value.statusFlowId,
     currencyUom: currencyUom.value || 'USD',
-		orderDate: DateTime.now().toFormat("yyyy-MM-dd 23:59:59.000"),
-		entryDate: DateTime.now().toFormat("yyyy-MM-dd 23:59:59.000"),
+		orderDate: DateTime.now().toFormat("yyyy-MM-dd HH:mm:ss") + ".000",
+		entryDate: DateTime.now().toFormat("yyyy-MM-dd HH:mm:ss") + ".000",
 		originFacilityId: currentOrder.value.originFacilityId,
 		shipGroups: [
 			{
