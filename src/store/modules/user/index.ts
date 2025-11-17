@@ -16,7 +16,10 @@ const userModule: Module<UserState, RootState> = {
       updateExists: false,
       registration: null,
     },
-    omsRedirectionUrl: ""
+    omsRedirectionInfo: {
+      url: "",
+      token: ""
+    },
   },
   getters,
   actions,

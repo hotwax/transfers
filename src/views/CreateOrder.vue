@@ -11,7 +11,7 @@
       <div class="find">
         <section class="search">
           <ion-item>
-            <ion-input :label="translate('Transfer name')" :placeholder="translate('name')" v-model="currentOrder.name" />
+            <ion-input :label="translate('Transfer name')" :placeholder="translate('Name')" v-model="currentOrder.name" />
           </ion-item>
         </section>
 
@@ -175,11 +175,11 @@
               <div class="tablet">
                 <ion-chip outline :color="isQOHAvailable(item) ? '' : 'warning'">
                   <ion-icon slot="start" :icon="sendOutline" />
-                  <ion-label>{{ item.qoh }} {{ translate("QOH") }}</ion-label>
+                  <ion-label>{{ item.qoh ?? 0 }} {{ translate("QOH") }}</ion-label>
                 </ion-chip>
               </div>
               <ion-item>
-                <ion-input type="number" placeholder="Qty" v-model="item.quantity" />
+                <ion-input type="number" :label="translate('Qty')" label-placement="floating" min="0" v-model="item.quantity" :clear-input="true" />
               </ion-item>
               <div class="tablet">
                 <ion-checkbox v-model="item.isChecked" />
@@ -217,7 +217,6 @@ import OrderItemActionsPopover from '@/components/OrderItemActionsPopover.vue';
 import SelectFacilityModal from '@/components/SelectFacilityModal.vue';
 import ImportCsvModal from '@/components/ImportCsvModal.vue';
 import { ProductService } from '@/services/ProductService';
-import { UserService } from '@/services/UserService';
 import { UtilService } from '@/services/UtilService';
 import { OrderService } from '@/services/OrderService';
 import router from '@/router';
@@ -233,9 +232,9 @@ const isSearchingProduct = ref(false);
 const searchedProduct = ref({}) as any;
 const queryString = ref("");
 const stores = ref([]) as any;
-const facilities = ref([]) as any;
 const dateTimeModalOpen = ref(false);
 const selectedDateFilter = ref("");
+const currencyUom = ref("");
 const currentOrder = ref({
   name: "",
   productStoreId: "",
@@ -271,6 +270,7 @@ const getProduct = computed(() => store.getters["product/getProduct"])
 const shipmentMethodsByCarrier = computed(() => store.getters["util/getShipmentMethodsByCarrier"])
 const getCarrierDesc = computed(() => store.getters["util/getCarrierDesc"])
 const sampleProducts = computed(() => store.getters["util/getSampleProducts"])
+const facilities = computed(() => store.getters["util/getFacilitiesByProductStore"])
 
 // Implemented watcher to display the search spinner correctly. Mainly the watcher is needed to not make the findProduct call always and to create the debounce effect.
 // Previously we were using the `debounce` property of ion-input but it was updating the searchedString and making other related effects after the debounce effect thus the spinner is also displayed after the debounce
@@ -299,13 +299,14 @@ watch(queryString, (value) => {
 onIonViewDidEnter(async () => {
   emitter.emit("presentLoader")
   stores.value = useUserStore().eComStores
-  currentOrder.value.productStoreId = useUserStore().getCurrentEComStore?.productStoreId
-  await Promise.allSettled([fetchFacilitiesByCurrentStore(), store.dispatch("util/fetchStoreCarrierAndMethods", currentOrder.value.productStoreId), store.dispatch("util/fetchCarriersDetail"), store.dispatch("util/fetchSampleProducts")])
+  const currentProductStoreId = useUserStore().getCurrentEComStore?.productStoreId
+  currentOrder.value.productStoreId = currentProductStoreId
+  await Promise.allSettled([store.dispatch("util/fetchFacilitiesByCurrentStore", currentOrder.value.productStoreId), store.dispatch("util/fetchStoreCarrierAndMethods", currentOrder.value.productStoreId), store.dispatch("util/fetchCarriersDetail"), store.dispatch("util/fetchSampleProducts")])
+  await fetchProductStoreDetails(currentProductStoreId);
   if(Object.keys(shipmentMethodsByCarrier.value)?.length) {
     currentOrder.value.carrierPartyId = Object.keys(shipmentMethodsByCarrier.value)[0]
     selectUpdatedMethod()
   }
-  currentOrder.value.originFacilityId = facilities.value[0]?.facilityId
   uploadedFile.value = {}
   content.value = []
   emitter.emit("dismissLoader")
@@ -330,6 +331,19 @@ async function parse(event: any) {
   }
 }
 
+async function fetchProductStoreDetails(productStoreId: string) {
+  try {
+    const resp = await UtilService.fetchProductStoreDetails({ productStoreId: productStoreId });
+    if(!hasError(resp)) {
+      currencyUom.value = resp.data.defaultCurrencyUomId;
+    } else {
+      throw resp.data;
+    }
+  } catch (err) {
+    logger.error(err);
+  }
+}
+
 async function findProductFromIdentifier(payload: any) {
   const productField = payload.productField
   const quantityField = payload.quantityField
@@ -342,6 +356,8 @@ async function findProductFromIdentifier(payload: any) {
   const idValues = Object.keys(uploadedItemsByIdValue);
   const productIdsAlreadyAddedInList = currentOrder.value.items.map((item: any) => item.productId)
   const filterString = (idType === 'productId') ? `${idType}: (${idValues.join(' OR ')})` : `goodIdentifications: (${idValues.map((value: any) => `${idType}/${value}`).join(' OR ')})`;
+  
+  emitter.emit("presentLoader", { message: "Uploading items...", backdropDismiss: false });
 
   try {
     const resp = await ProductService.fetchProducts({
@@ -362,7 +378,7 @@ async function findProductFromIdentifier(payload: any) {
         }
       })
 
-      Object.entries(productsByIdValue).map(async ([idValue, product]) => {
+      for (const [idValue, product] of Object.entries(productsByIdValue)) {
         if(productIdsAlreadyAddedInList.includes(product.productId)) {
           if(quantityField) {
             const item = currentOrder.value.items.find((item: any) => item.productId === product.productId)
@@ -372,14 +388,14 @@ async function findProductFromIdentifier(payload: any) {
           const stock = await fetchStock(product.productId);
           currentOrder.value.items.push({
             productId: product.productId,
-              sku: product.sku,
-            quantity:quantityField ? Number(uploadedItemsByIdValue[idValue][quantityField]) || 0:0,
+            sku: product.sku,
+            quantity: quantityField ? Number(uploadedItemsByIdValue[idValue][quantityField]) || 0 : 0,
             isChecked: false,
-            qoh: stock?.qoh || 0,
+            qoh: stock?.qoh ?? null,
             atp: stock?.atp || 0
           })
         }
-      })
+      }
     } else {
       throw resp.data;
     }
@@ -387,6 +403,7 @@ async function findProductFromIdentifier(payload: any) {
     logger.error(error)
     showToast(translate("Failed to add items to the order due to incorrect SKU mapping or invalid SKUs."))
   }
+  emitter.emit("dismissLoader")
 }
 
 async function addProductToCount() {
@@ -409,12 +426,12 @@ async function addProductToCount() {
 }
 
 async function productStoreUpdated() {
-  await fetchFacilitiesByCurrentStore();
+  await store.dispatch("util/fetchFacilitiesByCurrentStore", currentOrder.value.productStoreId);
   const isFacilityUpdated = currentOrder.value.originFacilityId !== facilities.value[0]?.facilityId
   if(isFacilityUpdated) {
-    currentOrder.value.originFacilityId = facilities.value[0]?.facilityId;
+    currentOrder.value.originFacilityId = "";
     currentOrder.value.destinationFacilityId = "";
-    refetchAllItemsStock()
+    if(currentOrder.value.items.length) refetchAllItemsStock()
   }
   await store.dispatch("util/fetchStoreCarrierAndMethods", currentOrder.value.productStoreId);
   if(Object.keys(shipmentMethodsByCarrier.value)?.length) {
@@ -436,35 +453,8 @@ function getCarrierShipmentMethods() {
   return currentOrder.value.carrierPartyId && shipmentMethodsByCarrier.value[currentOrder.value.carrierPartyId]
 }
 
-async function fetchFacilitiesByCurrentStore() {
-  let availableFacilities = [];
-
-  try {
-    const resp = await UserService.fetchFacilitiesByCurrentStore({
-			productStoreId: currentOrder.value.productStoreId,
-			facilityTypeId: "VIRTUAL_FACILITY",
-			facilityTypeId_op: "equals",
-			facilityTypeId_not: "Y",
-			parentFacilityTypeId: "VIRTUAL_FACILITY",
-			parentFacilityTypeId_op: "equals",
-			parentFacilityTypeId_not: "Y",
-			fieldsToSelect: ["facilityId", "facilityName"],
-			pageSize: 200,
-		})
-
-    if(!hasError(resp)) {
-      availableFacilities = resp.data
-    } else {
-      throw resp.data;
-    }
-  } catch(error: any) {
-    logger.error(error);
-  }
-  facilities.value = availableFacilities
-}
-
 function getFacilityName(facilityId: any) {
-  return facilities.value.find((facility: any) => facility.facilityId === facilityId)?.facilityName
+  return facilities.value?.find((facility: any) => facility.facilityId === facilityId)?.facilityName
 }
 
 async function updateBulkOrderItemQuantity(action: any) {
@@ -551,6 +541,7 @@ async function createOrder() {
 		statusId: "ORDER_CREATED",
 		productStoreId: currentOrder.value.productStoreId,
 		statusFlowId: currentOrder.value.statusFlowId,
+    currencyUom: currencyUom.value || 'USD',
 		orderDate: DateTime.now().toFormat("yyyy-MM-dd 23:59:59.000"),
 		entryDate: DateTime.now().toFormat("yyyy-MM-dd 23:59:59.000"),
 		originFacilityId: currentOrder.value.originFacilityId,
@@ -684,7 +675,7 @@ async function openSelectFacilityModal(facilityType: any) {
     if(result.data?.selectedFacilityId) {
       currentOrder.value[facilityType] = result.data.selectedFacilityId
       if(facilityType === "originFacilityId") {
-        refetchAllItemsStock()
+        if(currentOrder.value.items.length) refetchAllItemsStock()
       }
     }
   })
@@ -693,13 +684,15 @@ async function openSelectFacilityModal(facilityType: any) {
 }
 
 async function refetchAllItemsStock() {
+  emitter.emit("presentLoader", { message: "Updating items...", backdropDismiss: false });
   const responses = await Promise.allSettled(currentOrder.value.items.map((item: any) => fetchStock(item.productId)))
   currentOrder.value.items.map((item: any, index: any) => {
     if(responses[index].status === "fulfilled") {
-      item["qoh"] = responses[index]?.value.quantityOnHandTotal 
-      item["atp"] = responses[index]?.value.availableToPromiseTotal 
+      item["qoh"] = responses[index]?.value.qoh 
+      item["atp"] = responses[index]?.value.atp 
     }
   })
+  emitter.emit("dismissLoader")
 }
 
 function isProductAvailableInOrder() {

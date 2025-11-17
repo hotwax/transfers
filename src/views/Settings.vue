@@ -22,7 +22,7 @@
             </ion-card-header>
           </ion-item>
           <ion-button color="danger" @click="logout()">{{ translate("Logout") }}</ion-button>
-          <ion-button fill="outline" @click="goToLaunchpad()">
+          <ion-button :standalone-hidden="!hasPermission(Actions.APP_PWA_STANDALONE_ACCESS)" fill="outline" @click="goToLaunchpad()">
             {{ translate("Go to Launchpad") }}
             <ion-icon slot="end" :icon="openOutline" />
           </ion-button>
@@ -35,7 +35,23 @@
       </div>
 
       <section>
-        <DxpOmsInstanceNavigator />
+        <ion-card>
+          <ion-card-header>
+            <ion-card-subtitle>
+              {{ translate('OMS instance') }}
+            </ion-card-subtitle>
+            <ion-card-title>
+              {{ oms }}
+            </ion-card-title>
+          </ion-card-header>
+          <ion-card-content>
+            {{ translate('This is the name of the OMS you are connected to right now. Make sure that you are connected to the right instance before proceeding.') }}
+          </ion-card-content>
+          <ion-button :disabled="!omsRedirectionInfo.token || !omsRedirectionInfo.url" @click="goToOms(omsRedirectionInfo.token, omsRedirectionInfo.url)" fill="clear">
+            {{ translate('Go to OMS') }}
+            <ion-icon slot="end" :icon="openOutline" />
+          </ion-button>
+        </ion-card>
         <DxpProductStoreSelector @updateEComStore="updateEComStore" />
       </section>
 
@@ -45,7 +61,7 @@
 
       <section>
         <DxpProductIdentifier />
-        <DxpTimeZoneSwitcher @timeZoneUpdated="timeZoneUpdated" />
+        <TimeZoneSwitcher @timeZoneUpdated="timeZoneUpdated" />
       </section>
     </ion-content>
   </ion-page>
@@ -57,12 +73,16 @@ import { computed } from "vue";
 import { useStore } from "vuex";
 import Image from "@/components/Image.vue";
 import { openOutline } from "ionicons/icons";
-import { translate, useProductIdentificationStore } from "@hotwax/dxp-components";
+import { goToOms, translate, useProductIdentificationStore } from "@hotwax/dxp-components";
+import { Actions, hasPermission } from '@/authorization'
 import logger from "@/logger";
+import TimeZoneSwitcher from "@/components/TimeZoneSwitcher.vue"
 
 const store = useStore()
 
 const userProfile = computed(() => store.getters["user/getUserProfile"])
+const oms = computed(() => store.getters["user/getInstanceUrl"])
+const omsRedirectionInfo = computed(() => store.getters["user/getOmsRedirectionInfo"])
 
 function logout() {
   store.dispatch('user/logout', { isUserUnauthorised: false }).then((redirectionUrl: string) => {

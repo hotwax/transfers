@@ -24,8 +24,8 @@ const mutations: MutationTree <UserState> = {
       state.pwaState.registration = payload.registration;
       state.pwaState.updateExists = payload.updateExists;
   },
-  [types.USER_OMS_REDIRECTION_URL_UPDATED](state, payload) {
-    state.omsRedirectionUrl = payload;
+  [types.USER_OMS_REDIRECTION_INFO_UPDATED](state, payload) {
+    state.omsRedirectionInfo = payload;
   }
 }
 export default mutations;

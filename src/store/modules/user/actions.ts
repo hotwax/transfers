@@ -55,11 +55,11 @@ const actions: ActionTree<UserState, RootState> = {
 
       const ecomStores = await useUserStore().getEComStores()
       useUserStore().eComStores = ecomStores
-      await useUserStore().getEComStorePreference("SELECTED_BRAND")
+      await useUserStore().getEComStorePreference("SELECTED_BRAND",userProfile.userId)
       const preferredStore: any = useUserStore().getCurrentEComStore
 
-      if (omsRedirectionUrl) {
-        dispatch("setOmsRedirectionUrl", omsRedirectionUrl)
+      if (omsRedirectionUrl && token) {
+        dispatch("setOmsRedirectionInfo", { url: omsRedirectionUrl, token })
       }
 
       updateToken(token)
@@ -89,7 +89,7 @@ const actions: ActionTree<UserState, RootState> = {
     // Calling the logout api to flag the user as logged out, only when user is authorised
     // if the user is already unauthorised then not calling the logout api as it returns 401 again that results in a loop, thus there is no need to call logout api if the user is unauthorised
     if(!payload?.isUserUnauthorised) {
-      emitter.emit('presentLoader', { message: 'Logging out', backdropDismiss: false })
+      emitter.emit('presentLoader', { message: 'Logging out' })
       let resp;
 
       // wrapping the parsing logic in try catch as in some case the logout api makes redirection, and then we are unable to parse the resp and thus the logout process halts
@@ -111,7 +111,7 @@ const actions: ActionTree<UserState, RootState> = {
     const userStore = useUserStore()
     // TODO add any other tasks if need
     commit(types.USER_END_SESSION)
-    dispatch("setOmsRedirectionUrl", "")
+    dispatch("setOmsRedirectionInfo", { url: "", token: "" })
     await this.dispatch("order/clearOrderState")
     await this.dispatch("product/clearProductState")
     await this.dispatch("util/clearUtilState")
@@ -131,18 +131,25 @@ const actions: ActionTree<UserState, RootState> = {
     return redirectionUrl;
   },
 
-  setOmsRedirectionUrl({ commit }, payload) {
-    commit(types.USER_OMS_REDIRECTION_URL_UPDATED, payload)
+  setOmsRedirectionInfo({ commit }, payload) {
+    commit(types.USER_OMS_REDIRECTION_INFO_UPDATED, payload)
   },
 
   /**
    * Update user timeZone
    */
   async setUserTimeZone ( { state, commit }, timeZoneId) {
-    const current: any = state.current;
-    current.userTimeZone = timeZoneId;
-    commit(types.USER_INFO_UPDATED, current);
-    Settings.defaultZone = current.userTimeZone;
+   const current: any = state.current;
+    try {
+      await UserService.setUserTimeZone(({ userId: current.userId, timeZone: timeZoneId }));
+      current.timeZone = timeZoneId;
+      commit(types.USER_INFO_UPDATED, current);
+      Settings.defaultZone = current.timeZone;
+      showToast(translate("Time zone updated successfully"));
+    } catch(err) {
+      logger.error(err)
+      showToast(translate("Failed to update time zone"));
+    }
   },
 
   // Set User Instance Url

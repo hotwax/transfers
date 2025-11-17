@@ -55,12 +55,13 @@
   "Items": "Items",
   "Lifecycle": "Lifecycle",
   "Loading": "Loading",
+  "Loading...": "Loading...",
   "Location": "Location",
   "Login": "Login",
   "Logging in...": "Logging in...",
   "Logout": "Logout",
   "Method": "Method",
-  "name": "name",
+  "Name": "Name",
   "No item added to order": "No item added to order",
   "No new file upload. Please try again": "No new file upload. Please try again",
   "No order found": "No order found",
@@ -93,6 +94,7 @@
   "Product identifier": "Product identifier",
   "Product Store": "Product Store",
   "Quantity": "Quantity",
+  "Qty": "Qty",
   "received at": "received at",
   "Receipts": "Receipts",
   "Receive": "Receive",
@@ -137,5 +139,7 @@
   "Transfers": "Transfers",
   "Upload": "Upload",
   "Username": "Username",
-  "Version: ": "Version: {appVersion}"  
+  "Version: ": "Version: {appVersion}",
+  "Select a different time zone": "Select a different time zone",
+  "Browser time zone": "Browser time zone"
 }
