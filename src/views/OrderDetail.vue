@@ -24,7 +24,7 @@
               <ion-badge :color="getColorByDesc(getStatusDesc(currentOrder.statusId)) || getColorByDesc('default')" slot="end">{{ getStatusDesc(currentOrder.statusId) ? getStatusDesc(currentOrder.statusId) : currentOrder.statusId }}</ion-badge>
               <ion-select v-if="currentOrder.statusId === 'ORDER_CREATED' || currentOrder.statusId === 'ORDER_APPROVED'" ref="selectRef" slot="end" aria-label="status" :value="currentOrder.statusId" selected-text=" " interface="popover" @ionChange="changeOrderStatus($event.detail.value)">
                 <ion-select-option v-if="currentOrder.statusId === 'ORDER_CREATED'" value="ORDER_APPROVED">{{ translate("Approve") }}</ion-select-option>
-                <ion-select-option value="ORDER_CANCELLED">{{ translate("Cancel") }}</ion-select-option>
+                <ion-select-option :disabled="isAnyItemShipped(currentOrder)" value="ORDER_CANCELLED">{{ translate("Cancel") }}</ion-select-option>
               </ion-select>
             </ion-item>
           </div>
@@ -426,6 +426,10 @@ function getFilteredShipments(shipmentTypeId: string) {
 
 function getSelectedShipment() {
   return currentOrder.value.shipments.find((shipment: any) => shipment.shipmentId === selectedShipmentId.value)
+}
+
+function isAnyItemShipped(order: any) {
+  return order?.items?.some((item: any) => (item.totalIssuedQuantity || 0) > 0)
 }
 
 async function updateCarrierAndShipmentMethod(event: any, carrierPartyId: any, shipmentMethodTypeId: any) {
