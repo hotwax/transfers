@@ -1,5 +1,7 @@
 {
   "A store represents a company or a unique catalog of products. If your OMS is connected to multiple eCommerce stores selling different collections of products, you may have multiple Product Stores set up in HotWax Commerce.": "A store represents a company or a unique catalog of products. If your OMS is connected to multiple eCommerce stores selling different collections of products, you may have multiple Product Stores set up in HotWax Commerce.",
+  "Adding...": "Adding...",
+  "Adding items to the order": "Adding items to the order",
   "Add item to transfer": "Add item to transfer",
   "Add product": "Add product",
   "Add to order": "Add to order",
@@ -31,6 +33,7 @@
   "Edit ordered qty": "Edit ordered qty",
   "Enter a SKU, or product name to search a product": "Enter a SKU, or product name to search a product",
   "Enter a valid product sku": "Enter a valid product sku",
+  "Failed to add product to order": "Failed to add product to order",
   "Failed to add items to the order due to incorrect SKU mapping or invalid SKUs.": "Failed to add items to the order due to incorrect SKU mapping or invalid SKUs.",
   "Failed to create order.": "Failed to create order.",
   "Failed to update item ordered quantity.": "Failed to update item ordered quantity.",
