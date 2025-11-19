@@ -1,4 +1,5 @@
-import {api} from '@/adapter';
+import {api, client} from '@/adapter';
+import store from '@/store';
 
 const fetchShipmentMethodTypeDesc = async (query: any): Promise <any>  => {
   
@@ -29,9 +30,18 @@ const fetchStoreCarrierAndMethods = async (payload: any): Promise <any>  => {
 }
 
 const getInventoryAvailableByFacility = async (query: any): Promise <any> => {
-  return api({
+  // Calling this endpoint using client as using api auto dismisses the loader, which is not required when calling this api
+  // but using client will also remove the auto logout support in case of 401 from this api
+  const baseURL = store.getters['user/getBaseUrl'];
+  const token = store.getters['user/getUserToken'];
+  return client({
     url: "/poorti/getInventoryAvailableByFacility",
     method: "get",
+    baseURL,
+    headers: {
+      Authorization: 'Bearer ' + token,
+      "Content-Type": "application/json"
+    },
     params: query
   });
 }

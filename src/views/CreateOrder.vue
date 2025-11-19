@@ -386,7 +386,7 @@ async function findProductFromIdentifier(payload: any) {
             item.quantity = Number(item.quantity) + (Number(uploadedItemsByIdValue[idValue][quantityField]) || 0)
           }
         } else {
-          const stock = currentOrder.value.originFacilityId ?  await fetchStock(product.productId) : null;        
+          const stock = currentOrder.value.originFacilityId ?  await fetchStock(product.productId) : null;
           currentOrder.value.items.push({
             productId: product.productId,
             sku: product.sku,
