@@ -137,7 +137,7 @@
                 <p class="overline">{{ translate("Search result") }}</p>
                 {{ searchedProduct.internalName || searchedProduct.sku || searchedProduct.productId }}
               </ion-label>
-              <ion-button size="default" slot="end" fill="clear" @click="addProductToCount" :color="isProductAvailableInOrder() ? 'success' : 'primary'">
+              <ion-button :disabled="isAddingProduct" size="default" slot="end" fill="clear" @click="addProductToCount" :color="isProductAvailableInOrder() ? 'success' : 'primary'">
                 <ion-icon slot="icon-only" :icon="isProductAvailableInOrder() ? checkmarkCircle : addCircleOutline"/>
               </ion-button>
             </ion-item>
@@ -233,6 +233,7 @@ const searchedProduct = ref({}) as any;
 const queryString = ref("");
 const stores = ref([]) as any;
 const dateTimeModalOpen = ref(false);
+const isAddingProduct = ref(false)
 const selectedDateFilter = ref("");
 const currencyUom = ref("");
 const currentOrder = ref({
@@ -407,8 +408,11 @@ async function findProductFromIdentifier(payload: any) {
 }
 
 async function addProductToCount() {
-  if (!searchedProduct.value.productId ||!queryString.value) return;
+  if (isAddingProduct.value) return
+  if (!searchedProduct.value.productId || !queryString.value) return;
   if (isProductAvailableInOrder()) return;
+
+  isAddingProduct.value = true
 
   let newProduct = { 
     productId: searchedProduct.value.productId,
@@ -423,6 +427,7 @@ async function addProductToCount() {
   }
 
   currentOrder.value.items.push(newProduct);
+  isAddingProduct.value = false
 }
 
 async function productStoreUpdated() {
@@ -542,8 +547,8 @@ async function createOrder() {
 		productStoreId: currentOrder.value.productStoreId,
 		statusFlowId: currentOrder.value.statusFlowId,
     currencyUom: currencyUom.value || 'USD',
-		orderDate: DateTime.now().toFormat("yyyy-MM-dd 23:59:59.000"),
-		entryDate: DateTime.now().toFormat("yyyy-MM-dd 23:59:59.000"),
+		orderDate: DateTime.now().toFormat("yyyy-MM-dd HH:mm:ss.SSS"),
+		entryDate: DateTime.now().toFormat("yyyy-MM-dd HH:mm:ss.SSS"),
 		originFacilityId: currentOrder.value.originFacilityId,
 		shipGroups: [
 			{
