@@ -385,14 +385,15 @@ async function findProductFromIdentifier(payload: any) {
             item.quantity = Number(item.quantity) + (Number(uploadedItemsByIdValue[idValue][quantityField]) || 0)
           }
         } else {
-            const stock = currentOrder.value.originFacilityId ?  await fetchStock(product.productId) : null;            currentOrder.value.items.push({
-              productId: product.productId,
-              sku: product.sku,
-              quantity: quantityField ? Number(uploadedItemsByIdValue[idValue][quantityField]) || 0 : 0,
-              isChecked: false,
-              qoh: stock?.qoh ?? null,
-              atp: stock?.atp || 0
-            })
+          const stock = currentOrder.value.originFacilityId ?  await fetchStock(product.productId) : null;        
+          currentOrder.value.items.push({
+            productId: product.productId,
+            sku: product.sku,
+            quantity: quantityField ? Number(uploadedItemsByIdValue[idValue][quantityField]) || 0 : 0,
+            isChecked: false,
+            qoh: stock?.qoh ?? null,
+            atp: stock?.atp || 0
+          })
         }
       }
     } else {
