@@ -20,6 +20,6 @@ export {
   setUserLocale,
   updateInstanceUrl,
   updateToken,
-  setUserTimeZone.
+  setUserTimeZone,
   STATUSCOLOR
 }
