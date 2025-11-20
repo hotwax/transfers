@@ -137,7 +137,7 @@
                 <p class="overline">{{ translate("Search result") }}</p>
                 {{ searchedProduct.internalName || searchedProduct.sku || searchedProduct.productId }}
               </ion-label>
-              <ion-button size="default" slot="end" fill="clear" @click="addProductToCount" :color="isProductAvailableInOrder() ? 'success' : 'primary'">
+              <ion-button :disabled="isAddingProduct" size="default" slot="end" fill="clear" @click="addProductToCount" :color="isProductAvailableInOrder() ? 'success' : 'primary'">
                 <ion-icon slot="icon-only" :icon="isProductAvailableInOrder() ? checkmarkCircle : addCircleOutline"/>
               </ion-button>
             </ion-item>
@@ -233,6 +233,7 @@ const searchedProduct = ref({}) as any;
 const queryString = ref("");
 const stores = ref([]) as any;
 const dateTimeModalOpen = ref(false);
+const isAddingProduct = ref(false)
 const selectedDateFilter = ref("");
 const currencyUom = ref("");
 const currentOrder = ref({
@@ -307,7 +308,6 @@ onIonViewDidEnter(async () => {
     currentOrder.value.carrierPartyId = Object.keys(shipmentMethodsByCarrier.value)[0]
     selectUpdatedMethod()
   }
-  currentOrder.value.originFacilityId = facilities.value[0]?.facilityId
   uploadedFile.value = {}
   content.value = []
   emitter.emit("dismissLoader")
@@ -386,7 +386,7 @@ async function findProductFromIdentifier(payload: any) {
             item.quantity = Number(item.quantity) + (Number(uploadedItemsByIdValue[idValue][quantityField]) || 0)
           }
         } else {
-          const stock = await fetchStock(product.productId);
+          const stock = currentOrder.value.originFacilityId ?  await fetchStock(product.productId) : null;
           currentOrder.value.items.push({
             productId: product.productId,
             sku: product.sku,
@@ -408,8 +408,11 @@ async function findProductFromIdentifier(payload: any) {
 }
 
 async function addProductToCount() {
-  if (!searchedProduct.value.productId ||!queryString.value) return;
+  if (isAddingProduct.value) return
+  if (!searchedProduct.value.productId || !queryString.value) return;
   if (isProductAvailableInOrder()) return;
+
+  isAddingProduct.value = true
 
   let newProduct = { 
     productId: searchedProduct.value.productId,
@@ -424,13 +427,14 @@ async function addProductToCount() {
   }
 
   currentOrder.value.items.push(newProduct);
+  isAddingProduct.value = false
 }
 
 async function productStoreUpdated() {
   await store.dispatch("util/fetchFacilitiesByCurrentStore", currentOrder.value.productStoreId);
   const isFacilityUpdated = currentOrder.value.originFacilityId !== facilities.value[0]?.facilityId
   if(isFacilityUpdated) {
-    currentOrder.value.originFacilityId = facilities.value[0]?.facilityId;
+    currentOrder.value.originFacilityId = "";
     currentOrder.value.destinationFacilityId = "";
     if(currentOrder.value.items.length) refetchAllItemsStock()
   }
@@ -543,8 +547,8 @@ async function createOrder() {
 		productStoreId: currentOrder.value.productStoreId,
 		statusFlowId: currentOrder.value.statusFlowId,
     currencyUom: currencyUom.value || 'USD',
-		orderDate: DateTime.now().toFormat("yyyy-MM-dd 23:59:59.000"),
-		entryDate: DateTime.now().toFormat("yyyy-MM-dd 23:59:59.000"),
+		orderDate: DateTime.now().toFormat("yyyy-MM-dd HH:mm:ss.SSS"),
+		entryDate: DateTime.now().toFormat("yyyy-MM-dd HH:mm:ss.SSS"),
 		originFacilityId: currentOrder.value.originFacilityId,
 		shipGroups: [
 			{
@@ -689,8 +693,8 @@ async function refetchAllItemsStock() {
   const responses = await Promise.allSettled(currentOrder.value.items.map((item: any) => fetchStock(item.productId)))
   currentOrder.value.items.map((item: any, index: any) => {
     if(responses[index].status === "fulfilled") {
-      item["qoh"] = responses[index]?.value.qoh 
-      item["atp"] = responses[index]?.value.atp 
+      item["qoh"] = responses[index]?.value?.qoh
+      item["atp"] = responses[index]?.value?.atp
     }
   })
   emitter.emit("dismissLoader")

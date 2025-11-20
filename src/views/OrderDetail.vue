@@ -272,6 +272,7 @@ import { ellipsisVerticalOutline, ticketOutline, downloadOutline, sendOutline, s
 import Image from "@/components/Image.vue";
 import OrderItemDetailActionsPopover from '@/components/OrderItemDetailActionsPopover.vue';
 import AddProductModal from "@/components/AddProductModal.vue"
+import { useOrderQueue } from '@/composables/useProductQueue';
 import { computed, defineProps, ref } from "vue";
 import { useStore } from "vuex";
 import logger from "@/logger";
@@ -284,6 +285,7 @@ import { formatCurrency } from "@/utils";
 
 const store = useStore();
 const productIdentificationStore = useProductIdentificationStore();
+const orderQueue = useOrderQueue();
 const props = defineProps(["orderId"]);
 
 const currentOrder = computed(() => store.getters["order/getCurrent"])
@@ -476,15 +478,18 @@ async function updateCarrierAndShipmentMethod(event: any, carrierPartyId: any, s
 
 
 async function addProduct() {
-  emitter.on("generateItemsListByParent", generateItemsListByParent);
   const addProductModal = await modalController.create({
     component: AddProductModal,
     showBackdrop: false,
+    componentProps: {
+      addProductToQueue: orderQueue.addProductToQueue,
+      isProductInOrder: orderQueue.isProductInOrder,
+      pendingProductIds: orderQueue.pendingProductIds.value, // Pass the actual Set
+      onProductAdded: () => {
+        generateItemsListByParent(); // Re-render product list to include new item
+      }
+    }
   });
-
-  addProductModal.onDidDismiss().then(() => {
-    emitter.off("generateItemsListByParent", generateItemsListByParent);
-  })
 
   await addProductModal.present();
 }
