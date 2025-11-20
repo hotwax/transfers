@@ -364,10 +364,9 @@ import Filters from "@/components/Filters.vue";
 import logger from '@/logger';
 import { useStore } from 'vuex';
 import { computed, ref } from "vue";
-import { hasError } from "@/adapter";
-import { formatUtcDate, getColorByDesc } from "@/utils"
+import { hasError, STATUSCOLOR } from "@/adapter";
+import { formatUtcDate } from "@/utils"
 import { UtilService } from '@/services/UtilService';
-import { STATUSCOLOR } from '@hotwax/oms-api';
 
 const productIdentificationStore = useProductIdentificationStore();
 const store = useStore();

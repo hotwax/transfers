@@ -276,12 +276,11 @@ import { computed, defineProps, ref } from "vue";
 import { useStore } from "vuex";
 import logger from "@/logger";
 import { OrderService } from "@/services/OrderService";
-import { hasError } from "@/adapter";
+import { hasError, STATUSCOLOR } from "@/adapter";
 import { DateTime } from "luxon";
-import { getColorByDesc, showToast} from "@/utils";
+import { showToast } from "@/utils";
 import emitter from "@/event-bus";
 import { formatCurrency } from "@/utils";
-import { STATUSCOLOR } from "@hotwax/oms-api";
 
 const store = useStore();
 const productIdentificationStore = useProductIdentificationStore();
