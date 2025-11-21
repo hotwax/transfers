@@ -127,27 +127,37 @@
           <div class="timeline" v-if="selectedShipmentId">
             <ion-card>
               <ion-card-header>
-                <ion-card-title>{{ getSelectedShipment()?.isReceipt ? translate("Receipt details") : translate("Shipment details") }}</ion-card-title>
+                <ion-card-title>{{ getSelectedShipment()?.datetimeReceived ? translate("Receipt details") : translate("Shipment details") }}</ion-card-title>
                 <ion-button fill="clear" color="medium" @click="selectedShipmentId = ''; generateItemsListByParent()">
                   <ion-icon :icon="closeCircleOutline" slot="icon-only" />
                 </ion-button>
               </ion-card-header>
-              <ion-item>
-                <ion-label>{{ getSelectedShipment()?.isReceipt ? translate("Received date") : translate("Shipped date") }}</ion-label>
-                <ion-label slot="end">{{ getSelectedShipment()?.shipmentShippedDate ? formatDateTime(getSelectedShipment().shipmentShippedDate) : "-" }}</ion-label>
-              </ion-item>
-              <ion-item>
-                <ion-label>{{ translate("Method") }}</ion-label>
-                <ion-label slot="end">{{ getSelectedShipment()?.routeSegShipmentMethodTypeId ? getShipmentMethodDesc(getSelectedShipment().routeSegShipmentMethodTypeId) : "-" }}</ion-label>
-              </ion-item>
-              <ion-item>
-                <ion-label>{{ translate("Carrier") }}</ion-label>
-                <ion-label slot="end">{{ getSelectedShipment()?.routeSegCarrierPartyId ? getCarrierDesc(getSelectedShipment().routeSegCarrierPartyId) : "-" }}</ion-label>
-              </ion-item>
-              <ion-item lines="none">
-                <ion-label>{{ translate("Tracking code") }}</ion-label>
-                <ion-label slot="end">{{ getSelectedShipment()?.trackingIdNumber ? getSelectedShipment().trackingIdNumber : "-" }}</ion-label>
-              </ion-item>
+              <!-- For receipts only show received date -->
+              <template v-if="getSelectedShipment()?.datetimeReceived">
+                <ion-item>
+                  <ion-label>{{ translate("Received date") }}</ion-label>
+                  <ion-label slot="end">{{ formatDateTime(getSelectedShipment().datetimeReceived) }}</ion-label>
+                </ion-item>
+              </template>
+              <!-- For shipments -->
+              <template v-else>
+                <ion-item>
+                  <ion-label>{{ translate("Shipped date") }}</ion-label>
+                  <ion-label slot="end">{{ getSelectedShipment()?.shipmentShippedDate ? formatDateTime(getSelectedShipment().shipmentShippedDate) : "-" }}</ion-label>
+                </ion-item>
+                <ion-item>
+                  <ion-label>{{ translate("Method") }}</ion-label>
+                  <ion-label slot="end">{{ getSelectedShipment()?.routeSegShipmentMethodTypeId ? getShipmentMethodDesc(getSelectedShipment().routeSegShipmentMethodTypeId) : "-" }}</ion-label>
+                </ion-item>
+                <ion-item>
+                  <ion-label>{{ translate("Carrier") }}</ion-label>
+                  <ion-label slot="end">{{ getSelectedShipment()?.routeSegCarrierPartyId ? getCarrierDesc(getSelectedShipment().routeSegCarrierPartyId) : "-" }}</ion-label>
+                </ion-item>
+                <ion-item lines="none">
+                  <ion-label>{{ translate("Tracking code") }}</ion-label>
+                  <ion-label slot="end">{{ getSelectedShipment()?.trackingIdNumber ? getSelectedShipment().trackingIdNumber : "-" }}</ion-label>
+                </ion-item>
+              </template>
             </ion-card>
           </div>
         </section>
@@ -443,12 +453,7 @@ function getSelectedShipment() {
   if (selectedShipmentId.value.startsWith("receipt_")) {
     const datetimeReceived = selectedShipmentId.value.replace(/^receipt_/, "");
     return {
-      shipmentTypeId: "IN_TRANSFER",
-      shipmentShippedDate: Number(datetimeReceived),
-      routeSegShipmentMethodTypeId: currentOrder.value.shipments?.[0].routeSegShipmentMethodTypeId,
-      routeSegCarrierPartyId: currentOrder.value.shipments?.[0].routeSegCarrierPartyId,
-      trackingIdNumber: currentOrder.value.shipments?.[0]?.trackingIdNumber,
-      isReceipt: true
+      datetimeReceived: Number(datetimeReceived),
     };
   }
   
