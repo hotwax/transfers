@@ -21,6 +21,10 @@
         </ion-radio>
       </ion-item>
     </ion-radio-group>
+    <!-- Empty state -->
+    <div v-if="!facilities.length" class="empty-state">
+      <p>{{ translate("No facilities found") }}</p>
+    </div>
   </ion-content>
 
   <ion-fab vertical="bottom" horizontal="end" slot="fixed">
@@ -31,7 +35,7 @@
 </template>
   
 <script setup lang="ts">
-import { IonButton, IonButtons, IonContent, IonFab, IonFabButton, IonHeader, IonIcon, IonItem, IonLabel, IonRadio, IonRadioGroup, IonTitle, IonToolbar, modalController } from "@ionic/vue";
+import { IonButton, IonButtons, IonContent, IonFab, IonFabButton, IonHeader, IonIcon, IonItem, IonLabel, IonRadio, IonRadioGroup, IonSearchbar, IonTitle, IonToolbar, modalController } from "@ionic/vue";
 import { defineProps, onMounted, ref } from "vue";
 import { closeOutline, saveOutline } from "ionicons/icons";
 import { translate } from '@hotwax/dxp-components'
