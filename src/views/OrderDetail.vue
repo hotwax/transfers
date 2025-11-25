@@ -351,6 +351,11 @@ async function changeOrderStatus(updatedStatusId: string) {
     }]
   })
   alert.present()
+
+  const { role } = await alert.onDidDismiss();
+  if (role == 'backdrop') {
+      selectRef.value.$el.value = currentOrder.value
+  }
 }
 
 async function updateOrderStatus(updatedStatusId: string) {
