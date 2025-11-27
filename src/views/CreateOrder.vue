@@ -20,77 +20,84 @@
             <ion-card-header>
               <ion-card-title>{{ translate("Assign") }}</ion-card-title>
             </ion-card-header>
-            <ion-item>
-              <ion-icon :icon="storefrontOutline" slot="start" />
-              <ion-select value="" :label="translate('Product Store')" :placeholder="translate('Select')" interface="popover" v-model="currentOrder.productStoreId" @ionChange="productStoreUpdated()">
-                <ion-select-option v-for="store in stores" :value="store.productStoreId" :key="store.productStoreId">{{ store.storeName ? store.storeName : store.productStoreId }}</ion-select-option>
-              </ion-select>
-            </ion-item>
-            <ion-item>
-              <ion-icon :icon="sendOutline" slot="start" />
-              <ion-label>{{ translate("Origin") }}</ion-label>
-              <template v-if="currentOrder.originFacilityId" slot="end">
-                <ion-chip outline @click="openSelectFacilityModal('originFacilityId')">
-                  {{ getFacilityName(currentOrder.originFacilityId) ? getFacilityName(currentOrder.originFacilityId) : currentOrder.originFacilityId }}
-                </ion-chip>
-              </template>
-              <ion-button v-else slot="end" fill="outline" @click="openSelectFacilityModal('originFacilityId')">
-                <ion-icon slot="start" :icon="addCircleOutline" />
-                <ion-label>{{ translate("Assign") }}</ion-label>
-              </ion-button>
-            </ion-item>
-            <ion-item lines="none">
-              <ion-icon :icon="downloadOutline" slot="start" />
-              <ion-label>{{ translate("Destination") }}</ion-label>
-              <template v-if="currentOrder.destinationFacilityId" slot="end">
-                <ion-chip outline @click="openSelectFacilityModal('destinationFacilityId')">
-                  {{ getFacilityName(currentOrder.destinationFacilityId) ? getFacilityName(currentOrder.destinationFacilityId) : currentOrder.destinationFacilityId }}
-                </ion-chip>
-              </template>
-              <ion-button v-else slot="end" fill="outline" @click="openSelectFacilityModal('destinationFacilityId')">
-                <ion-icon slot="start" :icon="addCircleOutline" />
-                <ion-label>{{ translate("Assign") }}</ion-label>
-              </ion-button>
-            </ion-item>
+            <ion-list>
+              <ion-item>
+                <ion-icon :icon="storefrontOutline" slot="start" />
+                <ion-select value="" :label="translate('Product Store')" :placeholder="translate('Select')" interface="popover" v-model="currentOrder.productStoreId" @ionChange="productStoreUpdated()">
+                  <ion-select-option v-for="store in stores" :value="store.productStoreId" :key="store.productStoreId">{{ store.storeName ? store.storeName : store.productStoreId }}</ion-select-option>
+                </ion-select>
+              </ion-item>
+              <ion-item>
+                <ion-icon :icon="sendOutline" slot="start" />
+                <ion-label>{{ translate("Origin") }}</ion-label>
+                <template v-if="currentOrder.originFacilityId" slot="end">
+                  <ion-chip outline @click="openSelectFacilityModal('originFacilityId')">
+                    {{ getFacilityName(currentOrder.originFacilityId) ? getFacilityName(currentOrder.originFacilityId) : currentOrder.originFacilityId }}
+                  </ion-chip>
+                </template>
+                <ion-button v-else slot="end" fill="outline" @click="openSelectFacilityModal('originFacilityId')">
+                  <ion-icon slot="start" :icon="addCircleOutline" />
+                  <ion-label>{{ translate("Assign") }}</ion-label>
+                </ion-button>
+              </ion-item>
+              <ion-item lines="none">
+                <ion-icon :icon="downloadOutline" slot="start" />
+                <ion-label>{{ translate("Destination") }}</ion-label>
+                <template v-if="currentOrder.destinationFacilityId" slot="end">
+                  <ion-chip outline @click="openSelectFacilityModal('destinationFacilityId')">
+                    {{ getFacilityName(currentOrder.destinationFacilityId) ? getFacilityName(currentOrder.destinationFacilityId) : currentOrder.destinationFacilityId }}
+                  </ion-chip>
+                </template>
+                <ion-button v-else slot="end" fill="outline" @click="openSelectFacilityModal('destinationFacilityId')">
+                  <ion-icon slot="start" :icon="addCircleOutline" />
+                  <ion-label>{{ translate("Assign") }}</ion-label>
+                </ion-button>
+              </ion-item>
+            </ion-list>
+
           </ion-card>
 
           <ion-card>
             <ion-card-header>
               <ion-card-title>{{ translate("Shipping Method") }}</ion-card-title>
             </ion-card-header>
-            <ion-item>
-              <ion-select :label="translate('Carrier')" :placeholder="translate('Select')" v-model="currentOrder.carrierPartyId" interface="popover" @ionChange="selectUpdatedMethod()">
-                <ion-select-option :value="carrierPartyId" v-for="(carrierPartyId, index) in Object.keys(shipmentMethodsByCarrier)" :key="index">{{ getCarrierDesc(carrierPartyId) }}</ion-select-option>
-              </ion-select>
-            </ion-item>
-            <ion-item lines="none">
-              <ion-select :label="translate('Method')" :placeholder="translate('Select')" v-model="currentOrder.shipmentMethodTypeId" v-if="getCarrierShipmentMethods()?.length" interface="popover">
-                <ion-select-option :value="shipmentMethod.shipmentMethodTypeId" v-for="(shipmentMethod, index) in getCarrierShipmentMethods()" :key="index">{{ shipmentMethod.description ? shipmentMethod.description : shipmentMethod.shipmentMethodTypeId }}</ion-select-option>
-              </ion-select>
-              <template v-else>
-                <ion-icon :icon="informationCircleOutline" slot="start" />
-                <ion-label>{{ translate("No shipment methods found") }}</ion-label>
-              </template>
-            </ion-item>
+            <ion-list>
+              <ion-item>
+                <ion-select :label="translate('Carrier')" :placeholder="translate('Select')" v-model="currentOrder.carrierPartyId" interface="popover" @ionChange="selectUpdatedMethod()">
+                  <ion-select-option :value="carrierPartyId" v-for="(carrierPartyId, index) in Object.keys(shipmentMethodsByCarrier)" :key="index">{{ getCarrierDesc(carrierPartyId) }}</ion-select-option>
+                </ion-select>
+              </ion-item>
+              <ion-item lines="none">
+                <ion-select :label="translate('Method')" :placeholder="translate('Select')" v-model="currentOrder.shipmentMethodTypeId" v-if="getCarrierShipmentMethods()?.length" interface="popover">
+                  <ion-select-option :value="shipmentMethod.shipmentMethodTypeId" v-for="(shipmentMethod, index) in getCarrierShipmentMethods()" :key="index">{{ shipmentMethod.description ? shipmentMethod.description : shipmentMethod.shipmentMethodTypeId }}</ion-select-option>
+                </ion-select>
+                <template v-else>
+                  <ion-icon :icon="informationCircleOutline" slot="start" />
+                  <ion-label>{{ translate("No shipment methods found") }}</ion-label>
+                </template>
+              </ion-item>
+            </ion-list>
           </ion-card>
 
           <ion-card>
             <ion-card-header>
               <ion-card-title>{{ translate("Plan") }}</ion-card-title>
             </ion-card-header>
-            <ion-item>
-              <ion-select :label="translate('Lifecycle')" placeholder="Select" v-model="currentOrder.statusFlowId" interface="popover">
-                <ion-select-option v-for="flow in statusFlows" :key="flow.statusFlowId" :value="flow.statusFlowId">{{ translate(flow.description) }}</ion-select-option>
-              </ion-select>
-            </ion-item>
-            <ion-item>
-              <ion-label>{{ translate("Ship Date") }}</ion-label>
-              <ion-button slot="end" class="date-time-button" @click="openDateTimeModal('shipDate')">{{ currentOrder.shipDate ? formatDateTime(currentOrder.shipDate) : translate("Select date") }}</ion-button>
-            </ion-item>
-            <ion-item>
-              <ion-label>{{ translate("Delivery Date") }}</ion-label>
-              <ion-button slot="end" class="date-time-button" @click="openDateTimeModal('deliveryDate')">{{ currentOrder.deliveryDate ? formatDateTime(currentOrder.deliveryDate) : translate("Select date") }}</ion-button>
-            </ion-item>
+            <ion-list>
+              <ion-item>
+                <ion-select :label="translate('Lifecycle')" placeholder="Select" v-model="currentOrder.statusFlowId" interface="popover">
+                  <ion-select-option v-for="flow in statusFlows" :key="flow.statusFlowId" :value="flow.statusFlowId">{{ translate(flow.description) }}</ion-select-option>
+                </ion-select>
+              </ion-item>
+              <ion-item>
+                <ion-label>{{ translate("Ship Date") }}</ion-label>
+                <ion-button slot="end" class="date-time-button" @click="openDateTimeModal('shipDate')">{{ currentOrder.shipDate ? formatDateTime(currentOrder.shipDate) : translate("Select date") }}</ion-button>
+              </ion-item>
+              <ion-item>
+                <ion-label>{{ translate("Delivery Date") }}</ion-label>
+                <ion-button slot="end" class="date-time-button" @click="openDateTimeModal('deliveryDate')">{{ currentOrder.deliveryDate ? formatDateTime(currentOrder.deliveryDate) : translate("Select date") }}</ion-button>
+              </ion-item>
+            </ion-list>
           </ion-card>
 
           <ion-item>
@@ -205,7 +212,7 @@
 </template>
 
 <script setup lang="ts">
-import { IonBackButton, IonButton, IonCard, IonCardHeader, IonCardTitle, IonCheckbox, IonChip, IonContent, IonDatetime, IonFab, IonFabButton, IonHeader, IonIcon, IonInput, IonItem, IonLabel, IonModal, IonPage, IonSelect, IonSelectOption, IonSpinner, IonThumbnail, IonTitle, IonToolbar, onIonViewDidEnter, alertController, modalController, popoverController } from '@ionic/vue';
+import { IonBackButton, IonButton, IonCard, IonCardHeader, IonCardTitle, IonCheckbox, IonChip, IonContent, IonDatetime, IonFab, IonFabButton, IonHeader, IonIcon, IonInput, IonItem, IonLabel, IonModal, IonPage, IonSelect, IonSelectOption, IonSpinner, IonThumbnail, IonTitle, IonToolbar, onIonViewDidEnter, alertController, modalController, popoverController, IonList } from '@ionic/vue';
 import { addCircleOutline, checkmarkCircle, checkmarkDoneOutline, cloudUploadOutline, downloadOutline, ellipsisVerticalOutline, informationCircleOutline, listOutline, sendOutline, storefrontOutline } from 'ionicons/icons';
 import { getProductIdentificationValue, translate, useProductIdentificationStore, useUserStore } from '@hotwax/dxp-components'
 import { computed, ref, watch } from "vue";

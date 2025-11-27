@@ -34,44 +34,48 @@
               <ion-card-header>
                 <ion-card-title>{{ currentOrder.originFacility?.facilityName ? currentOrder.originFacility.facilityName : getFacilityName(currentOrder.facilityId) }}</ion-card-title>
               </ion-card-header>
-              <ion-item v-if="currentOrder?.originFacility" lines="none">
-                <ion-icon :icon="sendOutline" slot="start" />
-                <ion-label>
-                  <h3 v-if="currentOrder.originFacility?.address1">{{ currentOrder.originFacility.address1 }}</h3>
-                  <h3 v-if="currentOrder.originFacility?.address2">{{ currentOrder.originFacility.address2 }}</h3>
-                  <p>{{ currentOrder.originFacility?.city ?? "" }}{{ (currentOrder.originFacility?.city && currentOrder.originFacility?.postalCode) && ", " }}{{ currentOrder.originFacility?.postalCode ?? "" }}</p>
-                  <p>{{ currentOrder.originFacility?.stateGeoName ?? "" }}{{ (currentOrder.originFacility?.stateGeoName && currentOrder.originFacility?.countryGeoName) && ", " }}{{ currentOrder.originFacility?.countryGeoName ?? "" }}</p>
-                </ion-label>
-              </ion-item>
-              <ion-item>
-                <ion-select :label="translate('Carrier')" :value="currentOrder.carrierPartyId" interface="popover" :placeholder="translate('Select')" :disabled="isOrderFinished()" @ionChange="updateCarrierAndShipmentMethod($event, $event.detail.value, '')">
-                  <ion-select-option :value="carrierPartyId" v-for="(carrierPartyId, index) in Object.keys(shipmentMethodsByCarrier)" :key="index">{{ getCarrierDesc(carrierPartyId) ? getCarrierDesc(carrierPartyId) : carrierPartyId }}</ion-select-option>
-                </ion-select>
-              </ion-item>
-              <ion-item lines="none">
-                <ion-select :label="translate('Method')" :value="currentOrder.shipmentMethodTypeId" v-if="carrierMethods?.length" :placeholder="translate('Select')" interface="popover" :disabled="isOrderFinished()" @ionChange="updateCarrierAndShipmentMethod($event, currentOrder.carrierPartyId, $event.detail.value)">
-                  <ion-select-option :value="shipmentMethod.shipmentMethodTypeId" v-for="(shipmentMethod, index) in carrierMethods" :key="index">{{ shipmentMethod.description ? shipmentMethod.description : shipmentMethod.shipmentMethodTypeId }}</ion-select-option>
-                </ion-select>
-                <template v-else>
-                  <ion-icon :icon="informationCircleOutline" slot="start" />
-                  <ion-label>{{ "No shipment methods found" }}</ion-label>
-                </template>
-              </ion-item>
+              <ion-list>
+                <ion-item v-if="currentOrder?.originFacility" lines="none">
+                  <ion-icon :icon="sendOutline" slot="start" />
+                  <ion-label>
+                    <h3 v-if="currentOrder.originFacility?.address1">{{ currentOrder.originFacility.address1 }}</h3>
+                    <h3 v-if="currentOrder.originFacility?.address2">{{ currentOrder.originFacility.address2 }}</h3>
+                    <p>{{ currentOrder.originFacility?.city ?? "" }}{{ (currentOrder.originFacility?.city && currentOrder.originFacility?.postalCode) && ", " }}{{ currentOrder.originFacility?.postalCode ?? "" }}</p>
+                    <p>{{ currentOrder.originFacility?.stateGeoName ?? "" }}{{ (currentOrder.originFacility?.stateGeoName && currentOrder.originFacility?.countryGeoName) && ", " }}{{ currentOrder.originFacility?.countryGeoName ?? "" }}</p>
+                  </ion-label>
+                </ion-item>
+                <ion-item>
+                  <ion-select :label="translate('Carrier')" :value="currentOrder.carrierPartyId" interface="popover" :placeholder="translate('Select')" :disabled="isOrderFinished()" @ionChange="updateCarrierAndShipmentMethod($event, $event.detail.value, '')">
+                    <ion-select-option :value="carrierPartyId" v-for="(carrierPartyId, index) in Object.keys(shipmentMethodsByCarrier)" :key="index">{{ getCarrierDesc(carrierPartyId) ? getCarrierDesc(carrierPartyId) : carrierPartyId }}</ion-select-option>
+                  </ion-select>
+                </ion-item>
+                <ion-item lines="none">
+                  <ion-select :label="translate('Method')" :value="currentOrder.shipmentMethodTypeId" v-if="carrierMethods?.length" :placeholder="translate('Select')" interface="popover" :disabled="isOrderFinished()" @ionChange="updateCarrierAndShipmentMethod($event, currentOrder.carrierPartyId, $event.detail.value)">
+                    <ion-select-option :value="shipmentMethod.shipmentMethodTypeId" v-for="(shipmentMethod, index) in carrierMethods" :key="index">{{ shipmentMethod.description ? shipmentMethod.description : shipmentMethod.shipmentMethodTypeId }}</ion-select-option>
+                  </ion-select>
+                  <template v-else>
+                    <ion-icon :icon="informationCircleOutline" slot="start" />
+                    <ion-label>{{ "No shipment methods found" }}</ion-label>
+                  </template>
+                </ion-item>
+              </ion-list>
             </ion-card>
 
             <ion-card>
               <ion-card-header>
                 <ion-card-title>{{ currentOrder.destinationFacility?.facilityName ? currentOrder.destinationFacility.facilityName : getFacilityName(currentOrder.orderFacilityId) }}</ion-card-title>
               </ion-card-header>
-              <ion-item v-if="currentOrder?.destinationFacility" lines="none">
-                <ion-icon :icon="downloadOutline" slot="start" />
-                <ion-label>
-                  <h3 v-if="currentOrder.destinationFacility?.address1">{{ currentOrder.destinationFacility.address1 }}</h3>
-                  <h3 v-if="currentOrder.destinationFacility?.address2">{{ currentOrder.destinationFacility.address2 }}</h3>
-                  <p>{{ currentOrder.destinationFacility?.city ?? "" }}{{ (currentOrder.destinationFacility?.city && currentOrder.destinationFacility?.postalCode) && ", " }}{{ currentOrder.destinationFacility?.postalCode ?? "" }}</p>
-                  <p>{{ currentOrder.destinationFacility?.stateGeoName ?? "" }}{{ (currentOrder.destinationFacility?.stateGeoName && currentOrder.destinationFacility?.countryGeoName) && ", " }}{{ currentOrder.destinationFacility?.countryGeoName ?? "" }}</p>
-                </ion-label>
-              </ion-item>
+              <ion-list>
+                <ion-item v-if="currentOrder?.destinationFacility" lines="none">
+                  <ion-icon :icon="downloadOutline" slot="start" />
+                  <ion-label>
+                    <h3 v-if="currentOrder.destinationFacility?.address1">{{ currentOrder.destinationFacility.address1 }}</h3>
+                    <h3 v-if="currentOrder.destinationFacility?.address2">{{ currentOrder.destinationFacility.address2 }}</h3>
+                    <p>{{ currentOrder.destinationFacility?.city ?? "" }}{{ (currentOrder.destinationFacility?.city && currentOrder.destinationFacility?.postalCode) && ", " }}{{ currentOrder.destinationFacility?.postalCode ?? "" }}</p>
+                    <p>{{ currentOrder.destinationFacility?.stateGeoName ?? "" }}{{ (currentOrder.destinationFacility?.stateGeoName && currentOrder.destinationFacility?.countryGeoName) && ", " }}{{ currentOrder.destinationFacility?.countryGeoName ?? "" }}</p>
+                  </ion-label>
+                </ion-item>
+              </ion-list>
             </ion-card>
           </div>
 
@@ -98,29 +102,33 @@
                 <ion-card-header>
                   <ion-card-title>{{ translate("Fulfillment") }}</ion-card-title>
                 </ion-card-header>
-                <ion-item v-for="(shipment, index) in getFilteredShipments('OUT_TRANSFER')" :key="index">
-                  <ion-radio :value="shipment.shipmentId" label-placement="end" justify="start">
-                    <ion-label>
-                      {{ shipment.shipmentId }}
-                      <p v-if="shipment.trackingIdNumber">{{ shipment.trackingIdNumber }}</p>
-                    </ion-label>
-                  </ion-radio>
-                  <ion-badge slot="end" class="no-pointer-events" :color="getColorByDesc(getStatusDesc(shipment.shipmentStatusId)) || getColorByDesc('default')">{{ getStatusDesc(shipment.shipmentStatusId) }}</ion-badge>
-                </ion-item>
+                <ion-list>
+                  <ion-item v-for="(shipment, index) in getFilteredShipments('OUT_TRANSFER')" :key="index">
+                    <ion-radio :value="shipment.shipmentId" label-placement="end" justify="start">
+                      <ion-label>
+                        {{ shipment.shipmentId }}
+                        <p v-if="shipment.trackingIdNumber">{{ shipment.trackingIdNumber }}</p>
+                      </ion-label>
+                    </ion-radio>
+                    <ion-badge slot="end" class="no-pointer-events" :color="getColorByDesc(getStatusDesc(shipment.shipmentStatusId)) || getColorByDesc('default')">{{ getStatusDesc(shipment.shipmentStatusId) }}</ion-badge>
+                  </ion-item>
+                </ion-list>
               </ion-card>
               
               <ion-card v-if="currentOrder?.receipts && Object.keys(currentOrder.receipts)?.length">
                 <ion-card-header>
                   <ion-card-title>{{ translate("Receipts") }}</ion-card-title>
                 </ion-card-header>
-                <ion-item v-for="datetimeReceived in getReceipts()" :key="datetimeReceived">
-                  <ion-radio :value="`receipt_${datetimeReceived}`" label-placement="end" justify="start">
-                    <ion-label>
-                      {{ translate("received at") }} 
-                      <p>{{ formatDateTime(Number(datetimeReceived)) }}</p>
-                    </ion-label>
-                  </ion-radio>
-                </ion-item>
+                <ion-list>
+                  <ion-item v-for="datetimeReceived in getReceipts()" :key="datetimeReceived">
+                    <ion-radio :value="`receipt_${datetimeReceived}`" label-placement="end" justify="start">
+                      <ion-label>
+                        {{ translate("received at") }}
+                        <p>{{ formatDateTime(Number(datetimeReceived)) }}</p>
+                      </ion-label>
+                    </ion-radio>
+                  </ion-item>
+                </ion-list>
               </ion-card>
             </div>
           </ion-radio-group>
