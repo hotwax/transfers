@@ -8,21 +8,23 @@
     <ion-card-content>
       {{ translate('The timezone you select is used to ensure automations you schedule are always accurate to the time you select.') }}
     </ion-card-content>
-    <ion-item v-if="showBrowserTimeZone">
-      <ion-label>
-        <p class="overline">{{ translate("Browser TimeZone") }}</p>
-        {{ browserTimeZone.id }}
-        <p v-if="showDateTime">{{ getCurrentTime(browserTimeZone.id, dateTimeFormat) }}</p>
-      </ion-label>
-    </ion-item>
-    <ion-item lines="none">
-      <ion-label>
-        <p class="overline">{{ translate("Selected TimeZone") }}</p>
-        {{ currentTimeZoneId }}
-        <p v-if="showDateTime">{{ getCurrentTime(currentTimeZoneId, dateTimeFormat) }}</p>
-      </ion-label>
-      <ion-button id="time-zone-modal" slot="end" fill="outline" color="dark">{{ translate("Change") }}</ion-button>
-    </ion-item>
+    <ion-list>
+      <ion-item v-if="showBrowserTimeZone">
+        <ion-label>
+          <p class="overline">{{ translate("Browser TimeZone") }}</p>
+          {{ browserTimeZone.id }}
+          <p v-if="showDateTime">{{ getCurrentTime(browserTimeZone.id, dateTimeFormat) }}</p>
+        </ion-label>
+      </ion-item>
+      <ion-item lines="none">
+        <ion-label>
+          <p class="overline">{{ translate("Selected TimeZone") }}</p>
+          {{ currentTimeZoneId }}
+          <p v-if="showDateTime">{{ getCurrentTime(currentTimeZoneId, dateTimeFormat) }}</p>
+        </ion-label>
+        <ion-button id="time-zone-modal" slot="end" fill="outline" color="dark">{{ translate("Change") }}</ion-button>
+      </ion-item>
+    </ion-list>
   </ion-card>
   <!-- Using inline modal(as recommended by ionic), also using it inline as the component inside modal is not getting mounted when using modalController -->
   <ion-modal ref="timeZoneModal" trigger="time-zone-modal" @didPresent="search()" @didDismiss="clearSearch()">

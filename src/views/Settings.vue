@@ -9,18 +9,20 @@
     <ion-content>
       <div class="user-profile">
         <ion-card>
-          <ion-item lines="full">
-            <ion-avatar slot="start" v-if="userProfile?.partyImageUrl">
-              <Image :src="userProfile.partyImageUrl"/>
-            </ion-avatar>
-            <!-- ion-no-padding to remove extra side/horizontal padding as additional padding 
-            is added on sides from ion-item and ion-padding-vertical to compensate the removed
-            vertical padding -->
-            <ion-card-header class="ion-no-padding ion-padding-vertical">
-              <ion-card-subtitle>{{ userProfile?.userId }}</ion-card-subtitle>
-              <ion-card-title>{{ userProfile?.userFullName }}</ion-card-title>
-            </ion-card-header>
-          </ion-item>
+          <ion-list>
+            <ion-item lines="full">
+              <ion-avatar slot="start" v-if="userProfile?.partyImageUrl">
+                <Image :src="userProfile.partyImageUrl"/>
+              </ion-avatar>
+              <!-- ion-no-padding to remove extra side/horizontal padding as additional padding
+              is added on sides from ion-item and ion-padding-vertical to compensate the removed
+              vertical padding -->
+              <ion-card-header class="ion-no-padding ion-padding-vertical">
+                <ion-card-subtitle>{{ userProfile?.userId }}</ion-card-subtitle>
+                <ion-card-title>{{ userProfile?.userFullName }}</ion-card-title>
+              </ion-card-header>
+            </ion-item>
+          </ion-list>
           <ion-button color="danger" @click="logout()">{{ translate("Logout") }}</ion-button>
           <ion-button :standalone-hidden="!hasPermission(Actions.APP_PWA_STANDALONE_ACCESS)" fill="outline" @click="goToLaunchpad()">
             {{ translate("Go to Launchpad") }}
@@ -68,7 +70,7 @@
 </template>
 
 <script setup lang="ts">
-import { IonAvatar, IonButton, IonCard, IonCardHeader, IonCardSubtitle, IonCardTitle, IonContent, IonHeader, IonIcon, IonItem, IonPage, IonTitle, IonToolbar } from "@ionic/vue";
+import { IonAvatar, IonButton, IonCard, IonCardContent, IonCardHeader, IonCardSubtitle, IonCardTitle, IonContent, IonHeader, IonIcon, IonItem, IonPage, IonTitle, IonToolbar, IonList } from "@ionic/vue";
 import { computed } from "vue";
 import { useStore } from "vuex";
 import Image from "@/components/Image.vue";
