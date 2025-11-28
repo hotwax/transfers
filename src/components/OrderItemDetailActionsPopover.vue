@@ -40,6 +40,7 @@ const currentOrder = computed(() => store.getters["order/getCurrent"])
 const getOmsBaseUrl = computed(() => store.getters["user/getOmsBaseUrl"])
 
 async function editOrderedQuantity() {
+  let isUpdatingQuantity = false;
   const alert = await alertController.create({
     header: translate("Edit ordered qty"),
     buttons: [{
@@ -48,9 +49,14 @@ async function editOrderedQuantity() {
     }, {
       text: translate("Save"),
       handler: async (data: any) => {
+        // Prevent multiple API calls
+        if (isUpdatingQuantity) return false;
+        isUpdatingQuantity = true;
+
         const quantity = Number(data.quantity);
         if(!quantity || quantity < 0) {
           showToast(translate("Please enter a valid quantity."))
+          isUpdatingQuantity = false
           return false;
         }
         if(quantity !== props.item.quantity) {
@@ -80,6 +86,8 @@ async function editOrderedQuantity() {
             logger.error(error);
             showToast(translate("Failed to update item ordered quantity."));
             return false;
+          } finally {
+            isUpdatingQuantity = false;
           }
         }
       }

@@ -49,7 +49,7 @@ const actions: ActionTree<OrderState, RootState> = {
           await this.dispatch('product/fetchProducts', { productIds })
         }
 
-        ordersList = (state.orders).concat(orders)
+        ordersList = payload.pageIndex > 0 ? (state.orders).concat(orders) : orders
         ordersCount = resp.data.ordersCount
       } else {
         throw resp.data;

@@ -536,6 +536,8 @@ async function createOrder() {
     return;
   }
 
+  emitter.emit("presentLoader", { message: translate("Creating transfer order..."), backdropDismiss: false });
+
   const productIds = currentOrder.value.items?.map((item: any) => item.productId);
   const productAverageCostDetail = await UtilService.fetchProductsAverageCost(productIds, currentOrder.value.originFacilityId)
   
@@ -601,11 +603,13 @@ async function createOrder() {
     const resp = await OrderService.createOrder({ payload: order })
     if(!hasError(resp)) {
       router.replace(`/order-detail/${resp.data.orderId}`)
+      emitter.emit("dismissLoader")
     } else {
       throw resp.data;
     }
   } catch(error: any) {
     logger.error(error)
+    emitter.emit("dismissLoader")
     showToast(translate("Failed to create order."))
   }
 }
