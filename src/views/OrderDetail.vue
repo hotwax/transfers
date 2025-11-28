@@ -340,8 +340,9 @@ async function changeOrderStatus(updatedStatusId: string) {
     message: translate("Cancelation cannot be reverted. Are you sure you want to cancel this transfer order?"),
     buttons: [{
       text: translate("Dismiss"),
+      role: "cancel",
       handler: () => {
-        selectRef.value.$el.value = currentOrder.value
+        selectRef.value.$el.value = currentOrder.value.statusId;
       }
     }, {
       text: translate("Cancel"),
@@ -352,10 +353,6 @@ async function changeOrderStatus(updatedStatusId: string) {
   })
   alert.present()
 
-  const { role } = await alert.onDidDismiss();
-  if (role == 'backdrop') {
-      selectRef.value.$el.value = currentOrder.value.statusId
-  }
 }
 
 async function updateOrderStatus(updatedStatusId: string) {
