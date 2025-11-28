@@ -125,7 +125,7 @@
                     </div>
                     <div class="metadata">
                       <ion-note>{{ translate("Created on") }} {{ formatUtcDate(order.orderDate, "dd LLL yyyy") }}</ion-note>
-                      <ion-badge :color="STATUSCOLOR[order.orderStatusDesc] || 'medium'">
+                      <ion-badge :color="STATUSCOLOR[order.orderStatusId] || 'medium'">
                         {{ order.orderStatusDesc }}
                       </ion-badge>
                     </div>
@@ -376,7 +376,7 @@ const groupByOptions = [
   {
     id: "ORDER_ID",
     description: translate("Order item"),
-    selectFields: ["orderId", "orderName", "facilityId", "facilityName", "orderFacilityId", "orderFacilityName", "orderStatusDesc"],
+    selectFields: ["orderId", "orderName", "facilityId", "facilityName", "orderFacilityId", "orderFacilityName", "orderStatusDesc, orderStatusId"],
     groupingFields: ["orderId"],
     groupValueSeparator: '-' 
   },
