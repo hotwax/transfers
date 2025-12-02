@@ -370,7 +370,7 @@ import { UtilService } from '@/services/UtilService';
 
 const productIdentificationStore = useProductIdentificationStore();
 const store = useStore();
-const ecomStores = useUserStore()
+const userStore = useUserStore()
 
 const groupByOptions = [
   {
@@ -432,7 +432,7 @@ onIonViewWillEnter(async () => {
   isFetchingOrders.value = true;
   await Promise.allSettled([store.dispatch('order/findTransferOrders', { pageSize: process.env.VUE_APP_VIEW_SIZE, pageIndex: 0, groupByConfig: selectedGroupBy.value }), store.dispatch('util/fetchStatusDesc'), store.dispatch("util/fetchCarriersDetail"), store.dispatch("util/fetchShipmentMethodTypeDesc")])
   await fetchFacilities();
-  productStores.value = await ecomStores.getEComStores();
+  productStores.value = await userStore.getEComStores();
   isFetchingOrders.value = false;
 })
 
