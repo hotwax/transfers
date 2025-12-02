@@ -22,7 +22,7 @@
                 <h1>{{ currentOrder.orderName ? currentOrder.orderName : currentOrder.orderId }}</h1>
               </ion-label>
               <ion-badge :color="STATUSCOLOR[currentOrder.statusId] || 'medium'" slot="end">{{ getStatusDesc(currentOrder.statusId) }}</ion-badge>
-              <ion-select v-if="currentOrder.statusId === 'ORDER_CREATED' || currentOrder.statusId === 'ORDER_APPROVED'" ref="selectRef" slot="end" aria-label="status" :value="currentOrder.statusId" selected-text=" " interface="popover" @ionChange="changeOrderStatus($event.detail.value)">
+              <ion-select v-if="currentOrder.statusId === 'ORDER_CREATED' || currentOrder.statusId === 'ORDER_APPROVED'" :disabled="isOrderStatusUpdateDisabled" ref="selectRef" slot="end" aria-label="status" :value="currentOrder.statusId" selected-text=" " interface="popover" @ionChange="changeOrderStatus($event.detail.value)">
                 <ion-select-option v-if="currentOrder.statusId === 'ORDER_CREATED'" value="ORDER_APPROVED">{{ translate("Approve") }}</ion-select-option>
                 <ion-select-option :disabled="isAnyItemShipped(currentOrder)" value="ORDER_CANCELLED">{{ translate("Cancel") }}</ion-select-option>
               </ion-select>
@@ -305,6 +305,10 @@ const getProduct = computed(() => store.getters["product/getProduct"])
 const getCarrierDesc = computed(() => store.getters["util/getCarrierDesc"])
 const getShipmentMethodDesc = computed(() => store.getters["util/getShipmentMethodDesc"])
 const facilities = computed(() => store.getters["util/getFacilitiesByProductStore"])
+// disable order status updates during product processing
+const isOrderStatusUpdateDisabled = computed(() => {
+  return isUpdatingOrderStatus.value || orderQueue.pendingProductIds.value.size > 0;
+});
 
 const isFetchingOrderDetail = ref(false);
 const selectedShipmentId = ref("");
@@ -313,6 +317,7 @@ const parentProductInfoById = ref({}) as any;
 const orderTimeline = ref([]) as any;
 const carrierMethods = ref([])
 const selectRef = ref("") as any;
+const isUpdatingOrderStatus = ref(false);
 
 onIonViewWillEnter(async () => {
   isFetchingOrderDetail.value = true;
@@ -357,6 +362,7 @@ async function changeOrderStatus(updatedStatusId: string) {
 }
 
 async function updateOrderStatus(updatedStatusId: string) {
+  isUpdatingOrderStatus.value = true;
   let resp;
   try {
     if (updatedStatusId === "ORDER_APPROVED") {
@@ -386,6 +392,8 @@ async function updateOrderStatus(updatedStatusId: string) {
     const errorMessage = error?.response?.data?.errors || translate("Failed to update order status.");
     showToast(errorMessage)
     selectRef.value.$el.value = currentOrder.value
+  } finally {
+    isUpdatingOrderStatus.value = false;
   }
 }
 
