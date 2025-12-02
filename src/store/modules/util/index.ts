@@ -12,6 +12,7 @@ const utilModule: Module<UtilState, RootState> = {
     shipmentMethodTypeDesc: {},
     shipmentMethodsByCarrier: {},
     carrierDesc: {},
+    facilities: [],
     facilityAddresses: {},
     sampleProducts: []
   },

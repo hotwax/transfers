@@ -1,4 +1,4 @@
-import {api, client, hasError} from "@/adapter"
+import {api, apiClient, client, hasError} from "@/adapter"
 import store from "@/store";
 
 const login = async (username: string, password: string): Promise <any> => {
@@ -16,7 +16,7 @@ const getUserProfile = async (token: any): Promise<any> => {
   const baseURL = store.getters['user/getBaseUrl'];
   try {
     const resp = await client({
-      url: "user-profile",
+      url: "admin/user/profile",
       method: "get",
       baseURL,
       headers: {
@@ -31,8 +31,9 @@ const getUserProfile = async (token: any): Promise<any> => {
   }
 }
 
-const getUserPermissions = async (payload: any, token: any): Promise<any> => {
-  const baseURL = store.getters['user/getBaseUrl'];
+const getUserPermissions = async (payload: any, url: string, token: any): Promise<any> => {
+  // Currently, making this request in ofbiz
+  const baseURL = url.startsWith('http') ? url.includes('/api') ? url : `${url}/api/` : `https://${url}.hotwax.io/api/`;
   let serverPermissions = [] as any;
 
   // If the server specific permission list doesn't exist, getting server permissions will be of no use
@@ -63,7 +64,7 @@ const getUserPermissions = async (payload: any, token: any): Promise<any> => {
       })
       if(resp.status === 200 && resp.data.docs?.length && !hasError(resp)) {
         serverPermissions = resp.data.docs.map((permission: any) => permission.permissionId);
-        const total = resp.data.docs?.length;
+        const total = resp.data.count;
         const remainingPermissions = total - serverPermissions.length;
         if (remainingPermissions > 0) {
           // We need to get all the remaining permissions
@@ -121,11 +122,28 @@ const getUserPermissions = async (payload: any, token: any): Promise<any> => {
 }
 
 const fetchFacilitiesByCurrentStore = (payload: any): Promise <any> => {
+
   return api({
-    url: "/performFind",
-    method: "POST",
-    data: payload
+    url: `/oms/productStores/${payload.productStoreId}/facilities`,
+    method: "get",
+    params: payload
   });
+}
+async function setUserTimeZone(payload: any): Promise<any> {
+  try {
+    const resp = await api({
+      url: "admin/user/profile",
+      method: "POST",
+      data: payload,
+    }) as any;
+    return Promise.resolve(resp.data);
+  } catch (error: any) {
+    return Promise.reject({
+      code: "error",
+      message: "Failed to set user time zone",
+      serverResponse: error
+    });
+  }
 }
 
 export const UserService = {
@@ -133,4 +151,5 @@ export const UserService = {
   getUserProfile,
   getUserPermissions,
   login,
+  setUserTimeZone,
 }

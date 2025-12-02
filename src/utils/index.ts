@@ -3,6 +3,7 @@ import { DateTime } from "luxon";
 import store from "@/store";
 import Papa from 'papaparse'
 import { saveAs } from 'file-saver';
+import { translate } from "@hotwax/dxp-components";
 
 const dateOrdinalSuffix = {
   1: 'st',
@@ -14,18 +15,35 @@ const dateOrdinalSuffix = {
   23: 'rd'
 } as any
 
-const showToast = async (message: string) => {
-  const toast = await toastController
-    .create({
-      message,
-      duration: 3000,
-      position: "top",
-    })
-  return toast.present();
+const showToast = async (message: string, options?: any) => {  
+  const config = {
+    message,
+    ...options
+  } as any;
+
+  if (!options?.position) {
+    config.position = 'top';
+  }
+  if (options?.canDismiss) {
+    config.buttons = [
+      {
+        text: translate('Dismiss'),
+        role: 'cancel',
+      },
+    ]
+  }
+  if (!options?.manualDismiss) {
+    config.duration = 3000;
+  }
+
+  const toast = await toastController.create(config)
+  // present toast if manual dismiss is not needed
+  return !options?.manualDismiss ? toast.present() : toast
 }
 
 const formatUtcDate = (value: any, outFormat: string) => {
-  return DateTime.fromISO(value, { zone: 'utc' }).setZone(store.state.user.current.userTimeZone).toFormat(outFormat ? outFormat : 'MM-dd-yyyy')
+  if (!value || isNaN(Number(value))) return '-';
+  return DateTime.fromMillis(value, { zone: 'utc' }).setZone(store.state.user.current.userTimeZone).toFormat(outFormat ? outFormat : 'MM-dd-yyyy')
 }
 
 function getDateWithOrdinalSuffix(time: any) {
@@ -99,8 +117,15 @@ const currentSymbol: any = {
   "JPY": "¥"
 }
 
+// formats amount into currency with symbol and two decimal places, defaults to "0.00" if invalid
 const formatCurrency = (amount: any, code: string) => {
-  return `${currentSymbol[code] || code} ${amount ? amount.toFixed(2) : "0.00"}`
+  const symbol = currentSymbol[code] || code || ""
+  if(amount == null) return "0.00"
+  return `${symbol} ${amount.toFixed(2)}`
 }
 
-export { formatUtcDate, formatCurrency, getColorByDesc, getDateWithOrdinalSuffix, jsonToCsv, JsonToCsvOption, parseCsv, showToast }
+const getCurrentTime = (zone: string, format = 't ZZZZ') => {
+  return DateTime.now().setZone(zone).toFormat(format)
+}
+
+export { formatUtcDate, formatCurrency, getColorByDesc, getCurrentTime, getDateWithOrdinalSuffix, jsonToCsv, JsonToCsvOption, parseCsv, showToast }

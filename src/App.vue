@@ -33,7 +33,8 @@ initialise({
     queueTask: (payload: any) => {
       emitter.emit("queueTask", payload);
     }
-  }
+  },
+  systemType: "MOQUI" //Need to update oms-api to use oms token instead of api key
 })
 
 async function unauthorised() {
@@ -43,16 +44,16 @@ async function unauthorised() {
   window.location.href = `${process.env.VUE_APP_LOGIN_URL}?redirectUrl=${redirectUrl}`;
 }
 
-async function presentLoader(options = { message: "Click the backdrop to dismiss.", backdropDismiss: true }) {
+async function presentLoader(options = { message: "Click the backdrop to dismiss.", backdropDismiss: false }) {
   // When having a custom message remove already existing loader, if not removed it takes into account the already existing loader
   if(options.message && loader.value) dismissLoader();
 
   if (!loader.value) {
     loader.value = await loadingController
       .create({
-        message: translate(options.message),
+        message: options.message ? translate(options.message) : (options.backdropDismiss ? translate("Click the backdrop to dismiss.") : translate("Loading...")),
         translucent: true,
-        backdropDismiss: options.backdropDismiss
+        backdropDismiss: options.backdropDismiss || false
       });
   }
   loader.value.present();
