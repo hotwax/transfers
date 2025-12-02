@@ -380,9 +380,11 @@ async function updateOrderStatus(updatedStatusId: string) {
     } else {
       throw resp.data;
     }
-  } catch(error) {
+  } catch(error: any) {
     logger.error(error)
-    showToast(translate("Failed to update order status."))
+    // Show the actual error message from API response
+    const errorMessage = error?.response?.data?.errors || translate("Failed to update order status.");
+    showToast(errorMessage)
     selectRef.value.$el.value = currentOrder.value
   }
 }
