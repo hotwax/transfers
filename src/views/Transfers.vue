@@ -125,7 +125,7 @@
                     </div>
                     <div class="metadata">
                       <ion-note>{{ translate("Created on") }} {{ formatUtcDate(order.orderDate, "dd LLL yyyy") }}</ion-note>
-                      <ion-badge :color="getColorByDesc(order.orderStatusDesc) || getColorByDesc('default')">
+                      <ion-badge :color="STATUSCOLOR[order.orderStatusId] || 'medium'">
                         {{ order.orderStatusDesc }}
                       </ion-badge>
                     </div>
@@ -169,7 +169,7 @@
                         </ion-label>
                       </div>
                       <ion-item lines="none">
-                        <ion-badge slot="end" :color="getColorByDesc(item.orderItemStatusDesc) || getColorByDesc('default')">{{ getStatusDesc(item.itemStatusId) }}</ion-badge>
+                        <ion-badge slot="end" :color="STATUSCOLOR[item.itemStatusId] || 'medium'">{{ getStatusDesc(item.itemStatusId) }}</ion-badge>
                       </ion-item>
                     </div>
                   </div>
@@ -247,7 +247,7 @@
                       </div>
                       <div class="metadata ion-padding-end">
                         <ion-note>{{ translate("Created on") }} {{ formatUtcDate(item.orderDate, "dd LLL yyyy") }}</ion-note>
-                        <ion-badge slot="end" :color="getColorByDesc(getStatusDesc(item.itemStatusId)) || getColorByDesc('default')">{{ getStatusDesc(item.itemStatusId) }}</ion-badge>
+                        <ion-badge slot="end" :color="STATUSCOLOR[item.itemStatusId] || 'medium'">{{ getStatusDesc(item.itemStatusId) }}</ion-badge>
                       </div>
                     </div>
                   </div>
@@ -330,7 +330,7 @@
                       </div>
                       <div class="metadata ion-padding-end">
                         <ion-note>{{ translate("Created on") }} {{ formatUtcDate(item.orderDate, "dd LLL yyyy") }}</ion-note>
-                        <ion-badge slot="end" :color="getColorByDesc(getStatusDesc(item.itemStatusId)) || getColorByDesc('default')">{{ getStatusDesc(item.itemStatusId) }}</ion-badge>
+                        <ion-badge slot="end" :color="STATUSCOLOR[item.itemStatusId] || 'medium'">{{ getStatusDesc(item.itemStatusId) }}</ion-badge>
                       </div>
                     </div>
                   </div>
@@ -364,8 +364,8 @@ import Filters from "@/components/Filters.vue";
 import logger from '@/logger';
 import { useStore } from 'vuex';
 import { computed, ref } from "vue";
-import { hasError } from "@/adapter";
-import { formatUtcDate, getColorByDesc } from "@/utils"
+import { hasError, STATUSCOLOR } from "@/adapter";
+import { formatUtcDate } from "@/utils"
 import { UtilService } from '@/services/UtilService';
 
 const productIdentificationStore = useProductIdentificationStore();
@@ -376,7 +376,7 @@ const groupByOptions = [
   {
     id: "ORDER_ID",
     description: translate("Order item"),
-    selectFields: ["orderId", "orderName", "facilityId", "facilityName", "orderFacilityId", "orderFacilityName", "orderStatusDesc"],
+    selectFields: ["orderId", "orderName", "facilityId", "facilityName", "orderFacilityId", "orderFacilityName", "orderStatusDesc, orderStatusId"],
     groupingFields: ["orderId"],
     groupValueSeparator: '-' 
   },
