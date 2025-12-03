@@ -52,7 +52,7 @@
             <ion-icon slot="end" :icon="openOutline" />
           </ion-button>
         </ion-card>
-        <DxpProductStoreSelector @updateEComStore="updateEComStore" />
+        <DxpProductStoreSelector @updateEComStore="updateProductStore" />
       </section>
 
       <hr />
