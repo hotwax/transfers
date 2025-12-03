@@ -77,8 +77,8 @@ onMounted(async () => {
     userProfile.value.timeZone && (Settings.defaultZone = userProfile.value.timeZone);
   }
   if(userToken.value) {
-    const currentEComStore : any = useUserStore().getCurrentEComStore;
-    await useProductIdentificationStore().getIdentificationPref(currentEComStore.productStoreId)
+    const currentProductStore : any = useUserStore().getCurrentEComStore;
+    await useProductIdentificationStore().getIdentificationPref(currentProductStore.productStoreId)
       .catch((error) => logger.error(error));
   }
 })
