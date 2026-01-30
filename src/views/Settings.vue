@@ -130,4 +130,7 @@ function goToLaunchpad() {
     align-items: center;
     padding: var(--spacer-xs) 10px 0px;
   }
+  ion-content {
+    --padding-bottom: 80px;
+  }
 </style>
