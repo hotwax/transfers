@@ -168,8 +168,8 @@
                   <Image :src="getProduct(item.productId)?.mainImageUrl" />
                 </ion-thumbnail>
                 <ion-label>
-                  {{ getProductIdentificationValue(productIdentificationStore.getProductIdentificationPref.primaryId, getProduct(item.productId)) || getProduct(item.productId).productName }}
-                  <p>{{ getProductIdentificationValue(productIdentificationStore.getProductIdentificationPref.secondaryId, getProduct(item.productId)) }}</p>
+                  {{ getProductIdentificationValue(productIdentificationStore.getProductIdentificationPref?.primaryId, getProduct(item.productId)) || getProduct(item.productId).productName }}
+                  <p>{{ getProductIdentificationValue(productIdentificationStore.getProductIdentificationPref?.secondaryId, getProduct(item.productId)) }}</p>
                 </ion-label>
               </ion-item>
               <div class="tablet">
@@ -716,7 +716,21 @@ async function findProduct() {
 
   isSearchingProduct.value = true;
   try {
-    const filterString = productIdentificationStore.getProductIdentificationPref.primaryId === 'SKU' ? `sku: *${queryString.value}*` : productIdentificationStore.getProductIdentificationPref.primaryId === 'UPCA' ? `upc: *${queryString.value}*` : `goodIdentifications: (${productIdentificationStore.getProductIdentificationPref.primaryId}/*${queryString.value}*)`;
+    const primaryId = productIdentificationStore.getProductIdentificationPref?.primaryId;
+    let filterString = '';
+
+    if (primaryId === 'SKU') {
+      filterString = `sku: *${queryString.value}*`;
+    } else if (primaryId === 'UPCA') {
+      filterString = `upc: *${queryString.value}*`;
+    } else if (primaryId) {
+      filterString = `goodIdentifications: (${primaryId}/*${queryString.value}*)`;
+    }
+
+    if (!filterString) {
+      throw new Error('Primary ID is missing or invalid');
+    }
+
     const resp = await ProductService.fetchProducts({
       "filters": ['isVirtual: false', filterString],
       "viewSize": 1
@@ -764,12 +778,7 @@ onMounted(async () => {
 });
 
 watch(
-  () => productIdentificationStore.getProductIdentificationPref?.primaryId,
-  async () => { await computeProductSearchPlaceholder(); }
-);
-
-watch(
-  () => productIdentificationStore.getProductIdentificationOptions,
+  [() => productIdentificationStore.getProductIdentificationPref?.primaryId, () => productIdentificationStore.getProductIdentificationOptions],
   async () => { await computeProductSearchPlaceholder(); }
 );
 
@@ -788,7 +797,20 @@ async function prepareProductIdentifierOptions() {
   const fetchedGoodIdentificationTypes = await fetchGoodIdentificationTypes("HC_GOOD_ID_TYPE");
   const fetchedGoodIdentificationOptions = fetchedGoodIdentificationTypes || []
 
-  return Array.from(new Set([...productIdentificationOptions, ...fetchedGoodIdentificationOptions])).sort();
+  // Combine and deduplicate by goodIdentificationTypeId
+  const combinedOptions = [...productIdentificationOptions, ...fetchedGoodIdentificationOptions];
+  const uniqueOptionsMap = new Map();
+  combinedOptions.forEach(option => {
+    if (option.goodIdentificationTypeId) {
+      uniqueOptionsMap.set(option.goodIdentificationTypeId, option);
+    }
+  });
+
+  return Array.from(uniqueOptionsMap.values()).sort((a, b) => {
+    const descriptionA = (a.description || a.label || '').toLowerCase();
+    const descriptionB = (b.description || b.label || '').toLowerCase();
+    return descriptionA.localeCompare(descriptionB);
+  });
 }
 
 async function fetchStock(productId: string) {
