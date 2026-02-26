@@ -2,13 +2,13 @@
   <ion-page>
     <ion-header>
       <ion-toolbar>
-        <ion-back-button slot="start" default-href="/tabs/transfers" />
+        <ion-back-button data-testid="order-detail-back-btn" slot="start" default-href="/tabs/transfers" />
         <ion-title>{{ translate("Transfer order details") }}</ion-title>
       </ion-toolbar>
     </ion-header>
     <ion-content>
       <main v-if="isFetchingOrderDetail">
-        <div class="empty-state">
+        <div data-testid="order-detail-loading" class="empty-state">
           <ion-spinner name="crescent" />
           <ion-label>{{ translate("Fetching order details") }}</ion-label>
         </div>
@@ -21,8 +21,8 @@
               <ion-label>
                 <h1>{{ currentOrder.orderName ? currentOrder.orderName : currentOrder.orderId }}</h1>
               </ion-label>
-              <ion-badge :color="STATUSCOLOR[currentOrder.statusId] || 'medium'" slot="end">{{ getStatusDesc(currentOrder.statusId) }}</ion-badge>
-              <ion-select v-if="currentOrder.statusId === 'ORDER_CREATED' || currentOrder.statusId === 'ORDER_APPROVED'" :disabled="isOrderStatusUpdateDisabled" ref="selectRef" slot="end" aria-label="status" :value="currentOrder.statusId" selected-text=" " interface="popover" @ionChange="changeOrderStatus($event.detail.value)">
+              <ion-badge data-testid="order-detail-status-badge" :color="STATUSCOLOR[currentOrder.statusId] || 'medium'" slot="end">{{ getStatusDesc(currentOrder.statusId) }}</ion-badge>
+              <ion-select data-testid="order-detail-status-select" v-if="currentOrder.statusId === 'ORDER_CREATED' || currentOrder.statusId === 'ORDER_APPROVED'" :disabled="isOrderStatusUpdateDisabled" ref="selectRef" slot="end" aria-label="status" :value="currentOrder.statusId" selected-text=" " interface="popover" @ionChange="changeOrderStatus($event.detail.value)">
                 <ion-select-option v-if="currentOrder.statusId === 'ORDER_CREATED'" value="ORDER_APPROVED">{{ translate("Approve") }}</ion-select-option>
                 <ion-select-option :disabled="isAnyItemShipped(currentOrder)" value="ORDER_CANCELLED">{{ translate("Cancel") }}</ion-select-option>
               </ion-select>
@@ -44,12 +44,12 @@
                 </ion-label>
               </ion-item>
               <ion-item>
-                <ion-select :label="translate('Carrier')" :value="currentOrder.carrierPartyId" interface="popover" :placeholder="translate('Select')" :disabled="isOrderFinished()" @ionChange="updateCarrierAndShipmentMethod($event, $event.detail.value, '')">
+                <ion-select data-testid="order-detail-carrier-select" :label="translate('Carrier')" :value="currentOrder.carrierPartyId" interface="popover" :placeholder="translate('Select')" :disabled="isOrderFinished()" @ionChange="updateCarrierAndShipmentMethod($event, $event.detail.value, '')">
                   <ion-select-option :value="carrierPartyId" v-for="(carrierPartyId, index) in Object.keys(shipmentMethodsByCarrier)" :key="index">{{ getCarrierDesc(carrierPartyId) ? getCarrierDesc(carrierPartyId) : carrierPartyId }}</ion-select-option>
                 </ion-select>
               </ion-item>
               <ion-item lines="none">
-                <ion-select :label="translate('Method')" :value="currentOrder.shipmentMethodTypeId" v-if="carrierMethods?.length" :placeholder="translate('Select')" interface="popover" :disabled="isOrderFinished()" @ionChange="updateCarrierAndShipmentMethod($event, currentOrder.carrierPartyId, $event.detail.value)">
+                <ion-select data-testid="order-detail-method-select" :label="translate('Method')" :value="currentOrder.shipmentMethodTypeId" v-if="carrierMethods?.length" :placeholder="translate('Select')" interface="popover" :disabled="isOrderFinished()" @ionChange="updateCarrierAndShipmentMethod($event, currentOrder.carrierPartyId, $event.detail.value)">
                   <ion-select-option :value="shipmentMethod.shipmentMethodTypeId" v-for="(shipmentMethod, index) in carrierMethods" :key="index">{{ shipmentMethod.description ? shipmentMethod.description : shipmentMethod.shipmentMethodTypeId }}</ion-select-option>
                 </ion-select>
                 <template v-else>
@@ -75,7 +75,7 @@
             </ion-card>
           </div>
 
-          <div class="timeline" v-if="orderTimeline?.length">
+          <div data-testid="order-detail-timeline-section" class="timeline" v-if="orderTimeline?.length">
             <ion-list class="desktop-only">
               <ion-item lines="none">
                 <h2>{{ translate("Timeline") }}</h2>
@@ -92,20 +92,20 @@
         </section>
 
         <section class="header" v-if="currentOrder.shipments?.length || (currentOrder?.receipts && Object.keys(currentOrder?.receipts)?.length)">
-          <ion-radio-group v-model="selectedShipmentId" @ionChange="generateItemsListByParent()">
+          <ion-radio-group data-testid="order-detail-shipment-receipt-radio-group" v-model="selectedShipmentId" @ionChange="generateItemsListByParent()">
             <div class="info">
               <ion-card v-if="getFilteredShipments('OUT_TRANSFER')?.length">
                 <ion-card-header>
                   <ion-card-title>{{ translate("Fulfillment") }}</ion-card-title>
                 </ion-card-header>
                 <ion-item v-for="(shipment, index) in getFilteredShipments('OUT_TRANSFER')" :key="index">
-                  <ion-radio :value="shipment.shipmentId" label-placement="end" justify="start">
+                  <ion-radio :data-testid="`order-detail-selection-radio-${shipment.shipmentId}`" :value="shipment.shipmentId" label-placement="end" justify="start">
                     <ion-label>
                       {{ shipment.shipmentId }}
                       <p v-if="shipment.trackingIdNumber">{{ shipment.trackingIdNumber }}</p>
                     </ion-label>
                   </ion-radio>
-                  <ion-badge slot="end" class="no-pointer-events" :color="STATUSCOLOR[shipment.shipmentStatusId] || 'medium'">{{ getStatusDesc(shipment.shipmentStatusId) }}</ion-badge>
+                  <ion-badge :data-testid="`order-detail-shipment-status-badge-${shipment.shipmentId}`" slot="end" class="no-pointer-events" :color="STATUSCOLOR[shipment.shipmentStatusId] || 'medium'">{{ getStatusDesc(shipment.shipmentStatusId) }}</ion-badge>
                 </ion-item>
               </ion-card>
               
@@ -114,7 +114,7 @@
                   <ion-card-title>{{ translate("Receipts") }}</ion-card-title>
                 </ion-card-header>
                 <ion-item v-for="datetimeReceived in getReceipts()" :key="datetimeReceived">
-                  <ion-radio :value="`receipt_${datetimeReceived}`" label-placement="end" justify="start">
+                  <ion-radio :data-testid="`order-detail-selection-radio-receipt-${datetimeReceived}`" :value="`receipt_${datetimeReceived}`" label-placement="end" justify="start">
                     <ion-label>
                       {{ translate("received at") }} 
                       <p>{{ formatDateTime(Number(datetimeReceived)) }}</p>
@@ -128,7 +128,7 @@
             <ion-card>
               <ion-card-header>
                 <ion-card-title>{{ getSelectedShipment()?.datetimeReceived ? translate("Receipt details") : translate("Shipment details") }}</ion-card-title>
-                <ion-button fill="clear" color="medium" @click="selectedShipmentId = ''; generateItemsListByParent()">
+                <ion-button data-testid="order-detail-clear-filter-btn" fill="clear" color="medium" @click="selectedShipmentId = ''; generateItemsListByParent()">
                   <ion-icon :icon="closeCircleOutline" slot="icon-only" />
                 </ion-button>
               </ion-card-header>
@@ -169,7 +169,7 @@
               <h1>{{ translate("Items") }}</h1>
               <p>{{ translate(selectedShipmentId ? "Showing items for selected shipment" : "Showing all order items") }}</p>
             </ion-label>
-            <ion-button size="default" fill="outline" color="medium" v-if="!selectedShipmentId" :disabled="currentOrder.statusId !== 'ORDER_CREATED'" @click="addProduct()">
+            <ion-button data-testid="order-detail-add-item-btn" size="default" fill="outline" color="medium" v-if="!selectedShipmentId" :disabled="currentOrder.statusId !== 'ORDER_CREATED'" @click="addProduct()">
               {{ translate("Add item to transfer") }}
             </ion-button>
           </ion-item>
@@ -178,7 +178,7 @@
 
           <template v-for="([parentProductId, items], index) in Object.entries(itemsByParentProductId)" :key="index">
             <template v-if="items.length">
-              <div class="list-item product-header">
+              <div :data-testid="`order-detail-parent-product-header-${parentProductId}`" class="list-item product-header">
                 <ion-item lines="none">
                   <ion-thumbnail slot="start">
                     <Image :src="getProduct(items[0].productId)?.mainImageUrl" />
@@ -223,7 +223,7 @@
                 </template>
               </div>
 
-              <div class="list-item" v-for="(item, index) in items" :key="index">
+              <div :data-testid="`order-detail-item-row-${item.productId}`" class="list-item" v-for="(item, index) in items" :key="index">
                 <ion-item lines="none">
                   <ion-label class="ion-text-wrap">
                     {{ getProductIdentificationValue(productIdentificationStore.getProductIdentificationPref.primaryId, getProduct(item.productId)) || getProduct(item.productId).productName }}
@@ -234,10 +234,10 @@
                 <template v-if="selectedShipmentId">
                   <div></div>
                   <div class="tablet ion-text-center">
-                    <ion-chip outline>
-                      <ion-icon :icon="getSelectedShipment()?.shipmentTypeId === 'OUT_TRANSFER' ? sendOutline : downloadOutline" />
-                      <ion-label>{{ item.quantity || 0 }}</ion-label>
-                    </ion-chip>
+                     <ion-chip :data-testid="`order-detail-item-qty-chip-${item.productId}`" outline>
+                       <ion-icon :icon="getSelectedShipment()?.shipmentTypeId === 'OUT_TRANSFER' ? sendOutline : downloadOutline" />
+                       <ion-label>{{ item.quantity || 0 }}</ion-label>
+                     </ion-chip>
                   </div>
                   <div></div>
                 </template>
@@ -249,20 +249,20 @@
                     </ion-label>
                   </div>
                   <div class="tablet ion-text-center">
-                    <ion-chip outline>
-                      <ion-icon :icon="sendOutline" />
-                      <ion-label>{{ item.shippedQty || 0 }}</ion-label>
-                    </ion-chip>
+                     <ion-chip :data-testid="`order-detail-item-shipped-qty-chip-${item.productId}`" outline>
+                       <ion-icon :icon="sendOutline" />
+                       <ion-label>{{ item.shippedQty || 0 }}</ion-label>
+                     </ion-chip>
                   </div>
                   <div class="tablet ion-text-center">
-                    <ion-chip outline>
-                      <ion-icon :icon="downloadOutline" />
-                      <ion-label>{{ item.receivedQty || 0 }}</ion-label>
-                    </ion-chip>
+                     <ion-chip :data-testid="`order-detail-item-received-qty-chip-${item.productId}`" outline>
+                       <ion-icon :icon="downloadOutline" />
+                       <ion-label>{{ item.receivedQty || 0 }}</ion-label>
+                     </ion-chip>
                   </div>
-                  <ion-badge :color="STATUSCOLOR[item.statusId] || 'medium'">{{ getStatusDesc(item.statusId) }}</ion-badge>
+                   <ion-badge :data-testid="`order-detail-item-status-badge-${item.productId}`" :color="STATUSCOLOR[item.statusId] || 'medium'">{{ getStatusDesc(item.statusId) }}</ion-badge>
                 </template>
-                <ion-button slot="end" fill="clear" color="medium" :disabled="isOrderFinished(item)" @click="openOrderItemDetailActionsPopover($event, item)">
+                <ion-button :data-testid="`order-detail-item-actions-btn-${item.productId}`" slot="end" fill="clear" color="medium" :disabled="isOrderFinished(item)" @click="openOrderItemDetailActionsPopover($event, item)">
                   <ion-icon :icon="ellipsisVerticalOutline" slot="icon-only" />
                 </ion-button>
               </div>

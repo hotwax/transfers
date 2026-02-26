@@ -2,13 +2,13 @@
   <ion-content>
     <ion-list>
       <ion-list-header>{{ getProductIdentificationValue(productIdentificationStore.getProductIdentificationPref.primaryId, getProduct(item.productId)) || getProduct(item.productId).productName }}</ion-list-header>
-      <ion-item button :disabled="item.statusId !== 'ITEM_CREATED'" @click="editOrderedQuantity()">
+      <ion-item data-testid="order-item-detail-actions-edit-qty-btn" button :disabled="item.statusId !== 'ITEM_CREATED'" @click="editOrderedQuantity()">
         {{ translate("Edit ordered qty") }}
       </ion-item>
-      <ion-item button :disabled="!isEligibleToFulfill(item)" @click="redirectToFulfillItem()">
+      <ion-item data-testid="order-item-detail-actions-fulfill-btn" button :disabled="!isEligibleToFulfill(item)" @click="redirectToFulfillItem()">
         {{ translate("Fulfill") }}
       </ion-item>
-      <ion-item button :disabled="!isEligibleToReceive(item)" @click="redirectToReceiveItem()">
+      <ion-item data-testid="order-item-detail-actions-receive-btn" button :disabled="!isEligibleToReceive(item)" @click="redirectToReceiveItem()">
         {{ translate("Receive") }}
       </ion-item>
       <!--

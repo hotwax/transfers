@@ -2,7 +2,7 @@
   <ion-header>
     <ion-toolbar>
       <ion-buttons slot="start">
-        <ion-button @click="closeModal()"> 
+        <ion-button data-testid="import-csv-modal-close-btn" @click="closeModal()"> 
           <ion-icon slot="icon-only" :icon="closeOutline" />
         </ion-button>
       </ion-buttons>
@@ -12,7 +12,7 @@
 
   <ion-content>
     <ion-item>
-      <ion-select :label="translate('Product identifier')" interface="popover" :placeholder="translate('Select')" v-model="selectedIdentifier">
+      <ion-select data-testid="import-csv-modal-identifier-select" :label="translate('Product identifier')" interface="popover" :placeholder="translate('Select')" v-model="selectedIdentifier">
         <ion-select-option v-for="identification in productIdentifications" :key="identification.goodIdentificationTypeId" :value="identification.goodIdentificationTypeId" >{{ identification.description }}</ion-select-option>
       </ion-select>
     </ion-item>
@@ -20,19 +20,19 @@
     <ion-list>
       <ion-list-header>{{ translate("Select the column index for the following information in the uploaded CSV.") }}</ion-list-header>
       <ion-item>
-        <ion-select :label="translate('Identifier')" interface="popover" :placeholder="translate('Select')" v-model="selectedIdentifierColumn">
+        <ion-select data-testid="import-csv-modal-identifier-column-select" :label="translate('Identifier')" interface="popover" :placeholder="translate('Select')" v-model="selectedIdentifierColumn">
           <ion-select-option v-for="column in fileColumns" :key="column">{{ column }}</ion-select-option>
         </ion-select>
       </ion-item>
       <ion-item>
-        <ion-select :label="translate('Quantity')" interface="popover" :placeholder="translate('Select')" v-model="selectedQuantityColumn">
+        <ion-select data-testid="import-csv-modal-quantity-column-select" :label="translate('Quantity')" interface="popover" :placeholder="translate('Select')" v-model="selectedQuantityColumn">
           <ion-select-option v-for="column in fileColumns" :key="column">{{ column }}</ion-select-option>
         </ion-select>
       </ion-item>
     </ion-list>
 
     <ion-fab vertical="bottom" horizontal="end" slot="fixed">
-      <ion-fab-button @click="saveImportData">
+      <ion-fab-button data-testid="import-csv-modal-save-btn" @click="saveImportData">
         <ion-icon :icon="saveOutline"/>  
       </ion-fab-button>
     </ion-fab>

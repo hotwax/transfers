@@ -10,7 +10,7 @@
           <!-- <ion-button>
             <ion-icon :icon="downloadOutline" slot="icon-only" />
           </ion-button> -->
-          <ion-menu-button menu="transfers-filter" class="mobile-only">
+          <ion-menu-button data-testid="transfers-filter-menu-btn" menu="transfers-filter" class="mobile-only">
             <ion-icon :icon="filterOutline" />
           </ion-menu-button>
         </ion-buttons>
@@ -20,7 +20,7 @@
     <ion-content id="filter-content">
       <div class="find">
         <section class="search">
-          <ion-searchbar :placeholder="translate('Search transfer orders')" v-model="orderName" @keyup.enter="orderName = $event.target.value; updateAppliedFilters($event.target.value, 'orderName')" />
+          <ion-searchbar data-testid="transfers-search-input" :placeholder="translate('Search transfer orders')" v-model="orderName" @keyup.enter="orderName = $event.target.value; updateAppliedFilters($event.target.value, 'orderName')" />
         </section>
 
         <aside class="filters">
@@ -31,19 +31,19 @@
               </ion-label>
             </ion-item>
             <ion-item lines="none">
-              <ion-select :label="translate('Product Store')" interface="popover" :value="query.productStoreId" @ionChange="updateAppliedFilters($event['detail'].value, 'productStoreId')">
+              <ion-select data-testid="transfers-product-store-select" :label="translate('Product Store')" interface="popover" :value="query.productStoreId" @ionChange="updateAppliedFilters($event['detail'].value, 'productStoreId')">
                 <ion-select-option value="">{{ translate("All") }}</ion-select-option>
                 <ion-select-option v-for="store in productStores" :key="store.productStoreId" :value="store.productStoreId">{{ store.storeName ? store.storeName : store.productStoreId }}</ion-select-option>
               </ion-select>
             </ion-item>
             <ion-item lines="none">
-              <ion-select :label="translate('Origin')" interface="popover" :value="query.facilityId" @ionChange="updateAppliedFilters($event['detail'].value, 'facilityId')">
+              <ion-select data-testid="transfers-origin-facility-select" :label="translate('Origin')" interface="popover" :value="query.facilityId" @ionChange="updateAppliedFilters($event['detail'].value, 'facilityId')">
                 <ion-select-option value="">{{ translate("All") }}</ion-select-option>
                 <ion-select-option v-for="facility in facilities" :key="facility.facilityId" :value="facility.facilityId">{{ facility.facilityName ? facility.facilityName : facility.facilityId }}</ion-select-option>
               </ion-select>
             </ion-item>
             <ion-item lines="none">
-              <ion-select :label="translate('Destination')" interface="popover" :value="query.orderFacilityId" @ionChange="updateAppliedFilters($event['detail'].value, 'orderFacilityId')">
+              <ion-select data-testid="transfers-destination-facility-select" :label="translate('Destination')" interface="popover" :value="query.orderFacilityId" @ionChange="updateAppliedFilters($event['detail'].value, 'orderFacilityId')">
                 <ion-select-option value="">{{ translate("All") }}</ion-select-option>
                 <ion-select-option v-for="facility in facilities" :key="facility.facilityId" :value="facility.facilityId">{{ facility.facilityName ? facility.facilityName : facility.facilityId }}</ion-select-option>
               </ion-select>
@@ -55,19 +55,19 @@
               </ion-label>
             </ion-item>
             <ion-item lines="none">
-              <ion-select :label="translate('Method')" interface="popover" :value="query.shipmentMethodTypeId" @ionChange="updateAppliedFilters($event['detail'].value, 'shipmentMethodTypeId')">
+              <ion-select data-testid="transfers-method-select" :label="translate('Method')" interface="popover" :value="query.shipmentMethodTypeId" @ionChange="updateAppliedFilters($event['detail'].value, 'shipmentMethodTypeId')">
                 <ion-select-option value="">{{ translate("All") }}</ion-select-option>
                 <ion-select-option v-for="(shipmentMethodTypeDesc, shipmentMethodTypeId) in shipmentMethods" :key="shipmentMethodTypeId" :value="shipmentMethodTypeId">{{ shipmentMethodTypeDesc ? shipmentMethodTypeDesc : shipmentMethodTypeId }}</ion-select-option>
               </ion-select>
             </ion-item>
             <ion-item lines="none">
-              <ion-select :label="translate('Carrier')" interface="popover" :value="query.carrierPartyId" @ionChange="updateAppliedFilters($event['detail'].value, 'carrierPartyId')">
+              <ion-select data-testid="transfers-carrier-select" :label="translate('Carrier')" interface="popover" :value="query.carrierPartyId" @ionChange="updateAppliedFilters($event['detail'].value, 'carrierPartyId')">
                 <ion-select-option value="">{{ translate("All") }}</ion-select-option>
                 <ion-select-option v-for="(carrierDesc, carrierPartyId) in carriersList" :key="carrierPartyId" :value="carrierPartyId">{{ carrierDesc ? carrierDesc : carrierPartyId }}</ion-select-option>
               </ion-select>
             </ion-item>
             <ion-item lines="none">
-              <ion-select :label="translate('Status')" interface="popover" :value="query.orderStatusId" @ionChange="updateAppliedFilters($event['detail'].value, 'orderStatusId')">
+              <ion-select data-testid="transfers-status-select" :label="translate('Status')" interface="popover" :value="query.orderStatusId" @ionChange="updateAppliedFilters($event['detail'].value, 'orderStatusId')">
                 <ion-select-option value="">{{ translate("All") }}</ion-select-option>
                 <ion-select-option v-for="statusId in orderStatusIds" :key="statusId" :value="statusId">{{ getStatusDesc(statusId) }}</ion-select-option>
               </ion-select>
@@ -79,11 +79,11 @@
           <section class="sort">
             <ion-item lines="none">
               <ion-icon slot="start" :icon="documentTextOutline" />
-              <ion-select :label="translate('Group by')" interface="popover" :value="selectedGroupBy.id" @ionChange="updateGroupByFilter($event.detail.value)">
+              <ion-select data-testid="transfers-group-by-select" :label="translate('Group by')" interface="popover" :value="selectedGroupBy.id" @ionChange="updateGroupByFilter($event.detail.value)">
                 <ion-select-option v-for="option in groupByOptions" :value="option.id" :key="option.id">{{ option.description }}</ion-select-option>
               </ion-select>
             </ion-item>
-            <ion-item lines="none" button @click="updateAppliedFilters('', 'sort')">
+            <ion-item data-testid="transfers-sort-btn" lines="none" button @click="updateAppliedFilters('', 'sort')">
               <ion-icon slot="start" :icon="swapVerticalOutline" />
               <ion-label>{{ translate("Sort by") }}</ion-label>
               <ion-label>{{ translate("Created date") }}</ion-label>
@@ -93,20 +93,20 @@
 
           <hr />
 
-          <div class="empty-state" v-if="isFetchingOrders">
+          <div data-testid="transfers-loading" class="empty-state" v-if="isFetchingOrders">
             <ion-spinner name="crescent" />
             <p>{{ translate("Loading") }}</p>
           </div>
-          <div class="empty-state" v-else-if="!ordersList?.length">
+          <div data-testid="transfers-empty-state" class="empty-state" v-else-if="!ordersList?.length">
             <p>{{ translate("No order found") }}</p>
           </div>
           <ion-accordion-group v-else :multiple="true" @ionChange="showOrderItems($event)">
             <template v-for="(order, index) in ordersList" :key="index">
-              <ion-accordion :value="order.groupValue">
+              <ion-accordion :data-testid="`transfers-accordion-${order.groupValue}`" :value="order.groupValue">
                 <!-- Different accordion headers and content based on groupBy value on orderId -->
                 <template v-if="query.groupBy === 'ORDER_ID'">
                   <!-- order header -->
-                  <div class="section-header" slot="header" color="light">
+                  <div :data-testid="`transfers-order-header-${order.orderId}`" class="section-header" slot="header" color="light">
                     <ion-item class="primary-info" lines="none">
                       <ion-label>
                         <strong>{{ order.orderName }}</strong>
@@ -125,7 +125,7 @@
                     </div>
                     <div class="metadata">
                       <ion-note>{{ translate("Created on") }} {{ formatUtcDate(order.orderDate, "dd LLL yyyy") }}</ion-note>
-                      <ion-badge :color="STATUSCOLOR[order.orderStatusId] || 'medium'">
+                      <ion-badge :data-testid="`transfers-order-status-badge-${order.orderId}`" :color="STATUSCOLOR[order.orderStatusId] || 'medium'">
                         {{ order.orderStatusDesc }}
                       </ion-badge>
                     </div>
@@ -140,7 +140,7 @@
                       <p>{{ translate("Loading") }}</p>
                     </div>
                     <!-- order items -->
-                    <div v-else class="list-item" v-for="(item, index) in orderItemsList(order.orderId)" :key="index" @click="router.push(`/order-detail/${order.orderId}`)">
+                    <div :data-testid="`transfers-order-item-row-${order.orderId}-${item.productId}`" v-else class="list-item" v-for="(item, index) in orderItemsList(order.orderId)" :key="index" @click="router.push(`/order-detail/${order.orderId}`)">
                       <ion-item lines="none">
                         <ion-thumbnail slot="start">
                           <Image :src="getProduct(item.productId)?.mainImageUrl" />
@@ -169,7 +169,7 @@
                         </ion-label>
                       </div>
                       <ion-item lines="none">
-                        <ion-badge slot="end" :color="STATUSCOLOR[item.itemStatusId] || 'medium'">{{ getStatusDesc(item.itemStatusId) }}</ion-badge>
+                        <ion-badge :data-testid="`transfers-item-status-badge-${item.productId}`" slot="end" :color="STATUSCOLOR[item.itemStatusId] || 'medium'">{{ getStatusDesc(item.itemStatusId) }}</ion-badge>
                       </ion-item>
                     </div>
                   </div>
@@ -178,7 +178,7 @@
                 <!-- Different accordion header and content based on groupBy value on origin and destination facility -->
                 <template  v-else-if="query.groupBy === 'ORIGIN' || query.groupBy === 'DESTINATION'">
                   <!-- order header -->
-                  <div class="list-item" slot="header" color="light">
+                  <div :data-testid="`transfers-facility-header-${query.groupBy === 'ORIGIN' ? order.facilityId : order.orderFacilityId}`" class="list-item" slot="header" color="light">
                     <ion-item lines="none">
                       <ion-icon slot="start" :icon="query.groupBy === 'ORIGIN' ? sendOutline : downloadOutline" />
                       <ion-label>
@@ -216,7 +216,7 @@
                       <p>{{ translate("Loading") }}</p>
                     </div>
                     <!-- order items -->
-                    <div v-else class="list-item" v-for="(item, index) in orderItemsList(query.groupBy === 'ORIGIN' ? order.facilityId : order.orderFacilityId)" :key="index" @click="router.push(`/order-detail/${item.orderId}`)">
+                    <div :data-testid="`transfers-facility-item-row-${item.orderId}`" v-else class="list-item" v-for="(item, index) in orderItemsList(query.groupBy === 'ORIGIN' ? order.facilityId : order.orderFacilityId)" :key="index" @click="router.push(`/order-detail/${item.orderId}`)">
                       <ion-item lines="none">
                         <ion-label class="ion-text-wrap">
                           {{ item.orderName }}
@@ -256,7 +256,7 @@
                 <!-- Different accordion header and content based on groupBy value on origin and destination facility with product -->
                 <template v-else>
                   <!-- order header -->
-                  <div class="list-item" slot="header">
+                  <div :data-testid="`transfers-product-header-${order.productId}`" class="list-item" slot="header">
                     <ion-item lines="none">
                       <ion-thumbnail slot="start">
                         <Image :src="getProduct(order.productId)?.mainImageUrl" />
@@ -299,7 +299,7 @@
                       <p>{{ translate("Loading") }}</p>
                     </div>
                     <!-- order items -->
-                    <div class="list-item" v-for="(item, index) in orderItemsList(query.groupBy === 'ORIGIN_PRODUCT' ? `${order.productId}-${order.facilityId}` : `${order.productId}-${order.orderFacilityId}`)" :key="index" @click="router.push(`/order-detail/${item.orderId}`)">
+                    <div :data-testid="`transfers-product-item-row-${item.orderId}`" class="list-item" v-for="(item, index) in orderItemsList(query.groupBy === 'ORIGIN_PRODUCT' ? `${order.productId}-${order.facilityId}` : `${order.productId}-${order.orderFacilityId}`)" :key="index" @click="router.push(`/order-detail/${item.orderId}`)">
                       <ion-item lines="none">
                         <ion-label class="ion-text-wrap">
                           {{ item.orderName }}
@@ -339,14 +339,14 @@
             </template>
           </ion-accordion-group>
 
-          <ion-infinite-scroll @ionInfinite="loadMoreOrders($event)" threshold="100px" v-if="isScrollable">
+          <ion-infinite-scroll data-testid="transfers-infinite-scroll" @ionInfinite="loadMoreOrders($event)" threshold="100px" v-if="isScrollable">
             <ion-infinite-scroll-content loading-spinner="crescent" :loading-text="translate('Loading')"/>
           </ion-infinite-scroll>
         </main>
       </div>
 
       <ion-fab vertical="bottom" horizontal="end" slot="fixed">
-        <ion-fab-button @click="router.push('/create-order')">
+        <ion-fab-button data-testid="transfers-create-btn" @click="router.push('/create-order')">
           <ion-icon :icon="addOutline" />
         </ion-fab-button>
       </ion-fab>

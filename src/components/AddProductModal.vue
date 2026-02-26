@@ -2,7 +2,7 @@
   <ion-header>
     <ion-toolbar>
       <ion-buttons slot="start">
-        <ion-button @click="closeModal">
+        <ion-button data-testid="add-product-modal-close-btn" @click="closeModal">
           <ion-icon slot="icon-only" :icon="closeOutline" />
         </ion-button>
       </ion-buttons>
@@ -10,11 +10,11 @@
     </ion-toolbar>
   </ion-header>
   <ion-content>
-    <ion-searchbar v-model="queryString" :placeholder="translate('Search SKU or product name')" @keyup.enter="handleSearch" @ionInput="handleInput"/>
+    <ion-searchbar data-testid="add-product-modal-search-input" v-model="queryString" :placeholder="translate('Search SKU or product name')" @keyup.enter="handleSearch" @ionInput="handleInput"/>
 
     <template v-if="products.length">
       <ion-list v-for="product in products" :key="product.productId">
-        <ion-item lines="none">
+        <ion-item :data-testid="`add-product-modal-product-row-${product.productId}`" lines="none">
           <ion-thumbnail slot="start">
             <Image :src="product.mainImageUrl" />
           </ion-thumbnail>
@@ -23,13 +23,13 @@
             <p>{{ getProductIdentificationValue(productIdentificationStore.getProductIdentificationPref.secondaryId, product) }}</p>
           </ion-label>
           <ion-icon v-if="isProductInOrder(product.productId)" color="success" :icon="checkmarkCircle" />
-          <ion-button v-else fill="outline" @click="addItemToOrder(product)" :disabled="pendingProductIds.has(product.productId)">
+          <ion-button :data-testid="`add-product-modal-add-btn-${product.productId}`" v-else fill="outline" @click="addItemToOrder(product)" :disabled="pendingProductIds.has(product.productId)">
             {{ pendingProductIds.has(product.productId) ? translate("Adding...") : translate("Add to order") }}
           </ion-button>
         </ion-item>
       </ion-list>
 
-      <ion-infinite-scroll @ionInfinite="loadMoreProducts($event)" threshold="100px" :disabled="!isScrollable()">
+      <ion-infinite-scroll data-testid="add-product-modal-infinite-scroll" @ionInfinite="loadMoreProducts($event)" threshold="100px" :disabled="!isScrollable()">
         <ion-infinite-scroll-content loading-spinner="crescent" :loading-text="translate('Loading')" />
       </ion-infinite-scroll>
     </template>

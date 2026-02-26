@@ -2,7 +2,7 @@
   <ion-page>
     <ion-header :translucent="true">
       <ion-toolbar>
-        <ion-back-button slot="start" :default-href="`/tabs/transfers`" />
+        <ion-back-button data-testid="create-order-back-btn" slot="start" :default-href="`/tabs/transfers`" />
         <ion-title>{{ translate("Create transfer order") }}</ion-title>
       </ion-toolbar>
     </ion-header>
@@ -11,7 +11,7 @@
       <div class="find">
         <section class="search">
           <ion-item>
-            <ion-input :label="translate('Transfer name')" :placeholder="translate('Name')" v-model="currentOrder.name" />
+            <ion-input data-testid="create-order-name-input" :label="translate('Transfer name')" :placeholder="translate('Name')" v-model="currentOrder.name" />
           </ion-item>
         </section>
 
@@ -22,7 +22,7 @@
             </ion-card-header>
             <ion-item>
               <ion-icon :icon="storefrontOutline" slot="start" />
-              <ion-select value="" :label="translate('Product Store')" :placeholder="translate('Select')" interface="popover" v-model="currentOrder.productStoreId" @ionChange="productStoreUpdated()">
+              <ion-select data-testid="create-order-product-store-select" value="" :label="translate('Product Store')" :placeholder="translate('Select')" interface="popover" v-model="currentOrder.productStoreId" @ionChange="productStoreUpdated()">
                 <ion-select-option v-for="store in stores" :value="store.productStoreId" :key="store.productStoreId">{{ store.storeName ? store.storeName : store.productStoreId }}</ion-select-option>
               </ion-select>
             </ion-item>
@@ -30,11 +30,11 @@
               <ion-icon :icon="sendOutline" slot="start" />
               <ion-label>{{ translate("Origin") }}</ion-label>
               <template v-if="currentOrder.originFacilityId" slot="end">
-                <ion-chip outline @click="openSelectFacilityModal('originFacilityId')">
+                <ion-chip data-testid="create-order-origin-facility-btn" outline @click="openSelectFacilityModal('originFacilityId')">
                   {{ getFacilityName(currentOrder.originFacilityId) ? getFacilityName(currentOrder.originFacilityId) : currentOrder.originFacilityId }}
                 </ion-chip>
               </template>
-              <ion-button v-else slot="end" fill="outline" @click="openSelectFacilityModal('originFacilityId')">
+              <ion-button data-testid="create-order-assign-origin-facility-btn" v-else slot="end" fill="outline" @click="openSelectFacilityModal('originFacilityId')">
                 <ion-icon slot="start" :icon="addCircleOutline" />
                 <ion-label>{{ translate("Assign") }}</ion-label>
               </ion-button>
@@ -43,11 +43,11 @@
               <ion-icon :icon="downloadOutline" slot="start" />
               <ion-label>{{ translate("Destination") }}</ion-label>
               <template v-if="currentOrder.destinationFacilityId" slot="end">
-                <ion-chip outline @click="openSelectFacilityModal('destinationFacilityId')">
+                <ion-chip data-testid="create-order-destination-facility-btn" outline @click="openSelectFacilityModal('destinationFacilityId')">
                   {{ getFacilityName(currentOrder.destinationFacilityId) ? getFacilityName(currentOrder.destinationFacilityId) : currentOrder.destinationFacilityId }}
                 </ion-chip>
               </template>
-              <ion-button v-else slot="end" fill="outline" @click="openSelectFacilityModal('destinationFacilityId')">
+              <ion-button data-testid="create-order-assign-destination-facility-btn" v-else slot="end" fill="outline" @click="openSelectFacilityModal('destinationFacilityId')">
                 <ion-icon slot="start" :icon="addCircleOutline" />
                 <ion-label>{{ translate("Assign") }}</ion-label>
               </ion-button>
@@ -59,12 +59,12 @@
               <ion-card-title>{{ translate("Shipping Method") }}</ion-card-title>
             </ion-card-header>
             <ion-item>
-              <ion-select :label="translate('Carrier')" :placeholder="translate('Select')" v-model="currentOrder.carrierPartyId" interface="popover" @ionChange="selectUpdatedMethod()">
+              <ion-select data-testid="create-order-carrier-select" :label="translate('Carrier')" :placeholder="translate('Select')" v-model="currentOrder.carrierPartyId" interface="popover" @ionChange="selectUpdatedMethod()">
                 <ion-select-option :value="carrierPartyId" v-for="(carrierPartyId, index) in Object.keys(shipmentMethodsByCarrier)" :key="index">{{ getCarrierDesc(carrierPartyId) }}</ion-select-option>
               </ion-select>
             </ion-item>
             <ion-item lines="none">
-              <ion-select :label="translate('Method')" :placeholder="translate('Select')" v-model="currentOrder.shipmentMethodTypeId" v-if="getCarrierShipmentMethods()?.length" interface="popover">
+              <ion-select data-testid="create-order-method-select" :label="translate('Method')" :placeholder="translate('Select')" v-model="currentOrder.shipmentMethodTypeId" v-if="getCarrierShipmentMethods()?.length" interface="popover">
                 <ion-select-option :value="shipmentMethod.shipmentMethodTypeId" v-for="(shipmentMethod, index) in getCarrierShipmentMethods()" :key="index">{{ shipmentMethod.description ? shipmentMethod.description : shipmentMethod.shipmentMethodTypeId }}</ion-select-option>
               </ion-select>
               <template v-else>
@@ -79,17 +79,17 @@
               <ion-card-title>{{ translate("Plan") }}</ion-card-title>
             </ion-card-header>
             <ion-item>
-              <ion-select :label="translate('Lifecycle')" placeholder="Select" v-model="currentOrder.statusFlowId" interface="popover">
+              <ion-select data-testid="create-order-lifecycle-select" :label="translate('Lifecycle')" placeholder="Select" v-model="currentOrder.statusFlowId" interface="popover">
                 <ion-select-option v-for="flow in statusFlows" :key="flow.statusFlowId" :value="flow.statusFlowId">{{ translate(flow.description) }}</ion-select-option>
               </ion-select>
             </ion-item>
             <ion-item>
               <ion-label>{{ translate("Ship Date") }}</ion-label>
-              <ion-button slot="end" class="date-time-button" @click="openDateTimeModal('shipDate')">{{ currentOrder.shipDate ? formatDateTime(currentOrder.shipDate) : translate("Select date") }}</ion-button>
+              <ion-button data-testid="create-order-ship-date-btn" slot="end" class="date-time-button" @click="openDateTimeModal('shipDate')">{{ currentOrder.shipDate ? formatDateTime(currentOrder.shipDate) : translate("Select date") }}</ion-button>
             </ion-item>
             <ion-item>
               <ion-label>{{ translate("Delivery Date") }}</ion-label>
-              <ion-button slot="end" class="date-time-button" @click="openDateTimeModal('deliveryDate')">{{ currentOrder.deliveryDate ? formatDateTime(currentOrder.deliveryDate) : translate("Select date") }}</ion-button>
+              <ion-button data-testid="create-order-delivery-date-btn" slot="end" class="date-time-button" @click="openDateTimeModal('deliveryDate')">{{ currentOrder.deliveryDate ? formatDateTime(currentOrder.deliveryDate) : translate("Select date") }}</ion-button>
             </ion-item>
           </ion-card>
 
@@ -97,12 +97,12 @@
             <ion-icon :icon="cloudUploadOutline" slot="start" />
             <ion-label>
               {{ translate("Import items CSV") }}
-              <p @click="downloadSampleCsv()">
+              <p data-testid="create-order-sample-csv-btn" @click="downloadSampleCsv()">
                 <a>{{ translate("Download example") }}</a>
               </p>
             </ion-label>
             <input @change="parse" ref="file" class="ion-hide" type="file" id="updateProductFile" :key="fileUploaded.toString()"/>
-            <label for="updateProductFile" class="pointer">{{ translate("Upload") }}</label>
+            <label data-testid="create-order-upload-csv-btn" for="updateProductFile" class="pointer">{{ translate("Upload") }}</label>
           </ion-item>
         </aside>
 
@@ -124,12 +124,12 @@
           <div class="item-search">
             <ion-item>
               <ion-icon slot="start" :icon="listOutline"/>
-              <ion-input :label="translate('Add product')" label-placement="floating" :clear-input="true" v-model="queryString" :placeholder="translate('Searching on SKU')" @keyup.enter="addProductToCount()" />
+              <ion-input data-testid="create-order-product-search-input" :label="translate('Add product')" label-placement="floating" :clear-input="true" v-model="queryString" :placeholder="translate('Searching on SKU')" @keyup.enter="addProductToCount()" />
             </ion-item>
             <ion-item lines="none" v-if="isSearchingProduct">
-              <ion-spinner color="secondary" name="crescent"></ion-spinner>
+              <ion-spinner data-testid="create-order-product-search-loading" color="secondary" name="crescent"></ion-spinner>
             </ion-item>
-            <ion-item lines="none" v-else-if="searchedProduct.productId">
+            <ion-item data-testid="create-order-search-result-row" lines="none" v-else-if="searchedProduct.productId">
               <ion-thumbnail slot="start">
                 <Image :src="getProduct(searchedProduct.productId).mainImageUrl"/>
               </ion-thumbnail>
@@ -137,11 +137,11 @@
                 <p class="overline">{{ translate("Search result") }}</p>
                 {{ searchedProduct.internalName || searchedProduct.sku || searchedProduct.productId }}
               </ion-label>
-              <ion-button :disabled="isAddingProduct" size="default" slot="end" fill="clear" @click="addProductToCount" :color="isProductAvailableInOrder() ? 'success' : 'primary'">
+              <ion-button data-testid="create-order-add-product-btn" :disabled="isAddingProduct" size="default" slot="end" fill="clear" @click="addProductToCount" :color="isProductAvailableInOrder() ? 'success' : 'primary'">
                 <ion-icon slot="icon-only" :icon="isProductAvailableInOrder() ? checkmarkCircle : addCircleOutline"/>
               </ion-button>
             </ion-item>
-            <p v-else-if="queryString">{{ translate("No product found") }}</p>
+            <p data-testid="create-order-product-not-found" v-else-if="queryString">{{ translate("No product found") }}</p>
           </div>
 
           <hr />
@@ -149,20 +149,20 @@
           <template v-if="currentOrder.items?.length">
             <div class="list-item ion-padding-vertical">
               <ion-item lines="none" class="item-qty-actions" style="grid-column: span 2;">
-                <ion-button fill="outline" color="medium" @click="updateBulkOrderItemQuantity('bookQOH')">{{ translate("Book QoH") }}</ion-button>
-                <ion-button fill="outline" color="medium" @click="updateBulkOrderItemQuantity('bookATP')">{{ translate("Book ATP") }}</ion-button>
-                <ion-button fill="outline" color="medium" @click="updateBulkOrderItemQuantity('customQty')">{{ translate("Custom Qty") }}</ion-button>
+                <ion-button data-testid="create-order-bulk-book-qoh-btn" fill="outline" color="medium" @click="updateBulkOrderItemQuantity('bookQOH')">{{ translate("Book QoH") }}</ion-button>
+                <ion-button data-testid="create-order-bulk-book-atp-btn" fill="outline" color="medium" @click="updateBulkOrderItemQuantity('bookATP')">{{ translate("Book ATP") }}</ion-button>
+                <ion-button data-testid="create-order-bulk-custom-qty-btn" fill="outline" color="medium" @click="updateBulkOrderItemQuantity('customQty')">{{ translate("Custom Qty") }}</ion-button>
               </ion-item>
               <div></div>
               <div class="tablet">
-                <ion-checkbox :modelValue="isEligibleForBulkAction()" @ionChange="toggleBulkSelection($event.detail.checked)" />
+                <ion-checkbox data-testid="create-order-bulk-select-all-checkbox" :modelValue="isEligibleForBulkAction()" @ionChange="toggleBulkSelection($event.detail.checked)" />
               </div>
-              <ion-button slot="end" fill="clear" color="medium" :disabled="!isEligibleForBulkAction()" @click="openOrderItemActionsPopover($event, null, true)">
+              <ion-button data-testid="create-order-bulk-actions-btn" slot="end" fill="clear" color="medium" :disabled="!isEligibleForBulkAction()" @click="openOrderItemActionsPopover($event, null, true)">
                 <ion-icon :icon="ellipsisVerticalOutline" slot="icon-only" />
               </ion-button>
             </div>
 
-            <div class="list-item" v-for="(item, index) in currentOrder.items" :key="index">
+            <div :data-testid="`create-order-item-row-${item.productId}`" class="list-item" v-for="(item, index) in currentOrder.items" :key="index">
               <ion-item lines="none">
                 <ion-thumbnail slot="start">
                   <Image :src="getProduct(item.productId)?.mainImageUrl" />
@@ -179,24 +179,24 @@
                 </ion-chip>
               </div>
               <ion-item>
-                <ion-input type="number" :label="translate('Qty')" label-placement="floating" min="0" v-model="item.quantity" :clear-input="true" />
+                <ion-input :data-testid="`create-order-item-qty-input-${item.productId}`" type="number" :label="translate('Qty')" label-placement="floating" min="0" v-model="item.quantity" :clear-input="true" />
               </ion-item>
               <div class="tablet">
-                <ion-checkbox v-model="item.isChecked" />
+                <ion-checkbox :data-testid="`create-order-item-checkbox-${item.productId}`" v-model="item.isChecked" />
               </div>
-              <ion-button slot="end" fill="clear" color="medium" @click="openOrderItemActionsPopover($event, item)">
+              <ion-button :data-testid="`create-order-item-actions-btn-${item.productId}`" slot="end" fill="clear" color="medium" @click="openOrderItemActionsPopover($event, item)">
                 <ion-icon :icon="ellipsisVerticalOutline" slot="icon-only" />
               </ion-button>
             </div>
           </template>
-          <div v-else class="empty-state">
+          <div data-testid="create-order-empty-state" v-else class="empty-state">
             <p>{{ translate("No item added to order") }}</p>
           </div>
         </main>
       </div>
 
       <ion-fab vertical="bottom" horizontal="end" slot="fixed">
-        <ion-fab-button @click="createOrder()">
+        <ion-fab-button data-testid="create-order-save-btn" @click="createOrder()">
           <ion-icon :icon="checkmarkDoneOutline" />
         </ion-fab-button>
       </ion-fab>
