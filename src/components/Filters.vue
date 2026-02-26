@@ -56,7 +56,7 @@
           </ion-select>
         </ion-item>
       </ion-list>
-    </ion-content> 
+    </ion-content>
   </ion-menu>
 </template>
 

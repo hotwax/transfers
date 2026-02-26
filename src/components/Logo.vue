@@ -22,7 +22,7 @@ export default defineComponent({
   .dark {
     display: unset;
   }
-  
+
   .light {
     display: none;
   }

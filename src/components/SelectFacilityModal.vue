@@ -2,7 +2,7 @@
   <ion-header>
     <ion-toolbar>
       <ion-buttons slot="start">
-        <ion-button data-testid="select-facility-modal-close-btn" @click="closeModal"> 
+        <ion-button data-testid="select-facility-modal-close-btn" @click="closeModal">
           <ion-icon slot="icon-only" :icon="closeOutline" />
         </ion-button>
       </ion-buttons>
@@ -33,7 +33,7 @@
     </ion-fab-button>
   </ion-fab>
 </template>
-  
+
 <script setup lang="ts">
 import { IonButton, IonButtons, IonContent, IonFab, IonFabButton, IonHeader, IonIcon, IonItem, IonLabel, IonRadio, IonRadioGroup, IonSearchbar, IonTitle, IonToolbar, modalController } from "@ionic/vue";
 import { defineProps, onMounted, ref } from "vue";

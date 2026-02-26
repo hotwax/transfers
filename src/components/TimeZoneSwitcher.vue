@@ -94,7 +94,7 @@
 import {
   IonButton,
   IonButtons,
-  IonCard, 
+  IonCard,
   IonCardHeader,
   IonCardTitle,
   IonCardContent,

@@ -48,7 +48,7 @@
                 <ion-select-option v-for="facility in facilities" :key="facility.facilityId" :value="facility.facilityId">{{ facility.facilityName ? facility.facilityName : facility.facilityId }}</ion-select-option>
               </ion-select>
             </ion-item>
-            
+
             <ion-item lines="none">
               <ion-label>
                 <h1>{{ translate("Fulfillment") }}</h1>
@@ -378,35 +378,35 @@ const groupByOptions = [
     description: translate("Order item"),
     selectFields: ["orderId", "orderName", "facilityId", "facilityName", "orderFacilityId", "orderFacilityName", "orderStatusDesc, orderStatusId"],
     groupingFields: ["orderId"],
-    groupValueSeparator: '-' 
+    groupValueSeparator: '-'
   },
   {
     id: "DESTINATION",
     description: translate("Destination"),
     selectFields: ["orderFacilityId", "orderFacilityName"],
     groupingFields: ["orderFacilityId"],
-    groupValueSeparator: '-' 
+    groupValueSeparator: '-'
   },
   {
     id: "DESTINATION_PRODUCT",
     description: translate("Destination and product"),
     selectFields: ["productId", "orderFacilityId", "orderFacilityName"],
     groupingFields: ["productId", "orderFacilityId"],
-    groupValueSeparator: '-' 
+    groupValueSeparator: '-'
   },
   {
     id: "ORIGIN",
     description: translate("Origin"),
     selectFields: ["facilityId", "facilityName"],
     groupingFields: ["facilityId"],
-    groupValueSeparator: '-' 
+    groupValueSeparator: '-'
   },
   {
     id: "ORIGIN_PRODUCT",
     description: translate("Origin and product"),
     selectFields: ["productId", "facilityId", "facilityName"],
     groupingFields: ["productId", "facilityId"],
-    groupValueSeparator: '-' 
+    groupValueSeparator: '-'
   }
 ]
 
@@ -498,7 +498,7 @@ async function showOrderItems($event: any) {
   if(!newlySelectedGroupValue.length) return
 
   const groupValue = newlySelectedGroupValue[0];
-  await store.dispatch('order/findTransferOrderItems', { groupValue, groupByConfig: selectedGroupBy.value })  
+  await store.dispatch('order/findTransferOrderItems', { groupValue, groupByConfig: selectedGroupBy.value })
 }
 
 function getFacilityName(facilityId: string) {
@@ -528,7 +528,7 @@ main > div{
   display: grid;
   grid-template-areas: "info metadata toggle-icon"
                        "tags tags tags";
-  align-items: center;                     
+  align-items: center;
   margin: 0 var(--spacer-sm);
 }
 

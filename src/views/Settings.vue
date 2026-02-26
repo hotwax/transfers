@@ -5,7 +5,7 @@
         <ion-title>{{ translate("Settings") }}</ion-title>
       </ion-toolbar>
     </ion-header>
-    
+
     <ion-content>
       <div class="user-profile">
         <ion-card>
@@ -13,7 +13,7 @@
             <ion-avatar slot="start" v-if="userProfile?.partyImageUrl">
               <Image :src="userProfile.partyImageUrl"/>
             </ion-avatar>
-            <!-- ion-no-padding to remove extra side/horizontal padding as additional padding 
+            <!-- ion-no-padding to remove extra side/horizontal padding as additional padding
             is added on sides from ion-item and ion-padding-vertical to compensate the removed
             vertical padding -->
             <ion-card-header class="ion-no-padding ion-padding-vertical">

@@ -89,7 +89,7 @@ onUnmounted(() => {
 
 async function handleSearch() {
   if (!queryString.value.trim()) {
-    isSearching.value = false; 
+    isSearching.value = false;
     products.value = [];
     return;
   }

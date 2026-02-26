@@ -108,13 +108,13 @@
 
         <ion-modal class="date-time-modal" :is-open="dateTimeModalOpen" @didDismiss="closeDateTimeModal">
           <ion-content force-overscroll="false">
-            <ion-datetime 
+            <ion-datetime
               :value="currentOrder[selectedDateFilter] ? currentOrder[selectedDateFilter] : DateTime.now().toISO()"
               show-clear-button
               show-default-buttons
               presentation="date"
               :min="currentOrder.shipDate"
-              :max="currentOrder.deliveryDate" 
+              :max="currentOrder.deliveryDate"
               @ionChange="updateDateTimeFilter($event.detail.value)"
             />
           </ion-content>
@@ -242,7 +242,7 @@ const currentOrder = ref({
   originFacilityId: "",
   destinationFacilityId: "",
   carrierPartyId: "",
-  shipmentMethodTypeId: "", 
+  shipmentMethodTypeId: "",
   items: [],
   statusFlowId: ""
 }) as any;
@@ -262,10 +262,10 @@ const statusFlows = [
   }
 ]
 
-let content = ref([]) as any 
-let fileColumns = ref([]) as any 
-let uploadedFile = ref({}) as any
-const fileUploaded = ref(false);
+  let content = ref([]) as any
+  let fileColumns = ref([]) as any
+  let uploadedFile = ref({}) as any
+  const fileUploaded = ref(false);
 
 const getProduct = computed(() => store.getters["product/getProduct"])
 const shipmentMethodsByCarrier = computed(() => store.getters["util/getShipmentMethodsByCarrier"])
@@ -316,12 +316,12 @@ onIonViewDidEnter(async () => {
 async function parse(event: any) {
   let file = event.target.files[0];
   try {
-    if (file) { 
+    if (file) {
       uploadedFile.value = file;
       content.value = await parseCsv(uploadedFile.value);
       fileColumns.value = Object.keys(content.value[0]);
       showToast(translate("File uploaded successfully"));
-      fileUploaded.value =!fileUploaded.value; 
+      fileUploaded.value =!fileUploaded.value;
       openImportCsvModal();
     } else {
       showToast(translate("No new file upload. Please try again"));
@@ -357,7 +357,7 @@ async function findProductFromIdentifier(payload: any) {
   const idValues = Object.keys(uploadedItemsByIdValue);
   const productIdsAlreadyAddedInList = currentOrder.value.items.map((item: any) => item.productId)
   const filterString = (idType === 'productId') ? `${idType}: (${idValues.join(' OR ')})` : `goodIdentifications: (${idValues.map((value: any) => `${idType}/${value}`).join(' OR ')})`;
-  
+
   emitter.emit("presentLoader", { message: "Uploading items...", backdropDismiss: false });
 
   try {
@@ -414,7 +414,7 @@ async function addProductToCount() {
 
   isAddingProduct.value = true
 
-  let newProduct = { 
+  let newProduct = {
     productId: searchedProduct.value.productId,
     sku: searchedProduct.value.sku,
     quantity: 0,
@@ -489,7 +489,7 @@ async function updateBulkOrderItemQuantity(action: any) {
             if(item.isChecked) {
               item.quantity = customQty
             }
-          }) 
+          })
         }
       }],
       inputs: [{
@@ -540,39 +540,39 @@ async function createOrder() {
 
   const productIds = currentOrder.value.items?.map((item: any) => item.productId);
   const productAverageCostDetail = await UtilService.fetchProductsAverageCost(productIds, currentOrder.value.originFacilityId)
-  
-	const order = {
-		orderName: currentOrder.value.name.trim(),
-		orderTypeId: "TRANSFER_ORDER",
-		customerId: "COMPANY",
-		statusId: "ORDER_CREATED",
-		productStoreId: currentOrder.value.productStoreId,
-		statusFlowId: currentOrder.value.statusFlowId,
+
+  const order = {
+    orderName: currentOrder.value.name.trim(),
+    orderTypeId: "TRANSFER_ORDER",
+    customerId: "COMPANY",
+    statusId: "ORDER_CREATED",
+    productStoreId: currentOrder.value.productStoreId,
+    statusFlowId: currentOrder.value.statusFlowId,
     currencyUom: currencyUom.value || 'USD',
-		orderDate: DateTime.now().toFormat("yyyy-MM-dd HH:mm:ss.SSS"),
-		entryDate: DateTime.now().toFormat("yyyy-MM-dd HH:mm:ss.SSS"),
-		originFacilityId: currentOrder.value.originFacilityId,
-		shipGroups: [
-			{
-				shipGroupSeqId: "00001",
-				facilityId: currentOrder.value.originFacilityId,
-				orderFacilityId: currentOrder.value.destinationFacilityId,
-				carrierPartyId: currentOrder.value.carrierPartyId,
-				shipmentMethodTypeId: currentOrder.value.shipmentMethodTypeId,
-				estimatedShipDate: currentOrder.value.shipDate? DateTime.fromISO(currentOrder.value.shipDate).toFormat("yyyy-MM-dd 23:59:59.000") : "",
-				estimatedDeliveryDate: currentOrder.value.deliveryDate ? DateTime.fromISO(currentOrder.value.deliveryDate).toFormat("yyyy-MM-dd 23:59:59.000"): "",
-				items: currentOrder.value.items.map((item: any) => {
-					return {
-						orderItemTypeId: "PRODUCT_ORDER_ITEM",
-						productId: item.productId,
-						sku: item.sku,
-						statusId: "ITEM_CREATED",
-						quantity: Number(item.quantity),
-						unitPrice: productAverageCostDetail[item.productId] || 0.0,
-					}
-				})
-			}]
-	} as any;
+    orderDate: DateTime.now().toFormat("yyyy-MM-dd HH:mm:ss.SSS"),
+    entryDate: DateTime.now().toFormat("yyyy-MM-dd HH:mm:ss.SSS"),
+    originFacilityId: currentOrder.value.originFacilityId,
+    shipGroups: [
+      {
+        shipGroupSeqId: "00001",
+        facilityId: currentOrder.value.originFacilityId,
+        orderFacilityId: currentOrder.value.destinationFacilityId,
+        carrierPartyId: currentOrder.value.carrierPartyId,
+        shipmentMethodTypeId: currentOrder.value.shipmentMethodTypeId,
+        estimatedShipDate: currentOrder.value.shipDate? DateTime.fromISO(currentOrder.value.shipDate).toFormat("yyyy-MM-dd 23:59:59.000") : "",
+        estimatedDeliveryDate: currentOrder.value.deliveryDate ? DateTime.fromISO(currentOrder.value.deliveryDate).toFormat("yyyy-MM-dd 23:59:59.000"): "",
+        items: currentOrder.value.items.map((item: any) => {
+          return {
+            orderItemTypeId: "PRODUCT_ORDER_ITEM",
+            productId: item.productId,
+            sku: item.sku,
+            statusId: "ITEM_CREATED",
+            quantity: Number(item.quantity),
+            unitPrice: productAverageCostDetail[item.productId] || 0.0,
+          }
+        })
+      }]
+  } as any;
 
   let grandTotal = 0;
   order.shipGroups[0].items.map((item: any) => {
@@ -722,7 +722,7 @@ async function findProduct() {
     })
     if (!hasError(resp) && resp.data.response?.docs?.length) {
       searchedProduct.value = resp.data.response.docs[0];
-      store.dispatch("product/addProductToCached", searchedProduct.value)      
+      store.dispatch("product/addProductToCached", searchedProduct.value)
     } else {
       throw resp.data
     }

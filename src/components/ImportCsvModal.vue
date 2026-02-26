@@ -2,7 +2,7 @@
   <ion-header>
     <ion-toolbar>
       <ion-buttons slot="start">
-        <ion-button data-testid="import-csv-modal-close-btn" @click="closeModal()"> 
+        <ion-button data-testid="import-csv-modal-close-btn" @click="closeModal()">
           <ion-icon slot="icon-only" :icon="closeOutline" />
         </ion-button>
       </ion-buttons>
@@ -16,7 +16,7 @@
         <ion-select-option v-for="identification in productIdentifications" :key="identification.goodIdentificationTypeId" :value="identification.goodIdentificationTypeId" >{{ identification.description }}</ion-select-option>
       </ion-select>
     </ion-item>
-    
+
     <ion-list>
       <ion-list-header>{{ translate("Select the column index for the following information in the uploaded CSV.") }}</ion-list-header>
       <ion-item>
@@ -33,12 +33,12 @@
 
     <ion-fab vertical="bottom" horizontal="end" slot="fixed">
       <ion-fab-button data-testid="import-csv-modal-save-btn" @click="saveImportData">
-        <ion-icon :icon="saveOutline"/>  
+        <ion-icon :icon="saveOutline"/>
       </ion-fab-button>
     </ion-fab>
   </ion-content>
 </template>
-  
+
 <script setup lang="ts">
 import { IonButton, IonButtons, IonContent, IonFab, IonFabButton, IonHeader, IonIcon, IonItem, IonList, IonListHeader, IonSelect, IonSelectOption, IonTitle, IonToolbar,modalController } from "@ionic/vue";
 import { defineProps, onMounted, ref } from "vue";
@@ -90,7 +90,7 @@ function saveImportData() {
   closeModal(identifierData);
 }
 </script>
-    
+
 <style scoped>
 ion-content {
   --padding-bottom: 70px;

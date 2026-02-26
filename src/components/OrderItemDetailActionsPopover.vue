@@ -100,7 +100,7 @@ async function editOrderedQuantity() {
       type: "number"
     }]
   })
-  
+
 
   alert.present()
 }

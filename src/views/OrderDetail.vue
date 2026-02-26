@@ -108,7 +108,7 @@
                   <ion-badge :data-testid="`order-detail-shipment-status-badge-${shipment.shipmentId}`" slot="end" class="no-pointer-events" :color="STATUSCOLOR[shipment.shipmentStatusId] || 'medium'">{{ getStatusDesc(shipment.shipmentStatusId) }}</ion-badge>
                 </ion-item>
               </ion-card>
-              
+
               <ion-card v-if="currentOrder?.receipts && Object.keys(currentOrder.receipts)?.length">
                 <ion-card-header>
                   <ion-card-title>{{ translate("Receipts") }}</ion-card-title>
@@ -116,7 +116,7 @@
                 <ion-item v-for="datetimeReceived in getReceipts()" :key="datetimeReceived">
                   <ion-radio :data-testid="`order-detail-selection-radio-receipt-${datetimeReceived}`" :value="`receipt_${datetimeReceived}`" label-placement="end" justify="start">
                     <ion-label>
-                      {{ translate("received at") }} 
+                      {{ translate("received at") }}
                       <p>{{ formatDateTime(Number(datetimeReceived)) }}</p>
                     </ion-label>
                   </ion-radio>
@@ -459,7 +459,7 @@ function isOrderFinished(item?: any) {
 }
 
 function getFilteredShipments(shipmentTypeId: string) {
-  return currentOrder.value.shipments?.filter((shipment: any) => shipment.shipmentTypeId === shipmentTypeId); 
+  return currentOrder.value.shipments?.filter((shipment: any) => shipment.shipmentTypeId === shipmentTypeId);
 }
 
 // Returns shipment data for selected shipment ID or creates receipt data structure for receipt selections
@@ -470,7 +470,7 @@ function getSelectedShipment() {
       datetimeReceived: Number(datetimeReceived),
     };
   }
-  
+
   return currentOrder.value.shipments.find((shipment: any) => shipment.shipmentId === selectedShipmentId.value);
 }
 
@@ -638,7 +638,7 @@ ion-card-header {
     grid: "id timeline" min-content
           "cards timeline" 1fr
           / 1fr 500px;
-    justify-content: space-between;  
+    justify-content: space-between;
   }
 }
 </style>
