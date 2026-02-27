@@ -22,8 +22,8 @@ jobs:
       env:
         PLAYWRIGHT_OMS_URL: ${{ vars.PLAYWRIGHT_OMS_URL || 'https://launchpad-dev.hotwax.io/login?isLoggedOut=true&redirectUrl=https://transfers-dev.hotwax.io/login' }}
         PLAYWRIGHT_BASE_URL: ${{ vars.PLAYWRIGHT_BASE_URL || 'https://transfers-dev.hotwax.io/' }}
-        PLAYWRIGHT_USER: ${{ secrets.PLAYWRIGHT_USER }}
-        PLAYWRIGHT_PASSWORD: ${{ secrets.PLAYWRIGHT_PASSWORD }}
+        VUE_APP_PLAYWRIGHT_USERNAME: ${{ secrets.PLAYWRIGHT_USER }}
+        VUE_APP_PLAYWRIGHT_PASSWORD: ${{ secrets.PLAYWRIGHT_PASSWORD }}
     - uses: actions/upload-artifact@v4
       if: ${{ !cancelled() }}
       with:

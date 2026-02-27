@@ -21,11 +21,11 @@ setup('authenticate', async ({ page }) => {
     await loginPage.goto();
 
     // Step 2: Perform secure login using credentials from environment variables
-    const username = process.env.PLAYWRIGHT_USER;
-    const password = process.env.PLAYWRIGHT_PASSWORD;
+    const username = process.env.VUE_APP_PLAYWRIGHT_USERNAME;
+    const password = process.env.VUE_APP_PLAYWRIGHT_PASSWORD;
 
     if (!username || !password) {
-        throw new Error("Missing PLAYWRIGHT_USER or PLAYWRIGHT_PASSWORD environment variables. Please check your .env file.");
+        throw new Error("Missing VUE_APP_PLAYWRIGHT_USERNAME or VUE_APP_PLAYWRIGHT_PASSWORD environment variables. Please check your .env file.");
     }
 
     await loginPage.login(username, password);
