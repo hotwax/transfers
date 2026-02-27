@@ -1,0 +1,32 @@
+name: Playwright Tests
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+jobs:
+  test:
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 18
+    - name: Install dependencies
+      run: npm ci
+    - name: Install Playwright Browsers
+      run: npx playwright install --with-deps
+    - name: Run Playwright tests
+      run: npm run test:pw
+      env:
+        PLAYWRIGHT_OMS_URL: ${{ vars.PLAYWRIGHT_OMS_URL || 'https://launchpad-dev.hotwax.io/login?isLoggedOut=true&redirectUrl=https://transfers-dev.hotwax.io/login' }}
+        PLAYWRIGHT_BASE_URL: ${{ vars.PLAYWRIGHT_BASE_URL || 'https://transfers-dev.hotwax.io/' }}
+        VUE_APP_PLAYWRIGHT_USERNAME: ${{ secrets.PLAYWRIGHT_USER }}
+        VUE_APP_PLAYWRIGHT_PASSWORD: ${{ secrets.PLAYWRIGHT_PASSWORD }}
+    - uses: actions/upload-artifact@v4
+      if: ${{ !cancelled() }}
+      with:
+        name: playwright-report
+        path: playwright/playwright-report/
+        retention-days: 30
