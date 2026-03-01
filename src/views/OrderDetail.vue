@@ -19,13 +19,14 @@
             <ion-item lines="none">
               <ion-icon slot="start" :icon="ticketOutline" />
               <ion-label>
+                <p class="overline">{{ getStatusDesc(currentOrder.statusId) }}</p>
                 <h1>{{ currentOrder.orderName ? currentOrder.orderName : currentOrder.orderId }}</h1>
               </ion-label>
-              <ion-badge :color="STATUSCOLOR[currentOrder.statusId] || 'medium'" slot="end">{{ getStatusDesc(currentOrder.statusId) }}</ion-badge>
-              <ion-select v-if="currentOrder.statusId === 'ORDER_CREATED' || currentOrder.statusId === 'ORDER_APPROVED'" :disabled="isOrderStatusUpdateDisabled" ref="selectRef" slot="end" aria-label="status" :value="currentOrder.statusId" selected-text=" " interface="popover" @ionChange="changeOrderStatus($event.detail.value)">
-                <ion-select-option v-if="currentOrder.statusId === 'ORDER_CREATED'" value="ORDER_APPROVED">{{ translate("Approve") }}</ion-select-option>
-                <ion-select-option :disabled="isAnyItemShipped(currentOrder)" value="ORDER_CANCELLED">{{ translate("Cancel") }}</ion-select-option>
-              </ion-select>
+              <div slot="end">
+                <ion-button v-for="action in OrderActionValidator.getHeaderActions(currentOrder)" :key="action.id" fill="outline" :color="action.color || 'primary'" size="small" :disabled="isOrderStatusUpdateDisabled || !action.validation.allowed" @click="handleHeaderAction(action)">
+                  {{ translate(action.label) }}
+                </ion-button>
+              </div>
             </ion-item>
           </div>
 
@@ -80,84 +81,60 @@
               <ion-item lines="none">
                 <h2>{{ translate("Timeline") }}</h2>
               </ion-item>
-              <ion-item v-for="(status, index) in orderTimeline" :key="index">
+              <ion-item v-for="(event, index) in orderTimeline" :key="index" :button="!!event.eventType" @click="viewEventDetails(event)">
+                <ion-icon 
+                  slot="start" 
+                  :icon="event.eventType === 'SHIPMENT' ? sendOutline : (event.eventType === 'RECEIPT' ? downloadOutline : ticketOutline)" 
+                  :color="event.eventType ? 'primary' : 'medium'"
+                />
                 <ion-label>
-                  <p v-if="status.timeDiff">{{ status.timeDiff }}</p>
-                  {{ getStatusDesc(status.statusId) }}
+                  <p class="overline" v-if="event.timeDiff">{{ event.timeDiff }}</p>
+                  {{ event.statusDesc || (event.statusId ? getStatusDesc(event.statusId) : '') }}
                 </ion-label>
-                <ion-note slot="end">{{ status.statusDatetime ? formatDateTime(status.statusDatetime) : '-' }}</ion-note>
+                <ion-note slot="end">{{ event.statusDatetime ? formatDateTime(event.statusDatetime) : '-' }}</ion-note>
               </ion-item>
             </ion-list>
           </div>
         </section>
 
-        <section class="header" v-if="currentOrder.shipments?.length || (currentOrder?.receipts && Object.keys(currentOrder?.receipts)?.length)">
-          <ion-radio-group v-model="selectedShipmentId" @ionChange="generateItemsListByParent()">
-            <div class="info">
-              <ion-card v-if="getFilteredShipments('OUT_TRANSFER')?.length">
-                <ion-card-header>
-                  <ion-card-title>{{ translate("Fulfillment") }}</ion-card-title>
-                </ion-card-header>
-                <ion-item v-for="(shipment, index) in getFilteredShipments('OUT_TRANSFER')" :key="index">
-                  <ion-radio :value="shipment.shipmentId" label-placement="end" justify="start">
-                    <ion-label>
-                      {{ shipment.shipmentId }}
-                      <p v-if="shipment.trackingIdNumber">{{ shipment.trackingIdNumber }}</p>
-                    </ion-label>
-                  </ion-radio>
-                  <ion-badge slot="end" class="no-pointer-events" :color="STATUSCOLOR[shipment.shipmentStatusId] || 'medium'">{{ getStatusDesc(shipment.shipmentStatusId) }}</ion-badge>
-                </ion-item>
-              </ion-card>
-              
-              <ion-card v-if="currentOrder?.receipts && Object.keys(currentOrder.receipts)?.length">
-                <ion-card-header>
-                  <ion-card-title>{{ translate("Receipts") }}</ion-card-title>
-                </ion-card-header>
-                <ion-item v-for="datetimeReceived in getReceipts()" :key="datetimeReceived">
-                  <ion-radio :value="`receipt_${datetimeReceived}`" label-placement="end" justify="start">
-                    <ion-label>
-                      {{ translate("received at") }} 
-                      <p>{{ formatDateTime(Number(datetimeReceived)) }}</p>
-                    </ion-label>
-                  </ion-radio>
-                </ion-item>
-              </ion-card>
-            </div>
-          </ion-radio-group>
-          <div class="timeline" v-if="selectedShipmentId">
+        <section class="summary" v-if="currentOrder.originFacility || currentOrder.destinationFacility">
+          <ion-item lines="none">
+            <ion-label>
+              <h1>{{ translate("Summary") }}</h1>
+              <p>{{ statusFlowDesc }}</p>
+            </ion-label>
+          </ion-item>
+
+          <div class="info">
             <ion-card>
               <ion-card-header>
-                <ion-card-title>{{ getSelectedShipment()?.datetimeReceived ? translate("Receipt details") : translate("Shipment details") }}</ion-card-title>
-                <ion-button fill="clear" color="medium" @click="selectedShipmentId = ''; generateItemsListByParent()">
-                  <ion-icon :icon="closeCircleOutline" slot="icon-only" />
-                </ion-button>
+                <ion-card-title>{{ translate("Status") }}</ion-card-title>
               </ion-card-header>
-              <!-- For receipts only show received date -->
-              <template v-if="getSelectedShipment()?.datetimeReceived">
-                <ion-item>
-                  <ion-label>{{ translate("Received date") }}</ion-label>
-                  <ion-label slot="end">{{ formatDateTime(getSelectedShipment().datetimeReceived) }}</ion-label>
-                </ion-item>
-              </template>
-              <!-- For shipments -->
-              <template v-else>
-                <ion-item>
-                  <ion-label>{{ translate("Shipped date") }}</ion-label>
-                  <ion-label slot="end">{{ getSelectedShipment()?.shipmentShippedDate ? formatDateTime(getSelectedShipment().shipmentShippedDate) : "-" }}</ion-label>
-                </ion-item>
-                <ion-item>
-                  <ion-label>{{ translate("Method") }}</ion-label>
-                  <ion-label slot="end">{{ getSelectedShipment()?.routeSegShipmentMethodTypeId ? getShipmentMethodDesc(getSelectedShipment().routeSegShipmentMethodTypeId) : "-" }}</ion-label>
-                </ion-item>
-                <ion-item>
-                  <ion-label>{{ translate("Carrier") }}</ion-label>
-                  <ion-label slot="end">{{ getSelectedShipment()?.routeSegCarrierPartyId ? getCarrierDesc(getSelectedShipment().routeSegCarrierPartyId) : "-" }}</ion-label>
-                </ion-item>
-                <ion-item lines="none">
-                  <ion-label>{{ translate("Tracking code") }}</ion-label>
-                  <ion-label slot="end">{{ getSelectedShipment()?.trackingIdNumber ? getSelectedShipment().trackingIdNumber : "-" }}</ion-label>
-                </ion-item>
-              </template>
+              <ion-card-content>
+                <ion-chip :outline="selectedStatusFilter !== filter.value" v-for="filter in availableStatusFilters" :key="filter.value" @click="handleStatusFilterChange(filter.value)">
+                  <ion-label>{{ translate(filter.label) }} ({{ statusCounts[filter.value] || 0 }})</ion-label>
+                </ion-chip>
+              </ion-card-content>
+            </ion-card>
+
+            <ion-card v-if="discrepancySummary.total">
+              <ion-card-header>
+                <ion-card-title>{{ translate("Discrepancies") }}</ion-card-title>
+              </ion-card-header>
+              <ion-card-content>
+                <ion-chip :outline="selectedDiscrepancyFilter !== 'ALL'" @click="handleDiscrepancyFilterChange('ALL')">
+                  <ion-label>{{ translate("All") }} ({{ discrepancySummary.total }})</ion-label>
+                </ion-chip>
+                <ion-chip :outline="selectedDiscrepancyFilter !== 'UNDER_SHIPPED'" v-if="discrepancySummary.underShipped" @click="handleDiscrepancyFilterChange('UNDER_SHIPPED')">
+                  <ion-label>{{ translate("Under shipped") }} ({{ discrepancySummary.underShipped }})</ion-label>
+                </ion-chip>
+                <ion-chip :outline="selectedDiscrepancyFilter !== 'UNDER_RECEIVED'" v-if="discrepancySummary.underReceived" @click="handleDiscrepancyFilterChange('UNDER_RECEIVED')">
+                  <ion-label>{{ translate("Under received") }} ({{ discrepancySummary.underReceived }})</ion-label>
+                </ion-chip>
+                <ion-chip :outline="selectedDiscrepancyFilter !== 'OVER_RECEIVED'" v-if="discrepancySummary.overReceived" @click="handleDiscrepancyFilterChange('OVER_RECEIVED')">
+                  <ion-label>{{ translate("Over received") }} ({{ discrepancySummary.overReceived }})</ion-label>
+                </ion-chip>
+              </ion-card-content>
             </ion-card>
           </div>
         </section>
@@ -167,18 +144,18 @@
             <ion-icon slot="start" :icon="shirtOutline" />
             <ion-label>
               <h1>{{ translate("Items") }}</h1>
-              <p>{{ translate(selectedShipmentId ? "Showing items for selected shipment" : "Showing all order items") }}</p>
             </ion-label>
-            <ion-button size="default" fill="outline" color="medium" v-if="!selectedShipmentId" :disabled="currentOrder.statusId !== 'ORDER_CREATED'" @click="addProduct()">
+            <ion-button size="default" fill="outline" color="medium" :disabled="!OrderActionValidator.canAddItems(currentOrder).allowed" @click="addProduct()">
               {{ translate("Add item to transfer") }}
             </ion-button>
           </ion-item>
 
           <hr />
 
-          <template v-for="([parentProductId, items], index) in Object.entries(itemsByParentProductId)" :key="index">
-            <template v-if="items.length">
-              <div class="list-item product-header">
+          <template v-for="([parentProductId, items], index) in (Object.entries(itemsByParentProductId) as any)" :key="index">
+            <template v-if="(items as any).length">
+              <!-- Show parent product header only if there is more than one item -->
+              <div v-if="(items as any).length > 1" class="list-item product-header">
                 <ion-item lines="none">
                   <ion-thumbnail slot="start">
                     <Image :src="getProduct(items[0].productId)?.mainImageUrl" />
@@ -188,81 +165,70 @@
                     <p class="overline">{{ parentProductId }}</p>
                   </ion-label>
                 </ion-item>
-                <template v-if="selectedShipmentId">
-                  <div></div>
+                <div class="tablet ion-text-center">
                   <ion-label>
                     {{ parentProductInfoById[parentProductId]?.totalOrdered || 0 }}
-                    <p>{{ translate(getSelectedShipment()?.shipmentTypeId === "OUT_TRANSFER" ? "shipped" : "received") }}</p>
+                    <p>{{ translate("ordered") }}</p>
                   </ion-label>
-                  <div colspan="2"></div>
-                </template>
-                <template v-else>
-                  <div class="tablet ion-text-center">
-                    <ion-label>
-                      {{ parentProductInfoById[parentProductId]?.totalOrdered || 0 }}
-                      <p>{{ translate("ordered") }}</p>
-                    </ion-label>
-                  </div>
-                  <div class="tablet ion-text-center">
-                    <ion-label>
-                      {{ parentProductInfoById[parentProductId]?.totalShipped || 0 }}
-                      <p>{{ translate("shipped") }}</p>
-                    </ion-label>
-                  </div>
-                  <div class="ion-text-center ion-padding-end">
-                    <ion-label>
-                      {{ parentProductInfoById[parentProductId]?.totalReceived || 0 }}
-                      <p>{{ translate("received") }}</p>
-                    </ion-label>
-                  </div>
-                  <div class="ion-text-center ion-padding-end">
-                    <ion-label>
-                      {{ formatCurrency(parentProductInfoById[parentProductId]?.totalPrice, currentOrder.currencyUom) || "0.00" }}
-                    </ion-label>
-                  </div>
-                </template>
+                </div>
+                <div class="tablet ion-text-center">
+                  <ion-label>
+                    {{ parentProductInfoById[parentProductId]?.totalShipped || 0 }}
+                    <p>{{ translate("shipped") }}</p>
+                  </ion-label>
+                </div>
+                <div class="ion-text-center ion-padding-end">
+                  <ion-label>
+                    {{ parentProductInfoById[parentProductId]?.totalReceived || 0 }}
+                    <p>{{ translate("received") }}</p>
+                  </ion-label>
+                </div>
+                <div class="ion-text-center ion-padding-end">
+                  <ion-label>
+                    {{ formatCurrency(parentProductInfoById[parentProductId]?.totalPrice, currentOrder.currencyUom) || "0.00" }}
+                  </ion-label>
+                </div>
               </div>
 
-              <div class="list-item" v-for="(item, index) in items" :key="index">
+              <div class="list-item" v-for="(item, itemIndex) in (items as any)" :key="itemIndex">
                 <ion-item lines="none">
+                  <ion-thumbnail slot="start" v-if="(items as any).length === 1">
+                    <Image :src="getProduct(item.productId)?.mainImageUrl" />
+                  </ion-thumbnail>
                   <ion-label class="ion-text-wrap">
+                    <template v-if="(items as any).length === 1">
+                      <p class="overline">{{ parentProductInfoById[parentProductId]?.parentProductName }}</p>
+                    </template>
                     {{ getProductIdentificationValue(productIdentificationStore.getProductIdentificationPref.primaryId, getProduct(item.productId)) || getProduct(item.productId).productName }}
                     <p>{{ getProductIdentificationValue(productIdentificationStore.getProductIdentificationPref.secondaryId, getProduct(item.productId)) }}</p>
                   </ion-label>
                 </ion-item>
 
-                <template v-if="selectedShipmentId">
-                  <div></div>
-                  <div class="tablet ion-text-center">
-                    <ion-chip outline>
-                      <ion-icon :icon="getSelectedShipment()?.shipmentTypeId === 'OUT_TRANSFER' ? sendOutline : downloadOutline" />
-                      <ion-label>{{ item.quantity || 0 }}</ion-label>
-                    </ion-chip>
-                  </div>
-                  <div></div>
-                </template>
-                <template v-else>
-                  <div class="tablet ion-text-center">
-                    <ion-label>
-                      {{ item.quantity || 0 }}
-                      <p>{{ translate("ordered") }}</p>
-                    </ion-label>
-                  </div>
-                  <div class="tablet ion-text-center">
-                    <ion-chip outline>
-                      <ion-icon :icon="sendOutline" />
-                      <ion-label>{{ item.shippedQty || 0 }}</ion-label>
-                    </ion-chip>
-                  </div>
-                  <div class="tablet ion-text-center">
-                    <ion-chip outline>
-                      <ion-icon :icon="downloadOutline" />
-                      <ion-label>{{ item.receivedQty || 0 }}</ion-label>
-                    </ion-chip>
-                  </div>
-                  <ion-badge :color="STATUSCOLOR[item.statusId] || 'medium'">{{ getStatusDesc(item.statusId) }}</ion-badge>
-                </template>
-                <ion-button slot="end" fill="clear" color="medium" :disabled="isOrderFinished(item)" @click="openOrderItemDetailActionsPopover($event, item)">
+                <div class="tablet ion-text-center">
+                  <ion-label>
+                    {{ item.quantity || 0 }}
+                    <p>{{ translate("ordered") }}</p>
+                  </ion-label>
+                </div>
+                <div class="tablet ion-text-center">
+                  <ion-chip outline>
+                    <ion-icon :icon="sendOutline" />
+                    <ion-label>{{ item.shippedQty || 0 }}</ion-label>
+                  </ion-chip>
+                </div>
+                <div class="tablet ion-text-center">
+                  <ion-chip outline>
+                    <ion-icon :icon="downloadOutline" />
+                    <ion-label>{{ item.receivedQty || 0 }}</ion-label>
+                  </ion-chip>
+                </div>
+                <div> 
+                  <ion-badge :color="(STATUSCOLOR as any)[item.statusId] || 'medium'">{{ getStatusDesc(item.statusId) }}</ion-badge>
+                  <ion-badge color="warning" v-if="isUnderShipped(item)" :title="translate('Under shipped')">{{ translate("Under shipped") }}</ion-badge>
+                  <ion-badge color="danger" v-if="isUnderReceived(item)" :title="translate('Under received')">{{ translate("Under received") }}</ion-badge>
+                  <ion-badge color="primary" v-if="isOverReceived(item)" :title="translate('Over received')">{{ translate("Over received") }}</ion-badge>
+                </div>
+                <ion-button fill="clear" color="medium" :disabled="!OrderActionValidator.getItemActions(currentOrder, item).length" @click="openOrderItemDetailActionsPopover($event, item)">
                   <ion-icon :icon="ellipsisVerticalOutline" slot="icon-only" />
                 </ion-button>
               </div>
@@ -276,14 +242,15 @@
 </template>
 
 <script setup lang="ts">
-import { IonBackButton,IonBadge, IonButton, IonCard, IonCardHeader, IonCardTitle, IonChip, IonContent, IonHeader, IonIcon, IonItem, IonLabel, IonList, IonNote, IonPage, IonRadio, IonRadioGroup, IonSelect, IonSelectOption, IonSpinner, IonThumbnail, IonTitle, IonToolbar, onIonViewWillEnter, alertController, modalController, popoverController } from "@ionic/vue";
+import { IonBackButton,IonBadge, IonButton, IonCard, IonCardContent, IonCardHeader, IonCardTitle, IonChip, IonContent, IonHeader, IonIcon, IonItem, IonLabel, IonList, IonNote, IonPage, IonSegment, IonSegmentButton, IonSelect, IonSelectOption, IonSpinner, IonThumbnail, IonTitle, IonToolbar, onIonViewWillEnter, alertController, modalController, popoverController } from "@ionic/vue";
 import { getProductIdentificationValue, translate, useProductIdentificationStore } from '@hotwax/dxp-components';
 import { ellipsisVerticalOutline, ticketOutline, downloadOutline, sendOutline, shirtOutline, informationCircleOutline, closeCircleOutline } from "ionicons/icons";
 import Image from "@/components/Image.vue";
 import OrderItemDetailActionsPopover from '@/components/OrderItemDetailActionsPopover.vue';
+import ShipmentDetailModal from '@/components/ShipmentDetailModal.vue';
 import AddProductModal from "@/components/AddProductModal.vue"
 import { useOrderQueue } from '@/composables/useProductQueue';
-import { computed, defineProps, ref } from "vue";
+import { computed, ref } from "vue";
 import { useStore } from "vuex";
 import logger from "@/logger";
 import { OrderService } from "@/services/OrderService";
@@ -292,6 +259,7 @@ import { DateTime } from "luxon";
 import { showToast } from "@/utils";
 import emitter from "@/event-bus";
 import { formatCurrency } from "@/utils";
+import { OrderActionValidator, OrderHeaderAction } from "@/utils/OrderActionValidator";
 
 const store = useStore();
 const productIdentificationStore = useProductIdentificationStore();
@@ -311,28 +279,113 @@ const isOrderStatusUpdateDisabled = computed(() => {
 });
 
 const isFetchingOrderDetail = ref(false);
-const selectedShipmentId = ref("");
+
 const itemsByParentProductId = ref({}) as any;
 const parentProductInfoById = ref({}) as any;
 const orderTimeline = ref([]) as any;
-const carrierMethods = ref([])
-const selectRef = ref("") as any;
+const carrierMethods = ref([]) as any;
 const isUpdatingOrderStatus = ref(false);
+const selectedStatusFilter = ref("ALL");
+const selectedDiscrepancyFilter = ref("ALL");
+
+const isExcluded = (item: any) => currentOrder.value?.statusId === "ORDER_CANCELLED" || item.statusId === "ITEM_CANCELLED";
+const isReceiptFinished = (item: any) => item.statusId === "ITEM_COMPLETED";
+
+const isUnderShipped = (item: any) => !isExcluded(item) && item.cancelQuantity > 0;
+const isUnderReceived = (item: any) => !isExcluded(item) && isReceiptFinished(item) && (item.receivedQty || 0) < (item.shippedQty || 0);
+const isOverReceived = (item: any) => !isExcluded(item) && (item.receivedQty || 0) > (item.shippedQty || 0);
+
+const availableStatusFilters = computed(() => {
+  const flow = currentOrder.value?.statusFlowId;
+  const filters = [{ label: "All", value: "ALL" }];
+  if (flow === "TO_Fulfill_Only" || flow === "TO_Fulfill_And_Receive") {
+    filters.push({ label: "Pending fulfillment", value: "PENDING_FULFILLMENT" });
+  }
+  if (flow === "TO_Receive_Only" || flow === "TO_Fulfill_And_Receive") {
+    filters.push({ label: "Pending receipt", value: "PENDING_RECEIPT" });
+  }
+  filters.push({ label: "Completed", value: "COMPLETED" });
+  return filters;
+});
+
+const statusCounts = computed(() => {
+  const counts = { ALL: 0 } as any;
+  currentOrder.value.items?.forEach((item: any) => {
+    counts.ALL++;
+    const status = item.statusId;
+    if (["ITEM_CREATED", "ITEM_PENDING_FULFILL"].includes(status)) {
+      counts.PENDING_FULFILLMENT = (counts.PENDING_FULFILLMENT || 0) + 1;
+    } else if (["ITEM_APPROVED", "ITEM_PENDING_RECEIPT"].includes(status)) {
+      counts.PENDING_RECEIPT = (counts.PENDING_RECEIPT || 0) + 1;
+    } else if (status === "ITEM_COMPLETED") {
+      counts.COMPLETED = (counts.COMPLETED || 0) + 1;
+    }
+  });
+  return counts;
+});
+
+const discrepancySummary = computed(() => {
+  const summary = { total: 0, underShipped: 0, underReceived: 0, overReceived: 0 };
+  currentOrder.value.items?.forEach((item: any) => {
+    let hasDiscrepancy = false;
+    if (isUnderShipped(item)) {
+      summary.underShipped++;
+      hasDiscrepancy = true;
+    }
+    if (isUnderReceived(item)) {
+      summary.underReceived++;
+      hasDiscrepancy = true;
+    }
+    if (isOverReceived(item)) {
+      summary.overReceived++;
+      hasDiscrepancy = true;
+    }
+    if (hasDiscrepancy) summary.total++;
+  });
+  return summary;
+});
+
+const statusFlowDesc = computed(() => {
+  const flow = currentOrder.value?.statusFlowId;
+  switch (flow) {
+    case "TO_Fulfill_And_Receive":
+      return translate("This transfer order is for fulfill and receive.");
+    case "TO_Fulfill_Only":
+      return translate("This transfer order is for fulfill only.");
+    case "TO_Receive_Only":
+      return translate("This transfer order is for receiving only.");
+    default:
+      return "";
+  }
+})
+
+function handleStatusFilterChange(value: string) {
+  selectedStatusFilter.value = value;
+  selectedDiscrepancyFilter.value = "ALL";
+  generateItemsListByParent();
+}
+
+function handleDiscrepancyFilterChange(value: string) {
+  selectedDiscrepancyFilter.value = value;
+  selectedStatusFilter.value = "ALL";
+  generateItemsListByParent();
+}
 
 onIonViewWillEnter(async () => {
   isFetchingOrderDetail.value = true;
   await store.dispatch("order/fetchOrderDetails", props.orderId)
-  await Promise.allSettled([store.dispatch("util/fetchFacilitiesByCurrentStore", currentOrder.value.productStoreId), store.dispatch('util/fetchStatusDesc'), store.dispatch("util/fetchCarriersDetail"), fetchOrderStatusHistoryTimeline(), store.dispatch("util/fetchShipmentMethodTypeDesc")])
+  await Promise.allSettled([store.dispatch('util/fetchStatusDesc'), store.dispatch("util/fetchCarriersDetail"), fetchOrderTimeline(), store.dispatch("util/fetchShipmentMethodTypeDesc")])
   generateItemsListByParent();
   isFetchingOrderDetail.value = false;
   carrierMethods.value = shipmentMethodsByCarrier.value[currentOrder.value.carrierPartyId]
 })
 
-function getReceipts(): string[] {
-  if (!currentOrder.value?.receipts) return [];
-
-  return Object.keys(currentOrder.value.receipts)
-    .sort((a, b) => Number(b) - Number(a)); // returns sorted strings
+function handleHeaderAction(action: OrderHeaderAction) {
+  if (action.handler === 'changeOrderStatus') {
+    changeOrderStatus(action.statusId);
+  } else {
+    updateOrderStatus(action.statusId);
+  }
 }
 
 async function changeOrderStatus(updatedStatusId: string) {
@@ -346,10 +399,7 @@ async function changeOrderStatus(updatedStatusId: string) {
     message: translate("Cancelation cannot be reverted. Are you sure you want to cancel this transfer order?"),
     buttons: [{
       text: translate("Dismiss"),
-      role: "cancel",
-      handler: () => {
-        selectRef.value.$el.value = currentOrder.value.statusId;
-      }
+      role: "cancel"
     }, {
       text: translate("Cancel"),
       handler: () => {
@@ -380,7 +430,7 @@ async function updateOrderStatus(updatedStatusId: string) {
       showToast(translate("Order status updated successfully."))
       await Promise.all([
         store.dispatch("order/fetchOrderDetails", props.orderId),
-        fetchOrderStatusHistoryTimeline()
+        fetchOrderTimeline()
       ]);
       generateItemsListByParent();
     } else {
@@ -391,7 +441,6 @@ async function updateOrderStatus(updatedStatusId: string) {
     // Show the actual error message from API response
     const errorMessage = error?.response?.data?.errors || translate("Failed to update order status.");
     showToast(errorMessage)
-    selectRef.value.$el.value = currentOrder.value
   } finally {
     isUpdatingOrderStatus.value = false;
   }
@@ -399,22 +448,23 @@ async function updateOrderStatus(updatedStatusId: string) {
 
 function generateItemsListByParent() {
   const itemsById = {} as any;
+  const itemsList = currentOrder.value.items || [];
 
-  let itemsList = [];
-  if(selectedShipmentId.value) {
-    if (selectedShipmentId.value.startsWith("receipt_")) {
-      const datetimeReceived = selectedShipmentId.value.replace(/^receipt_/, "");
-      itemsList = currentOrder.value.receipts[datetimeReceived]
-    } else {
-      const shipment = currentOrder.value.shipments.find((shipment: any) => shipment.shipmentId === selectedShipmentId.value);
-      // Flatten all items from all packages into a single array
-      itemsList = shipment?.packages.flatMap((pkg: any) => pkg.items || [])
+  const filteredItems = itemsList.filter((item: any) => {
+    if (selectedStatusFilter.value !== "ALL") {
+      if (selectedStatusFilter.value === "PENDING_FULFILLMENT") return ["ITEM_CREATED", "ITEM_PENDING_FULFILL"].includes(item.statusId);
+      if (selectedStatusFilter.value === "PENDING_RECEIPT") return ["ITEM_APPROVED", "ITEM_PENDING_RECEIPT"].includes(item.statusId);
+      if (selectedStatusFilter.value === "COMPLETED") return item.statusId === "ITEM_COMPLETED";
     }
-  } else {
-    itemsList = currentOrder.value.items
-  }
+    if (selectedDiscrepancyFilter.value !== "ALL") {
+      if (selectedDiscrepancyFilter.value === "UNDER_SHIPPED") return isUnderShipped(item);
+      if (selectedDiscrepancyFilter.value === "UNDER_RECEIVED") return isUnderReceived(item);
+      if (selectedDiscrepancyFilter.value === "OVER_RECEIVED") return isOverReceived(item);
+    }
+    return true;
+  });
 
-  itemsList?.map((item: any) => {
+  filteredItems?.map((item: any) => {
     const product = getProduct.value(item.productId)
     if(itemsById[product.groupId]) {
       itemsById[product.groupId].push(item)
@@ -424,7 +474,7 @@ function generateItemsListByParent() {
     parentProductInfoById.value[product.groupId] = { parentProductName: product.parentProductName }
   })
 
-  Object.entries(itemsById).map(([groupId, items], index) => {
+  Object.entries(itemsById).map(([groupId, items]: [string, any]) => {
     let totalOrdered = 0, totalReceived = 0, totalShipped = 0, totalPrice = 0;
     items.map((item: any) => {
       if(item.quantity) totalOrdered = totalOrdered + item.quantity
@@ -444,6 +494,8 @@ function generateItemsListByParent() {
   itemsByParentProductId.value = itemsById
 }
 
+
+
 function isOrderFinished(item?: any) {
   const order = currentOrder.value;
   const excludedOrderStatuses = ["ORDER_COMPLETED", "ORDER_REJECTED", "ORDER_CANCELLED"];
@@ -458,30 +510,13 @@ function isOrderFinished(item?: any) {
   return false;
 }
 
-function getFilteredShipments(shipmentTypeId: string) {
-  return currentOrder.value.shipments?.filter((shipment: any) => shipment.shipmentTypeId === shipmentTypeId); 
-}
 
-// Returns shipment data for selected shipment ID or creates receipt data structure for receipt selections
-function getSelectedShipment() {
-  if (selectedShipmentId.value.startsWith("receipt_")) {
-    const datetimeReceived = selectedShipmentId.value.replace(/^receipt_/, "");
-    return {
-      datetimeReceived: Number(datetimeReceived),
-    };
-  }
-  
-  return currentOrder.value.shipments.find((shipment: any) => shipment.shipmentId === selectedShipmentId.value);
-}
 
 function getFacilityName(facilityId: string) {
   const facility = facilities.value?.find((facility: any) => facility.facilityId === facilityId)
   return facility ? facility.facilityName || facility.facilityId : facilityId
 }
 
-function isAnyItemShipped(order: any) {
-  return order?.items?.some((item: any) => (item.totalIssuedQuantity || 0) > 0)
-}
 
 async function updateCarrierAndShipmentMethod(event: any, carrierPartyId: any, shipmentMethodTypeId: any) {
   carrierMethods.value = shipmentMethodsByCarrier.value[carrierPartyId]
@@ -528,6 +563,79 @@ async function addProduct() {
   await addProductModal.present();
 }
 
+async function fetchOrderTimeline() {
+  let timeline = [] as any;
+  try {
+    const resp = await OrderService.fetchOrderStatusHistory({
+      inputFields: {
+        orderId: props.orderId,
+        orderItemSeqId_op: "empty"
+      },
+      entityName: "OrderStatus",
+      viewSize: "100",
+      sortBy: 'statusDatetime ASC',
+      fieldList: ["statusId", "statusDatetime"]
+    })
+    if(!hasError(resp)) {
+      timeline = resp.data.docs || [];
+
+      // Add shipments to timeline
+      const shipments = currentOrder.value.shipments || [];
+      shipments.forEach((shipment: any) => {
+        timeline.push({
+          ...shipment,
+          statusDatetime: Number(shipment.statusDate),
+          eventType: 'SHIPMENT',
+          statusDesc: translate('Shipped'), // explicitly set description
+          carrierDesc: getCarrierDesc.value(shipment.routeSegCarrierPartyId),
+          shipmentMethodDesc: getShipmentMethodDesc.value(shipment.routeSegShipmentMethodTypeId)
+        });
+      });
+
+      // Add receipts to timeline
+      const receipts = currentOrder.value.receipts || {};
+      Object.keys(receipts).forEach((datetimeReceived: any) => {
+        timeline.push({
+          statusDatetime: Number(datetimeReceived),
+          eventType: 'RECEIPT',
+          statusDesc: translate('Receipt') // explicitly set description
+        });
+      });
+
+      // Sort timeline chronologically
+      timeline.sort((a: any, b: any) => (a.statusDatetime || 0) - (b.statusDatetime || 0));
+
+      const firstStatus = timeline.find((event: any) => event.statusId);
+      const baseTime = firstStatus ? firstStatus.statusDatetime : null;
+
+      timeline.forEach((event: any, index: number) => {
+        if (baseTime && event.statusDatetime && event !== firstStatus) {
+          event["timeDiff"] = findTimeDiff(baseTime, event.statusDatetime);
+        }
+      });
+    } else {
+      throw resp.data;
+    }
+  } catch(error: any) {
+    logger.error(error);
+  }
+  orderTimeline.value = timeline
+}
+
+async function viewEventDetails(event: any) {
+  if (!event.eventType) return;
+
+  const modal = await modalController.create({
+    component: ShipmentDetailModal,
+    componentProps: {
+      event,
+      isReceipt: event.eventType === 'RECEIPT'
+    }
+  });
+
+  await modal.present();
+}
+
 async function openOrderItemDetailActionsPopover(event: any, item: any){
   const popover = await popoverController.create({
     component: OrderItemDetailActionsPopover,
@@ -541,36 +649,6 @@ async function openOrderItemDetailActionsPopover(event: any, item: any){
   })
 
   await popover.present();
-}
-
-async function fetchOrderStatusHistoryTimeline() {
-  let timeline = [] as any;
-  try {
-    const resp = await OrderService.fetchOrderStatusHistory({
-      inputFields: {
-        orderId: props.orderId,
-        orderItemSeqId_op: "empty"
-      },
-      entityName: "OrderStatus",
-      viewSize: "100",
-      sortBy: 'statusDatetime ASC',
-      fieldList: ["statusId", "statusDatetime"]
-    })
-    if(!hasError(resp) && resp.data.docs?.length) {
-      timeline = resp.data.docs
-
-      timeline.map((status: any, index: number) => {
-        if(index > 0) {
-          status["timeDiff"] = findTimeDiff(timeline[0].statusDatetime, status.statusDatetime)
-        }
-      })
-    } else {
-      throw resp.data;
-    }
-  } catch(error: any) {
-    logger.error(error);
-  }
-  orderTimeline.value = timeline
 }
 
 function findTimeDiff(startTime: any, endTime: any) {
@@ -639,6 +717,18 @@ ion-card-header {
           "cards timeline" 1fr
           / 1fr 500px;
     justify-content: space-between;  
+  }
+
+  .summary .details {
+    display: flex;
+  }
+
+  .summary .info {
+    flex: 1;
+  }
+
+  .summary .related-details {
+    flex-basis: 343px;
   }
 }
 </style>
