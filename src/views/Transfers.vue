@@ -67,6 +67,12 @@
               </ion-select>
             </ion-item>
             <ion-item lines="none">
+              <ion-select :label="translate('Type')" interface="popover" :value="query.statusFlowId" @ionChange="updateAppliedFilters($event['detail'].value, 'statusFlowId')">
+                <ion-select-option value="">{{ translate("All") }}</ion-select-option>
+                <ion-select-option v-for="flow in statusFlows" :key="flow.statusFlowId" :value="flow.statusFlowId">{{ translate(flow.description) }}</ion-select-option>
+              </ion-select>
+            </ion-item>
+            <ion-item lines="none">
               <ion-select :label="translate('Status')" interface="popover" :value="query.orderStatusId" @ionChange="updateAppliedFilters($event['detail'].value, 'orderStatusId')">
                 <ion-select-option value="">{{ translate("All") }}</ion-select-option>
                 <ion-select-option v-for="statusId in orderStatusIds" :key="statusId" :value="statusId">{{ getStatusDesc(statusId) }}</ion-select-option>
@@ -381,6 +387,20 @@ const isFetchingOrders = ref(false);
 const productStores = ref({}) as any;
 const facilities = ref([]) as any;
 const orderStatusIds = ["ORDER_APPROVED", "ORDER_CANCELLED", "ORDER_COMPLETED", "ORDER_CREATED"];
+const statusFlows = [
+  {
+    statusFlowId: "TO_Fulfill_And_Receive",
+    description: "Fulfill & Receive"
+  },
+  {
+    statusFlowId: "TO_Fulfill_Only",
+    description: "Fulfill only"
+  },
+  {
+    statusFlowId: "TO_Receive_Only",
+    description: "Receive only"
+  }
+]
 
 const query = computed(() => store.getters["order/getQuery"])
 const getProduct = computed(() => store.getters["product/getProduct"])
@@ -392,8 +412,8 @@ const carriersList = computed(() => store.getters["util/getCarriers"])
 const isScrollable = computed(() => store.getters["order/isScrollable"])
 
 const isAnyFilterApplied = computed(() => {
-  const { orderName, productStoreId, facilityId, orderFacilityId, orderStatusId, carrierPartyId, shipmentMethodTypeId } = query.value;
-  return !!(orderName || productStoreId || facilityId || orderFacilityId || orderStatusId || carrierPartyId || shipmentMethodTypeId);
+  const { orderName, productStoreId, facilityId, orderFacilityId, orderStatusId, carrierPartyId, shipmentMethodTypeId, statusFlowId } = query.value;
+  return !!(orderName || productStoreId || facilityId || orderFacilityId || orderStatusId || carrierPartyId || shipmentMethodTypeId || statusFlowId);
 })
 
 onIonViewWillEnter(async () => {

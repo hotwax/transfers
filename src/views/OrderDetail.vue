@@ -144,14 +144,11 @@
 
         <section class="ion-margin-top">
           <ion-item lines="none">
-            <ion-checkbox slot="start" :indeterminate="isIndeterminate" :checked="isAllSelected" @click.prevent="toggleSelectAll()"></ion-checkbox>
+            <ion-checkbox slot="start" :indeterminate="isIndeterminate" :checked="isAllSelected" @ionChange="toggleSelectAll($event)"></ion-checkbox>
             <ion-icon slot="start" :icon="shirtOutline" />
             <ion-label>
               <h1>{{ translate("Items") }}</h1>
             </ion-label>
-            <ion-button size="default" fill="outline" color="medium" :disabled="!OrderActionValidator.canAddItems(currentOrder).allowed" @click="addProduct()">
-              {{ translate("Add item to transfer") }}
-            </ion-button>
           </ion-item>
 
           <hr />
@@ -253,20 +250,16 @@
         </section>
       </main>
     </ion-content>
-    <ion-footer v-if="selectedItemSeqIds.size">
+    <ion-footer>
       <ion-toolbar>
         <ion-item lines="none">
-          <ion-label>
+          <ion-label v-if="selectedItemSeqIds.size">
             {{ selectedItemSeqIds.size }} {{ translate("items selected") }}
           </ion-label>
           <ion-buttons slot="end">
-            <ion-button fill="outline" color="primary" @click="openBulkActionModal('FULFILL')">
-              <ion-icon :icon="playOutline" slot="start" />
-              {{ translate("Bulk Fulfill") }}
-            </ion-button>
-            <ion-button fill="outline" color="primary" @click="openBulkActionModal('RECEIVE')">
-              <ion-icon :icon="checkmarkDoneOutline" slot="start" />
-              {{ translate("Bulk Receive") }}
+            <ion-button v-for="action in OrderActionValidator.getFooterActions(currentOrder, selectedItemSeqIds.size)" :key="action.id" fill="outline" :color="action.color || 'primary'" :disabled="!action.validation.allowed" @click="handleFooterAction(action)">
+              <ion-icon :icon="getIcon(action.icon)" slot="start" v-if="action.icon" />
+              {{ translate(action.label) }}
             </ion-button>
           </ion-buttons>
         </ion-item>
@@ -295,7 +288,7 @@ import { DateTime } from "luxon";
 import { showToast } from "@/utils";
 import emitter from "@/event-bus";
 import { formatCurrency } from "@/utils";
-import { OrderActionValidator, OrderHeaderAction } from "@/utils/OrderActionValidator";
+import { OrderActionValidator, OrderHeaderAction, OrderFooterAction } from "@/utils/OrderActionValidator";
 import ProgressBar from "@/components/ProgressBar.vue";
 import { DynamicScroller, DynamicScrollerItem } from 'vue-virtual-scroller';
 
@@ -309,18 +302,12 @@ const getStatusDesc = computed(() => store.getters["util/getStatusDesc"])
 const selectedItemSeqIds = ref(new Set())
 
 const isAllSelected = computed(() => {
-  const selectAllValidItems = currentOrder.value?.items ? currentOrder.value.items.filter((item: any) => 
-    OrderActionValidator.validateItemAction(currentOrder.value, item, 'FULFILL').allowed || 
-    OrderActionValidator.validateItemAction(currentOrder.value, item, 'RECEIVE').allowed
-  ) : [];
+  const selectAllValidItems = OrderActionValidator.getBulkSelectableItems(currentOrder.value);
   return selectAllValidItems.length > 0 && selectedItemSeqIds.value.size === selectAllValidItems.length;
 })
 
 const isIndeterminate = computed(() => {
-  const selectAllValidItems = currentOrder.value?.items ? currentOrder.value.items.filter((item: any) => 
-    OrderActionValidator.validateItemAction(currentOrder.value, item, 'FULFILL').allowed || 
-    OrderActionValidator.validateItemAction(currentOrder.value, item, 'RECEIVE').allowed
-  ) : [];
+  const selectAllValidItems = OrderActionValidator.getBulkSelectableItems(currentOrder.value);
   return selectedItemSeqIds.value.size > 0 && selectedItemSeqIds.value.size < selectAllValidItems.length;
 })
 
@@ -334,16 +321,38 @@ function toggleSelectedItem(itemSeqId: string) {
   selectedItemSeqIds.value = newSet;
 }
 
-function toggleSelectAll() {
-  if (isAllSelected.value) {
+function toggleSelectAll(event: any) {
+  const isChecked = event.detail.checked;
+  if (!isChecked) {
     selectedItemSeqIds.value = new Set();
   } else {
-    const selectAllValidItems = currentOrder.value?.items ? currentOrder.value.items.filter((item: any) => 
-      OrderActionValidator.validateItemAction(currentOrder.value, item, 'FULFILL').allowed || 
-      OrderActionValidator.validateItemAction(currentOrder.value, item, 'RECEIVE').allowed
-    ) : [];
+    const selectAllValidItems = OrderActionValidator.getBulkSelectableItems(currentOrder.value);
     selectedItemSeqIds.value = new Set(selectAllValidItems.map((item: any) => item.orderItemSeqId));
   }
+}
+
+async function handleFooterAction(action: OrderFooterAction) {
+  switch (action.id) {
+    case 'ADD_ITEMS':
+      addProduct();
+      break;
+    case 'CANCEL':
+      changeOrderStatus('ORDER_CANCELLED');
+      break;
+    case 'BULK_RECEIVE':
+      openBulkActionModal('RECEIVE');
+      break;
+  }
+}
+
+function getIcon(iconName: string) {
+  const icons = {
+    shirtOutline,
+    closeCircleOutline,
+    playOutline,
+    checkmarkDoneOutline
+  } as any;
+  return icons[iconName];
 }
 
 async function openBulkActionModal(actionType: string) {
@@ -363,7 +372,7 @@ async function openBulkActionModal(actionType: string) {
 
   bulkActionModal.onDidDismiss().then((result) => {
     if (result.data?.isCompleted) {
-      selectedItemSeqIds.value.clear();
+      selectedItemSeqIds.value = new Set();
       store.dispatch("order/fetchOrderDetails", props.orderId);
     }
   });

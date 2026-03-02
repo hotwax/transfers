@@ -1,5 +1,6 @@
-export type OrderHeaderActionId = 'APPROVE' | 'CANCEL';
+export type OrderHeaderActionId = 'APPROVE';
 export type OrderItemActionId = 'EDIT' | 'REMOVE' | 'FULFILL' | 'RECEIVE' | 'CLOSE_FULFILLMENT' | 'APPROVE' | 'CANCEL';
+export type OrderFooterActionId = 'ADD_ITEMS' | 'CANCEL' | 'BULK_RECEIVE';
 
 export interface ActionValidationResult {
   allowed: boolean;
@@ -22,6 +23,14 @@ export interface OrderItemAction {
   validation: ActionValidationResult;
 }
 
+export interface OrderFooterAction {
+  id: OrderFooterActionId;
+  label: string;
+  color?: string;
+  icon?: string;
+  validation: ActionValidationResult;
+}
+
 export const OrderActionValidator = {
   /**
    * VALIDATION MODE: Validates a specific header action.
@@ -31,6 +40,22 @@ export const OrderActionValidator = {
       case 'APPROVE':
         if (order.statusId !== 'ORDER_CREATED') {
           return { allowed: false, reason: 'Order must be in Created status to be approved.' };
+        }
+        return { allowed: true };
+
+      default:
+        return { allowed: false, reason: 'Unknown action.' };
+    }
+  },
+
+  /**
+   * VALIDATION MODE: Validates a specific footer action.
+   */
+  validateFooterAction(order: any, actionId: OrderFooterActionId, selectedItemCount: number): ActionValidationResult {
+    switch (actionId) {
+      case 'ADD_ITEMS':
+        if (order.statusId !== 'ORDER_CREATED') {
+          return { allowed: false, reason: 'Items can only be added while the order is in Created status.' };
         }
         return { allowed: true };
 
@@ -52,6 +77,11 @@ export const OrderActionValidator = {
             return { allowed: false, reason: 'Cannot cancel order once inventory has been impacted (packed or shipped).' };
           }
         }
+        return { allowed: true };
+
+      case 'BULK_RECEIVE':
+        if (selectedItemCount === 0) return { allowed: false, reason: 'No items selected.' };
+        if (order.statusId !== 'ORDER_APPROVED') return { allowed: false, reason: 'Order must be Approved.' };
         return { allowed: true };
 
       default:
@@ -124,17 +154,43 @@ export const OrderActionValidator = {
         statusId: 'ORDER_APPROVED'
       });
     }
-    if (['ORDER_CREATED', 'ORDER_APPROVED'].includes(order.statusId)) {
+    return actions.filter(action => action.validation.allowed);
+  },
+
+  /**
+   * DISCOVERY MODE: Returns all available footer actions.
+   */
+  getFooterActions(order: any, selectedItemCount: number): OrderFooterAction[] {
+    const actions: OrderFooterAction[] = [];
+    
+    // Always add these actions, they will be enabled/disabled via validation
+    actions.push({
+      id: 'ADD_ITEMS',
+      label: 'Add items',
+      icon: 'shirtOutline',
+      validation: this.validateFooterAction(order, 'ADD_ITEMS', selectedItemCount)
+    });
+
+    actions.push({
+      id: 'CANCEL',
+      label: 'Cancel',
+      color: 'danger',
+      icon: 'closeCircleOutline',
+      validation: this.validateFooterAction(order, 'CANCEL', selectedItemCount)
+    });
+
+    const flow = order.statusFlowId;
+
+    if (flow === 'TO_Receive_Only' || flow === 'TO_Fulfill_And_Receive') {
       actions.push({
-        id: 'CANCEL',
-        label: 'Cancel',
-        color: 'danger',
-        validation: this.validateHeaderAction(order, 'CANCEL'),
-        handler: 'changeOrderStatus',
-        statusId: 'ORDER_CANCELLED'
+        id: 'BULK_RECEIVE',
+        label: 'Bulk Receive',
+        icon: 'checkmarkDoneOutline',
+        validation: this.validateFooterAction(order, 'BULK_RECEIVE', selectedItemCount)
       });
     }
-    return actions.filter(action => action.validation.allowed);
+
+    return actions;
   },
 
   /**
@@ -186,11 +242,12 @@ export const OrderActionValidator = {
     return actions.filter(action => action.validation.allowed);
   },
 
-  // Legacy/Helper methods (can be removed later if not used directly)
-  canAddItems(order: any): ActionValidationResult {
-    if (order.statusId !== 'ORDER_CREATED') {
-      return { allowed: false, reason: 'Items can only be added while the order is in Created status.' };
-    }
-    return { allowed: true };
+  /**
+   * BULK HELPER: Returns items that are valid for either FULFILL or RECEIVE.
+   */
+  getBulkSelectableItems(order: any): any[] {
+    return (order?.items || []).filter((item: any) => 
+      this.validateItemAction(order, item, 'RECEIVE').allowed
+    );
   }
 };

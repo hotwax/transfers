@@ -167,7 +167,9 @@ async function closeFulfillment() {
         try {
           const resp = await OrderService.closeFulfillment({
             orderId: currentOrder.value.orderId,
-            orderItemSeqId: props.item.orderItemSeqId
+            items: [{
+              orderItemSeqId: props.item.orderItemSeqId
+            }]
           })
 
           if (!hasError(resp)) {
