@@ -356,7 +356,7 @@ async function handleFooterAction(action: OrderFooterAction) {
 function getFooterActionLabel(action: any) {
   if (action.id === 'CANCEL') {
     if (selectedItemSeqIds.value.size > 0 && !isAllSelected.value) {
-      return translate("Close @size items", { size: selectedItemSeqIds.value.size });
+      return translate("Close @size items", { size: selectedItemSeqIds.value.size }).replace('@size', String(selectedItemSeqIds.value.size))
     }
     return translate("Close order");
   }
