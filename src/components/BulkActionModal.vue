@@ -16,7 +16,13 @@
         <ion-item lines="none">
           <ion-label class="ion-text-wrap">
             <h1>{{ translate("Confirm Action") }}</h1>
-            <p>{{ translate("You are about to perform bulk action for") }} {{ items.length }} {{ translate("items.") }}</p>
+            <p>{{ translate("You are about to perform bulk action for") }} {{ itemsToProcess.length }} {{ translate("items.") }}</p>
+          </ion-label>
+        </ion-item>
+        <ion-item v-if="pendingFulfillmentItemsCount > 0" lines="none" class="ion-margin-top" style="--background: var(--ion-color-warning-tint); --border-radius: 8px;">
+          <ion-icon :icon="informationCircleOutline" slot="start" color="warning" />
+          <ion-label class="ion-text-wrap">
+            <p>{{ pendingFulfillmentItemsCount }} {{ translate("items are pending fulfillment and will be skipped in this bulk action.") }}</p>
           </ion-label>
         </ion-item>
       </ion-list>
@@ -32,7 +38,7 @@
       <div class="ion-padding">
         <ion-label>
           <h1>{{ translate("Processing") }}...</h1>
-          <p>{{ translate("Completed") }} {{ completedItemsCount }} / {{ items.length }}</p>
+          <p>{{ translate("Completed") }} {{ completedItemsCount }} / {{ itemsToProcess.length }}</p>
         </ion-label>
       </div>
       
@@ -81,9 +87,10 @@ import {
   modalController 
 } from "@ionic/vue";
 import { ref, computed } from "vue";
-import { checkmarkCircleOutline, closeOutline } from "ionicons/icons";
+import { checkmarkCircleOutline, closeOutline, informationCircleOutline } from "ionicons/icons";
 import { translate } from "@hotwax/dxp-components";
 import { OrderService } from "@/services/OrderService";
+import { OrderActionValidator } from "@/utils/OrderActionValidator";
 import logger from "@/logger";
 
 const props = defineProps({
@@ -102,6 +109,10 @@ const props = defineProps({
   facilityId: {
     type: String,
     required: true
+  },
+  order: {
+    type: Object as any,
+    required: true
   }
 });
 
@@ -115,8 +126,22 @@ const modalTitle = computed(() => {
   return props.actionType === 'FULFILL' ? "Bulk Fulfill" : "Bulk Receive";
 });
 
+const pendingFulfillmentItemsCount = computed(() => {
+  if (props.actionType === 'RECEIVE') {
+    return props.items.filter((item: any) => OrderActionValidator.isItemPendingFulfillment(props.order, item)).length;
+  }
+  return 0;
+});
+
+const itemsToProcess = computed(() => {
+  if (props.actionType === 'RECEIVE') {
+    return props.items.filter((item: any) => !OrderActionValidator.isItemPendingFulfillment(props.order, item));
+  }
+  return props.items;
+});
+
 const progress = computed(() => {
-  return props.items.length > 0 ? completedItemsCount.value / props.items.length : 0;
+  return itemsToProcess.value.length > 0 ? completedItemsCount.value / itemsToProcess.value.length : 0;
 });
 
 const closeModal = () => {
@@ -130,8 +155,8 @@ const processBatches = async () => {
   const BATCH_SIZE = 200;
   const batches = [];
   
-  for (let i = 0; i < props.items.length; i += BATCH_SIZE) {
-    batches.push(props.items.slice(i, i + BATCH_SIZE));
+  for (let i = 0; i < itemsToProcess.value.length; i += BATCH_SIZE) {
+    batches.push(itemsToProcess.value.slice(i, i + BATCH_SIZE));
   }
 
   for (const batch of batches) {

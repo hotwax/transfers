@@ -195,9 +195,9 @@
                 </div>
 
                 <!-- ITEM ROW -->
-                <div v-else-if="item.type === 'item'" class="list-item" @click="toggleSelectedItem(item.orderItemSeqId)">
+                <div v-else-if="item.type === 'item'" class="list-item" :class="{ 'disabled': !OrderActionValidator.isItemSelectable(currentOrder, item) }" @click="OrderActionValidator.isItemSelectable(currentOrder, item) && toggleSelectedItem(item.orderItemSeqId)">
                   <div class="item-key">
-                    <ion-checkbox :checked="selectedItemSeqIds.has(item.orderItemSeqId)" class="no-pointer-events"></ion-checkbox>
+                    <ion-checkbox :checked="selectedItemSeqIds.has(item.orderItemSeqId)" :disabled="!OrderActionValidator.isItemSelectable(currentOrder, item)" class="no-pointer-events"></ion-checkbox>
                     <ion-item lines="none">
                       <ion-thumbnail slot="start" v-if="!item.hasHeader">
                         <Image :src="getProduct(item.productId)?.mainImageUrl" />
@@ -257,7 +257,7 @@
             {{ selectedItemSeqIds.size }} {{ translate("items selected") }}
           </ion-label>
           <ion-buttons slot="end">
-            <ion-button v-for="action in OrderActionValidator.getFooterActions(currentOrder, selectedItemSeqIds.size)" :key="action.id" fill="outline" :color="action.color || 'primary'" :disabled="!action.validation.allowed" @click="handleFooterAction(action)">
+            <ion-button v-for="action in OrderActionValidator.getFooterActions(currentOrder, selectedItemSeqIds)" :key="action.id" fill="outline" :color="action.color || 'primary'" :disabled="!action.validation.allowed" @click="handleFooterAction(action)">
               <ion-icon :icon="getIcon(action.icon)" slot="start" v-if="action.icon" />
               {{ translate(action.label) }}
             </ion-button>
@@ -275,6 +275,7 @@ import { chevronDownOutline, checkmarkDoneOutline, playOutline, ellipsisVertical
 import Image from "@/components/Image.vue";
 import OrderItemDetailActionsPopover from '@/components/OrderItemDetailActionsPopover.vue';
 import ShipmentDetailModal from '@/components/ShipmentDetailModal.vue';
+import CancellationDetailModal from '@/components/CancellationDetailModal.vue';
 import AddProductModal from "@/components/AddProductModal.vue"
 import { useOrderQueue } from '@/composables/useProductQueue';
 import { useOrderTimeline } from '@/composables/useOrderTimeline';
@@ -299,7 +300,7 @@ const props = defineProps(["orderId"]);
 
 const currentOrder = computed(() => store.getters["order/getCurrent"])
 const getStatusDesc = computed(() => store.getters["util/getStatusDesc"])
-const selectedItemSeqIds = ref(new Set())
+const selectedItemSeqIds = ref(new Set<string>())
 
 const isAllSelected = computed(() => {
   const selectAllValidItems = OrderActionValidator.getBulkSelectableItems(currentOrder.value);
@@ -312,6 +313,9 @@ const isIndeterminate = computed(() => {
 })
 
 function toggleSelectedItem(itemSeqId: string) {
+  const item = currentOrder.value?.items?.find((i: any) => i.orderItemSeqId === itemSeqId);
+  if (!item || !OrderActionValidator.isItemSelectable(currentOrder.value, item)) return;
+
   const newSet = new Set(selectedItemSeqIds.value);
   if (newSet.has(itemSeqId)) {
     newSet.delete(itemSeqId)
@@ -366,7 +370,8 @@ async function openBulkActionModal(actionType: string) {
       items: selectedItems,
       actionType,
       orderId: currentOrder.value.orderId,
-      facilityId
+      facilityId,
+      order: currentOrder.value
     }
   });
 
@@ -703,7 +708,7 @@ async function viewEventDetails(event: any) {
   if (!event.eventType) return;
 
   const modal = await modalController.create({
-    component: ShipmentDetailModal,
+    component: event.eventType === 'CANCELLATION' ? CancellationDetailModal : ShipmentDetailModal,
     componentProps: {
       event,
       isReceipt: event.eventType === 'RECEIPT'
@@ -763,6 +768,10 @@ function formatDateTime(date: any) {
 
 .list-item > ion-item {
   width: 100%;
+}
+.list-item.disabled {
+  opacity: 0.5;
+  pointer-events: none;
 }
 
 .list-item .item-key {

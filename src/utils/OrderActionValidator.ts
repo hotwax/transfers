@@ -51,7 +51,8 @@ export const OrderActionValidator = {
   /**
    * VALIDATION MODE: Validates a specific footer action.
    */
-  validateFooterAction(order: any, actionId: OrderFooterActionId, selectedItemCount: number): ActionValidationResult {
+  validateFooterAction(order: any, actionId: OrderFooterActionId, selectedItemSeqIds: Set<string>): ActionValidationResult {
+    const selectedItemCount = selectedItemSeqIds.size;
     switch (actionId) {
       case 'ADD_ITEMS':
         if (order.statusId !== 'ORDER_CREATED') {
@@ -80,8 +81,17 @@ export const OrderActionValidator = {
         return { allowed: true };
 
       case 'BULK_RECEIVE':
-        if (selectedItemCount === 0) return { allowed: false, reason: 'No items selected.' };
+        if (selectedItemSeqIds.size === 0) return { allowed: false, reason: 'No items selected.' };
         if (order.statusId !== 'ORDER_APPROVED') return { allowed: false, reason: 'Order must be Approved.' };
+        
+        // Logic: Disable if ALL selected items are pending fulfillment (cannot be received yet)
+        const selectedItems = (order.items || []).filter((item: any) => selectedItemSeqIds.has(item.orderItemSeqId));
+        const allPendingFulfillment = selectedItems.length > 0 && selectedItems.every((item: any) => this.isItemPendingFulfillment(order, item));
+        
+        if (allPendingFulfillment) {
+          return { allowed: false, reason: 'All selected items are pending fulfillment and cannot be received.' };
+        }
+
         return { allowed: true };
 
       default:
@@ -160,7 +170,7 @@ export const OrderActionValidator = {
   /**
    * DISCOVERY MODE: Returns all available footer actions.
    */
-  getFooterActions(order: any, selectedItemCount: number): OrderFooterAction[] {
+  getFooterActions(order: any, selectedItemSeqIds: Set<string>): OrderFooterAction[] {
     const actions: OrderFooterAction[] = [];
     
     // Always add these actions, they will be enabled/disabled via validation
@@ -168,7 +178,7 @@ export const OrderActionValidator = {
       id: 'ADD_ITEMS',
       label: 'Add items',
       icon: 'shirtOutline',
-      validation: this.validateFooterAction(order, 'ADD_ITEMS', selectedItemCount)
+      validation: this.validateFooterAction(order, 'ADD_ITEMS', selectedItemSeqIds)
     });
 
     actions.push({
@@ -176,7 +186,7 @@ export const OrderActionValidator = {
       label: 'Cancel',
       color: 'danger',
       icon: 'closeCircleOutline',
-      validation: this.validateFooterAction(order, 'CANCEL', selectedItemCount)
+      validation: this.validateFooterAction(order, 'CANCEL', selectedItemSeqIds)
     });
 
     const flow = order.statusFlowId;
@@ -186,7 +196,7 @@ export const OrderActionValidator = {
         id: 'BULK_RECEIVE',
         label: 'Bulk Receive',
         icon: 'checkmarkDoneOutline',
-        validation: this.validateFooterAction(order, 'BULK_RECEIVE', selectedItemCount)
+        validation: this.validateFooterAction(order, 'BULK_RECEIVE', selectedItemSeqIds)
       });
     }
 
@@ -247,7 +257,15 @@ export const OrderActionValidator = {
    */
   getBulkSelectableItems(order: any): any[] {
     return (order?.items || []).filter((item: any) => 
-      this.validateItemAction(order, item, 'RECEIVE').allowed
+      this.isItemSelectable(order, item)
     );
+  },
+
+  /**
+   * ITEM HELPER: Determines if an item can be selected for bulk actions.
+   */
+  isItemSelectable(order: any, item: any): boolean {
+    return this.validateItemAction(order, item, 'FULFILL').allowed || 
+           this.validateItemAction(order, item, 'RECEIVE').allowed;
   }
 };
