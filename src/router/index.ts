@@ -47,6 +47,11 @@ const routes: Array<RouteRecordRaw> = [
         component: () => import("@/views/Transfers.vue")
       },
       {
+        path: "discrepancies",
+        name: "Discrepancies",
+        component: () => import("@/views/Discrepancies.vue")
+      },
+      {
         path: "settings",
         name: "Settings",
         component: () => import("@/views/Settings.vue")
