@@ -22,6 +22,13 @@ Allows items to be marked as fulfilled (shipped).
 - If any item fails validation, the bulk action should either skip that item or alert the user.
 - **Note**: Items in `ITEM_CREATED` status must be approved before they can be fulfilled.
 
+In order to bulk fulfill items in a transfer order, they need to go through the following system actions:
+- Create shipment
+- Approve shipment
+- Pack shipment
+- Add tracking details
+- Ship shipment
+
 ### 2. Bulk Receipt
 Allows items to be marked as received.
 

@@ -14,9 +14,7 @@ const utilModule: Module<UtilState, RootState> = {
     carrierDesc: {},
     facilities: [],
     facilityAddresses: {},
-    sampleProducts: [],
-    barcodeIdentificationPref: "",
-    productStoreSettings: {}
+    sampleProducts: []
   },
   getters,
   actions,

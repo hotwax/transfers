@@ -6,6 +6,4 @@ export default interface UtilState {
   facilities: any;
   facilityAddresses: any;
   sampleProducts: any;
-  barcodeIdentificationPref: string;
-  productStoreSettings: Record<string, any>;
 }

@@ -304,6 +304,30 @@ const fetchOrderReceipts = async (params :any): Promise<any> => {
   });
 }
 
+const createTransferOrderShipment = async (payload: any): Promise<any> => {
+  return api({
+    url: "poorti/transferShipments",
+    method: "post",
+    data: payload
+  });
+}
+
+const shipTransferOrderShipment = async (payload: any): Promise<any> => {
+  return api({
+    url: `poorti/transferShipments/${payload.shipmentId}/ship`,
+    method: "post",
+    data: payload
+  });
+}
+
+const receiveTransferOrder = async (payload: any): Promise<any> => {
+  return api({
+    url: `poorti/transferOrders/${payload.orderId}/receipts`,
+    method: "post",
+    data: payload
+  });
+}
+
 export const OrderService = {
   addOrderItem,
   approveOrder,
@@ -319,6 +343,9 @@ export const OrderService = {
   fetchShippedTransferShipments,
   findTransferOrders,
   findTransferOrderItems,
+  createTransferOrderShipment,
+  shipTransferOrderShipment,
+  receiveTransferOrder,
   updateOrderItem,
   updateOrderItemShipGroup,
   updateOrderStatus,

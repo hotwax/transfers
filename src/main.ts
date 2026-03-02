@@ -35,6 +35,8 @@ import { dxpComponents } from "@hotwax/dxp-components"
 import { login, logout, loader } from "@/user-utils";
 import { fetchGoodIdentificationTypes, getConfig, getEComStores, getProductIdentificationPref, getUserPreference, initialise, setProductIdentificationPref, setUserPreference, setUserLocale, setUserTimeZone, getAvailableTimeZones } from './adapter';
 import localeMessages from '@/locales';
+import VueVirtualScroller from 'vue-virtual-scroller';
+import 'vue-virtual-scroller/dist/vue-virtual-scroller.css';
 
 const app = createApp(App)
   .use(IonicVue, {
@@ -46,6 +48,7 @@ const app = createApp(App)
   })
   .use(router)
   .use(store)
+  .use(VueVirtualScroller)
   .use(permissionPlugin, {
     rules: permissionRules,
     actions: permissionActions
