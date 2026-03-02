@@ -20,10 +20,14 @@
       <ion-item-divider>
         <ion-label>{{ translate("Items") }}</ion-label>
       </ion-item-divider>
-      <ion-item v-for="(item, index) in event.items" :key="index">
-        <ion-label>
+      <ion-item v-for="(item, index) in event.items" :key="index" lines="none">
+        <ion-thumbnail slot="start">
+          <Image :src="getProduct(item.productId)?.mainImageUrl" />
+        </ion-thumbnail>
+        <ion-label class="ion-text-wrap">
           <p class="overline">{{ item.orderItemSeqId }}</p>
-          {{ item.productName }}
+          {{ getProductIdentificationValue(productIdentificationStore.getProductIdentificationPref.primaryId, getProduct(item.productId)) || getProduct(item.productId).productName }}
+          <p>{{ getProductIdentificationValue(productIdentificationStore.getProductIdentificationPref.secondaryId, getProduct(item.productId)) }}</p>
           <p v-if="item.statusUserLogin">{{ translate("Cancelled by") }}: {{ item.statusUserLogin }}</p>
         </ion-label>
       </ion-item>
@@ -32,12 +36,19 @@
 </template>
 
 <script setup lang="ts">
-import { IonButton, IonButtons, IonContent, IonHeader, IonIcon, IonItem, IonItemDivider, IonLabel, IonList, IonTitle, IonToolbar, modalController } from "@ionic/vue";
+import { IonButton, IonButtons, IonContent, IonHeader, IonIcon, IonItem, IonItemDivider, IonLabel, IonList, IonThumbnail, IonTitle, IonToolbar, modalController } from "@ionic/vue";
 import { closeOutline } from "ionicons/icons";
-import { translate } from '@hotwax/dxp-components';
+import { getProductIdentificationValue, translate, useProductIdentificationStore } from '@hotwax/dxp-components';
 import { DateTime } from "luxon";
+import Image from "@/components/Image.vue";
+import { useStore } from "vuex";
+import { computed } from "vue";
 
 defineProps(["event"]);
+
+const store = useStore();
+const productIdentificationStore = useProductIdentificationStore();
+const getProduct = computed(() => store.getters["product/getProduct"]);
 
 function closeModal() {
   modalController.dismiss();

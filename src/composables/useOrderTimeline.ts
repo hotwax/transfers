@@ -92,6 +92,7 @@ export function useOrderTimeline(orderId: Ref<string>) {
           const product = getProduct.value(item?.productId);
           return {
             ...event,
+            productId: item?.productId,
             productName: product?.productName || item?.productId || event.orderItemSeqId,
             statusUserLogin: event.statusUserLogin
           };
@@ -116,6 +117,7 @@ export function useOrderTimeline(orderId: Ref<string>) {
           eventType: 'CANCELLATION',
           items: [{
             ...event,
+            productId: item?.productId,
             productName,
             statusUserLogin: event.statusUserLogin
           }]
