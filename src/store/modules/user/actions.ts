@@ -63,9 +63,10 @@ const actions: ActionTree<UserState, RootState> = {
       }
 
       updateToken(token)
-      await useProductIdentificationStore().getIdentificationPref(preferredStore.productStoreId)
-        .catch((error) => logger.error(error));
-      
+      await Promise.all([
+        useProductIdentificationStore().getIdentificationPref(preferredStore.productStoreId).catch((error) => logger.error(error)),
+        dispatch('util/fetchFacilitiesByCurrentStore', preferredStore.productStoreId, { root: true }).catch((error) => logger.error(error))
+      ])
       setPermissions(appPermissions);
       commit(types.USER_TOKEN_CHANGED, { newToken: token })
       commit(types.USER_INFO_UPDATED, userProfile);

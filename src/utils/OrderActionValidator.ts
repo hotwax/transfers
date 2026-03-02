@@ -138,6 +138,31 @@ export const OrderActionValidator = {
   },
 
   /**
+   * CATEGORY HELPERS: Centralized logic for determining if an item belongs to a specific status queue.
+   */
+  isItemPendingFulfillment(order: any, item: any): boolean {
+    const flow = order?.statusFlowId;
+    const statuses = ['ITEM_PENDING_FULFILL'];
+    
+    // In fulfillment-focused flows, approved items await fulfillment
+    if (flow === 'TO_Fulfill_Only' || flow === 'TO_Fulfill_And_Receive') {
+      statuses.push('ITEM_APPROVED');
+    }
+    return statuses.includes(item?.statusId);
+  },
+
+  isItemPendingReceipt(order: any, item: any): boolean {
+    const flow = order?.statusFlowId;
+    const statuses = ['ITEM_PENDING_RECEIPT'];
+    
+    // In receive-only flows, approved items await receipt directly
+    if (flow === 'TO_Receive_Only') {
+      statuses.push('ITEM_APPROVED');
+    }
+    return statuses.includes(item?.statusId);
+  },
+
+  /**
    * DISCOVERY MODE: Returns ONLY available item actions.
    */
   getItemActions(order: any, item: any): OrderItemAction[] {

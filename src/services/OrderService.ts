@@ -259,6 +259,14 @@ const approveOrder = async (payload: any): Promise<any> => {
   })
 }
 
+const uploadTransferOrders = async (payload: any): Promise<any> => {
+  return api({
+    url: `poorti/transferOrders/upload`,
+    method: "post",
+    ...payload
+  })
+}
+
 const approveWarehouseFulfillOrder = async (payload: any): Promise<any> => { 
   return api({
     url: `oms/transferOrders/${payload.orderId}/approveWhFulfill`,
@@ -315,5 +323,6 @@ export const OrderService = {
   updateOrderItemShipGroup,
   updateOrderStatus,
   fetchOrderReceipts,
-  closeFulfillment
+  closeFulfillment,
+  uploadTransferOrders
 }

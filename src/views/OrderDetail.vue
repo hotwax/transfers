@@ -112,27 +112,27 @@
               </ion-card-header>
               <ion-card-content>
                 <ion-chip :outline="selectedStatusFilter !== filter.value" v-for="filter in availableStatusFilters" :key="filter.value" @click="handleStatusFilterChange(filter.value)">
-                  <ion-label>{{ translate(filter.label) }} ({{ statusCounts[filter.value] || 0 }})</ion-label>
+                  <ion-label>{{ translate(filter.label) }} ({{ orderStatusCounts[filter.value] || 0 }})</ion-label>
                 </ion-chip>
               </ion-card-content>
             </ion-card>
 
-            <ion-card v-if="discrepancySummary.total">
+            <ion-card v-if="orderDiscrepancySummary.total">
               <ion-card-header>
                 <ion-card-title>{{ translate("Discrepancies") }}</ion-card-title>
               </ion-card-header>
               <ion-card-content>
                 <ion-chip :outline="selectedDiscrepancyFilter !== 'ALL'" @click="handleDiscrepancyFilterChange('ALL')">
-                  <ion-label>{{ translate("All") }} ({{ discrepancySummary.total }})</ion-label>
+                  <ion-label>{{ translate("All") }} ({{ orderDiscrepancySummary.total }})</ion-label>
                 </ion-chip>
-                <ion-chip :outline="selectedDiscrepancyFilter !== 'UNDER_SHIPPED'" v-if="discrepancySummary.underShipped" @click="handleDiscrepancyFilterChange('UNDER_SHIPPED')">
-                  <ion-label>{{ translate("Under shipped") }} ({{ discrepancySummary.underShipped }})</ion-label>
+                <ion-chip :outline="selectedDiscrepancyFilter !== 'UNDER_SHIPPED'" v-if="orderDiscrepancySummary.underShipped" @click="handleDiscrepancyFilterChange('UNDER_SHIPPED')">
+                  <ion-label>{{ translate("Under shipped") }} ({{ orderDiscrepancySummary.underShipped }})</ion-label>
                 </ion-chip>
-                <ion-chip :outline="selectedDiscrepancyFilter !== 'UNDER_RECEIVED'" v-if="discrepancySummary.underReceived" @click="handleDiscrepancyFilterChange('UNDER_RECEIVED')">
-                  <ion-label>{{ translate("Under received") }} ({{ discrepancySummary.underReceived }})</ion-label>
+                <ion-chip :outline="selectedDiscrepancyFilter !== 'UNDER_RECEIVED'" v-if="orderDiscrepancySummary.underReceived" @click="handleDiscrepancyFilterChange('UNDER_RECEIVED')">
+                  <ion-label>{{ translate("Under received") }} ({{ orderDiscrepancySummary.underReceived }})</ion-label>
                 </ion-chip>
-                <ion-chip :outline="selectedDiscrepancyFilter !== 'OVER_RECEIVED'" v-if="discrepancySummary.overReceived" @click="handleDiscrepancyFilterChange('OVER_RECEIVED')">
-                  <ion-label>{{ translate("Over received") }} ({{ discrepancySummary.overReceived }})</ion-label>
+                <ion-chip :outline="selectedDiscrepancyFilter !== 'OVER_RECEIVED'" v-if="orderDiscrepancySummary.overReceived" @click="handleDiscrepancyFilterChange('OVER_RECEIVED')">
+                  <ion-label>{{ translate("Over received") }} ({{ orderDiscrepancySummary.overReceived }})</ion-label>
                 </ion-chip>
               </ion-card-content>
             </ion-card>
@@ -152,7 +152,7 @@
 
           <hr />
 
-          <template v-for="([parentProductId, items], index) in (Object.entries(itemsByParentProductId) as any)" :key="index">
+          <template v-for="([parentProductId, items], index) in (Object.entries(orderItemsByParentProductId) as any)" :key="index">
             <template v-if="(items as any).length">
               <!-- Show parent product header only if there is more than one item -->
               <div v-if="(items as any).length > 1" class="list-item product-header">
@@ -161,31 +161,26 @@
                     <Image :src="getProduct(items[0].productId)?.mainImageUrl" />
                   </ion-thumbnail>
                   <ion-label class="ion-text-wrap">
-                    {{ parentProductInfoById[parentProductId]?.parentProductName }}
+                    {{ orderParentProductInfoById[parentProductId]?.parentProductName }}
                     <p class="overline">{{ parentProductId }}</p>
                   </ion-label>
                 </ion-item>
                 <div class="tablet ion-text-center">
                   <ion-label>
-                    {{ parentProductInfoById[parentProductId]?.totalOrdered || 0 }}
+                    {{ orderParentProductInfoById[parentProductId]?.totalOrdered || 0 }}
                     <p>{{ translate("ordered") }}</p>
                   </ion-label>
                 </div>
                 <div class="tablet ion-text-center">
                   <ion-label>
-                    {{ parentProductInfoById[parentProductId]?.totalShipped || 0 }}
+                    {{ orderParentProductInfoById[parentProductId]?.totalShipped || 0 }}
                     <p>{{ translate("shipped") }}</p>
                   </ion-label>
                 </div>
                 <div class="ion-text-center ion-padding-end">
                   <ion-label>
-                    {{ parentProductInfoById[parentProductId]?.totalReceived || 0 }}
+                    {{ orderParentProductInfoById[parentProductId]?.totalReceived || 0 }}
                     <p>{{ translate("received") }}</p>
-                  </ion-label>
-                </div>
-                <div class="ion-text-center ion-padding-end">
-                  <ion-label>
-                    {{ formatCurrency(parentProductInfoById[parentProductId]?.totalPrice, currentOrder.currencyUom) || "0.00" }}
                   </ion-label>
                 </div>
               </div>
@@ -197,10 +192,11 @@
                   </ion-thumbnail>
                   <ion-label class="ion-text-wrap">
                     <template v-if="(items as any).length === 1">
-                      <p class="overline">{{ parentProductInfoById[parentProductId]?.parentProductName }}</p>
+                      <p class="overline">{{ orderParentProductInfoById[parentProductId]?.parentProductName }}</p>
                     </template>
                     {{ getProductIdentificationValue(productIdentificationStore.getProductIdentificationPref.primaryId, getProduct(item.productId)) || getProduct(item.productId).productName }}
                     <p>{{ getProductIdentificationValue(productIdentificationStore.getProductIdentificationPref.secondaryId, getProduct(item.productId)) }}</p>
+                    <p v-if="item.unitPrice">{{ formatCurrency(item.unitPrice, currentOrder?.currencyUom) }}</p>
                   </ion-label>
                 </ion-item>
 
@@ -250,6 +246,7 @@ import OrderItemDetailActionsPopover from '@/components/OrderItemDetailActionsPo
 import ShipmentDetailModal from '@/components/ShipmentDetailModal.vue';
 import AddProductModal from "@/components/AddProductModal.vue"
 import { useOrderQueue } from '@/composables/useProductQueue';
+import { useOrderTimeline } from '@/composables/useOrderTimeline';
 import { computed, ref } from "vue";
 import { useStore } from "vuex";
 import logger from "@/logger";
@@ -280,9 +277,57 @@ const isOrderStatusUpdateDisabled = computed(() => {
 
 const isFetchingOrderDetail = ref(false);
 
-const itemsByParentProductId = ref({}) as any;
-const parentProductInfoById = ref({}) as any;
-const orderTimeline = ref([]) as any;
+const orderItems = computed(() => currentOrder.value?.items || []);
+
+const orderFilteredItems = computed(() => {
+  return orderItems.value.filter((item: any) => {
+    if (selectedStatusFilter.value !== 'ALL') {
+      if (selectedStatusFilter.value === 'PENDING_FULFILLMENT') {
+        return OrderActionValidator.isItemPendingFulfillment(currentOrder.value, item);
+      }
+      if (selectedStatusFilter.value === 'PENDING_RECEIPT') {
+        return OrderActionValidator.isItemPendingReceipt(currentOrder.value, item);
+      }
+      if (selectedStatusFilter.value === 'COMPLETED') return item.statusId === 'ITEM_COMPLETED';
+    }
+    if (selectedDiscrepancyFilter.value !== 'ALL') {
+      if (selectedDiscrepancyFilter.value === 'UNDER_SHIPPED') return isUnderShipped(item);
+      if (selectedDiscrepancyFilter.value === 'UNDER_RECEIVED') return isUnderReceived(item);
+      if (selectedDiscrepancyFilter.value === 'OVER_RECEIVED') return isOverReceived(item);
+    }
+    return true;
+  });
+});
+
+const orderItemsByParentProductId = computed(() => {
+  const itemsById = {} as Record<string, any[]>;
+  orderFilteredItems.value.forEach((item: any) => {
+    const product = getProduct.value(item.productId);
+    const groupId = product?.groupId || product?.productId || 'UNKNOWN';
+    if (!itemsById[groupId]) itemsById[groupId] = [];
+    itemsById[groupId].push(item);
+  });
+  return itemsById;
+});
+
+const orderParentProductInfoById = computed(() => {
+  const infoById = {} as Record<string, any>;
+  Object.entries(orderItemsByParentProductId.value).forEach(([groupId, items]) => {
+    let totalOrdered = 0, totalReceived = 0, totalShipped = 0;
+    let parentProductName = '';
+    items.forEach((item: any) => {
+      if (item.quantity) totalOrdered += item.quantity;
+      if (item.shippedQty) totalShipped += item.shippedQty;
+      if (item.receivedQty) totalReceived += item.receivedQty;
+      const product = getProduct.value(item.productId);
+      if (product?.parentProductName) parentProductName = product.parentProductName;
+    });
+    infoById[groupId] = { parentProductName, totalOrdered, totalReceived, totalShipped };
+  });
+  return infoById;
+});
+
+const { orderTimeline, fetchOrderTimeline } = useOrderTimeline(computed(() => props.orderId));
 const carrierMethods = ref([]) as any;
 const isUpdatingOrderStatus = ref(false);
 const selectedStatusFilter = ref("ALL");
@@ -308,25 +353,24 @@ const availableStatusFilters = computed(() => {
   return filters;
 });
 
-const statusCounts = computed(() => {
-  const counts = { ALL: 0 } as any;
-  currentOrder.value.items?.forEach((item: any) => {
+const orderStatusCounts = computed(() => {
+  const counts = { ALL: 0, PENDING_FULFILLMENT: 0, PENDING_RECEIPT: 0, COMPLETED: 0 } as any;
+  orderItems.value.forEach((item: any) => {
     counts.ALL++;
-    const status = item.statusId;
-    if (["ITEM_CREATED", "ITEM_PENDING_FULFILL"].includes(status)) {
-      counts.PENDING_FULFILLMENT = (counts.PENDING_FULFILLMENT || 0) + 1;
-    } else if (["ITEM_APPROVED", "ITEM_PENDING_RECEIPT"].includes(status)) {
-      counts.PENDING_RECEIPT = (counts.PENDING_RECEIPT || 0) + 1;
-    } else if (status === "ITEM_COMPLETED") {
-      counts.COMPLETED = (counts.COMPLETED || 0) + 1;
+    if (OrderActionValidator.isItemPendingFulfillment(currentOrder.value, item)) {
+      counts.PENDING_FULFILLMENT++;
+    } else if (OrderActionValidator.isItemPendingReceipt(currentOrder.value, item)) {
+      counts.PENDING_RECEIPT++;
+    } else if (item.statusId === "ITEM_COMPLETED") {
+      counts.COMPLETED++;
     }
   });
   return counts;
 });
 
-const discrepancySummary = computed(() => {
+const orderDiscrepancySummary = computed(() => {
   const summary = { total: 0, underShipped: 0, underReceived: 0, overReceived: 0 };
-  currentOrder.value.items?.forEach((item: any) => {
+  orderItems.value.forEach((item: any) => {
     let hasDiscrepancy = false;
     if (isUnderShipped(item)) {
       summary.underShipped++;
@@ -362,20 +406,17 @@ const statusFlowDesc = computed(() => {
 function handleStatusFilterChange(value: string) {
   selectedStatusFilter.value = value;
   selectedDiscrepancyFilter.value = "ALL";
-  generateItemsListByParent();
 }
 
 function handleDiscrepancyFilterChange(value: string) {
   selectedDiscrepancyFilter.value = value;
   selectedStatusFilter.value = "ALL";
-  generateItemsListByParent();
 }
 
 onIonViewWillEnter(async () => {
   isFetchingOrderDetail.value = true;
   await store.dispatch("order/fetchOrderDetails", props.orderId)
   await Promise.allSettled([store.dispatch('util/fetchStatusDesc'), store.dispatch("util/fetchCarriersDetail"), fetchOrderTimeline(), store.dispatch("util/fetchShipmentMethodTypeDesc")])
-  generateItemsListByParent();
   isFetchingOrderDetail.value = false;
   carrierMethods.value = shipmentMethodsByCarrier.value[currentOrder.value.carrierPartyId]
 })
@@ -432,7 +473,6 @@ async function updateOrderStatus(updatedStatusId: string) {
         store.dispatch("order/fetchOrderDetails", props.orderId),
         fetchOrderTimeline()
       ]);
-      generateItemsListByParent();
     } else {
       throw resp.data;
     }
@@ -446,53 +486,6 @@ async function updateOrderStatus(updatedStatusId: string) {
   }
 }
 
-function generateItemsListByParent() {
-  const itemsById = {} as any;
-  const itemsList = currentOrder.value.items || [];
-
-  const filteredItems = itemsList.filter((item: any) => {
-    if (selectedStatusFilter.value !== "ALL") {
-      if (selectedStatusFilter.value === "PENDING_FULFILLMENT") return ["ITEM_CREATED", "ITEM_PENDING_FULFILL"].includes(item.statusId);
-      if (selectedStatusFilter.value === "PENDING_RECEIPT") return ["ITEM_APPROVED", "ITEM_PENDING_RECEIPT"].includes(item.statusId);
-      if (selectedStatusFilter.value === "COMPLETED") return item.statusId === "ITEM_COMPLETED";
-    }
-    if (selectedDiscrepancyFilter.value !== "ALL") {
-      if (selectedDiscrepancyFilter.value === "UNDER_SHIPPED") return isUnderShipped(item);
-      if (selectedDiscrepancyFilter.value === "UNDER_RECEIVED") return isUnderReceived(item);
-      if (selectedDiscrepancyFilter.value === "OVER_RECEIVED") return isOverReceived(item);
-    }
-    return true;
-  });
-
-  filteredItems?.map((item: any) => {
-    const product = getProduct.value(item.productId)
-    if(itemsById[product.groupId]) {
-      itemsById[product.groupId].push(item)
-    } else {
-      itemsById[product.groupId] = [item]
-    }
-    parentProductInfoById.value[product.groupId] = { parentProductName: product.parentProductName }
-  })
-
-  Object.entries(itemsById).map(([groupId, items]: [string, any]) => {
-    let totalOrdered = 0, totalReceived = 0, totalShipped = 0, totalPrice = 0;
-    items.map((item: any) => {
-      if(item.quantity) totalOrdered = totalOrdered + item.quantity
-      if(item.shippedQty) totalShipped = totalShipped + item.shippedQty
-      if(item.receivedQty) totalReceived = totalReceived + item.receivedQty
-      totalPrice = totalPrice + (item.quantity * item.unitPrice);
-
-      parentProductInfoById.value[groupId] = {
-        ...parentProductInfoById.value[groupId],
-        totalOrdered,
-        totalReceived,
-        totalShipped,
-        totalPrice
-      }
-    })
-  })
-  itemsByParentProductId.value = itemsById
-}
 
 
 
@@ -555,7 +548,7 @@ async function addProduct() {
       isProductInOrder: orderQueue.isProductInOrder,
       pendingProductIds: orderQueue.pendingProductIds.value, // Pass the actual Set
       onProductAdded: () => {
-        generateItemsListByParent(); // Re-render product list to include new item
+        // Automatically handled by reactive computed properties
       }
     }
   });
@@ -563,64 +556,7 @@ async function addProduct() {
   await addProductModal.present();
 }
 
-async function fetchOrderTimeline() {
-  let timeline = [] as any;
-  try {
-    const resp = await OrderService.fetchOrderStatusHistory({
-      inputFields: {
-        orderId: props.orderId,
-        orderItemSeqId_op: "empty"
-      },
-      entityName: "OrderStatus",
-      viewSize: "100",
-      sortBy: 'statusDatetime ASC',
-      fieldList: ["statusId", "statusDatetime"]
-    })
-    if(!hasError(resp)) {
-      timeline = resp.data.docs || [];
 
-      // Add shipments to timeline
-      const shipments = currentOrder.value.shipments || [];
-      shipments.forEach((shipment: any) => {
-        timeline.push({
-          ...shipment,
-          statusDatetime: Number(shipment.statusDate),
-          eventType: 'SHIPMENT',
-          statusDesc: translate('Shipped'), // explicitly set description
-          carrierDesc: getCarrierDesc.value(shipment.routeSegCarrierPartyId),
-          shipmentMethodDesc: getShipmentMethodDesc.value(shipment.routeSegShipmentMethodTypeId)
-        });
-      });
-
-      // Add receipts to timeline
-      const receipts = currentOrder.value.receipts || {};
-      Object.keys(receipts).forEach((datetimeReceived: any) => {
-        timeline.push({
-          statusDatetime: Number(datetimeReceived),
-          eventType: 'RECEIPT',
-          statusDesc: translate('Receipt') // explicitly set description
-        });
-      });
-
-      // Sort timeline chronologically
-      timeline.sort((a: any, b: any) => (a.statusDatetime || 0) - (b.statusDatetime || 0));
-
-      const firstStatus = timeline.find((event: any) => event.statusId);
-      const baseTime = firstStatus ? firstStatus.statusDatetime : null;
-
-      timeline.forEach((event: any, index: number) => {
-        if (baseTime && event.statusDatetime && event !== firstStatus) {
-          event["timeDiff"] = findTimeDiff(baseTime, event.statusDatetime);
-        }
-      });
-    } else {
-      throw resp.data;
-    }
-  } catch(error: any) {
-    logger.error(error);
-  }
-  orderTimeline.value = timeline
-}
 
 async function viewEventDetails(event: any) {
   if (!event.eventType) return;
@@ -644,27 +580,19 @@ async function openOrderItemDetailActionsPopover(event: any, item: any){
     showBackdrop: false,
   });
 
-  popover.onDidDismiss().then((result) => {
-    if(result.data?.isItemUpdated) generateItemsListByParent()
+  popover.onDidDismiss().then(async (result) => {
+    if(result.data?.isItemUpdated) {
+      await Promise.all([
+        store.dispatch("order/fetchOrderDetails", props.orderId),
+        fetchOrderTimeline()
+      ]);
+    }
   })
 
   await popover.present();
 }
 
-function findTimeDiff(startTime: any, endTime: any) {
-  if(!endTime || !startTime) {
-    return ""
-  }
 
-  const timeDiff = DateTime.fromMillis(endTime).diff(DateTime.fromMillis(startTime), ["years", "months", "days", "hours", "minutes"]);
-  let diffString = "+ ";
-  if(timeDiff.years) diffString += `${Math.round(timeDiff.years)} years `
-  if(timeDiff.months) diffString += `${Math.round(timeDiff.months)} months `
-  if(timeDiff.days) diffString += `${Math.round(timeDiff.days)} days `
-  if(timeDiff.hours) diffString += `${Math.round(timeDiff.hours)} hours `
-  if(timeDiff.minutes) diffString += `${Math.round(timeDiff.minutes)} minutes`
-  return diffString
-}
 
 function formatDateTime(date: any) {
   return DateTime.fromMillis(date).toLocaleString({ hour: "numeric", minute: "2-digit", day: "numeric", month: "short", year: "numeric", hourCycle: "h12" })

@@ -26,6 +26,12 @@ const getters: GetterTree <UtilState, RootState> = {
   },
   getFacilitiesByProductStore (state) {
     return state.facilities
+  },
+  getBarcodeIdentificationPref(state) {
+    return state.productStoreSettings?.BARCODE_IDEN_PREF
+  },
+  isForceScanEnabled(state) {
+    return state.productStoreSettings?.FULFILL_FORCE_SCAN && JSON.parse(state.productStoreSettings.FULFILL_FORCE_SCAN)
   }
 }
 export default getters;

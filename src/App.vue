@@ -78,8 +78,10 @@ onMounted(async () => {
   }
   if(userToken.value) {
     const currentProductStore : any = useUserStore().getCurrentEComStore;
-    await useProductIdentificationStore().getIdentificationPref(currentProductStore.productStoreId)
-      .catch((error) => logger.error(error));
+    await Promise.all([
+      useProductIdentificationStore().getIdentificationPref(currentProductStore.productStoreId).catch((error) => logger.error(error)),
+      store.dispatch("util/fetchFacilitiesByCurrentStore", currentProductStore.productStoreId).catch((error) => logger.error(error))
+    ])
   }
 })
 
