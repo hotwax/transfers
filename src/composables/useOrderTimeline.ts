@@ -55,26 +55,36 @@ export function useOrderTimeline(orderId: Ref<string>) {
       return event;
     });
 
-    // Group item cancellations by timestamp
+    // Group item cancellations by timestamp window (within 1 minute)
     const processedTimeline = [] as any[];
-    const cancellationsByTime = {} as any;
+    const groupedCancellations = [] as any[];
 
     eventsWithLabels.forEach((event: any) => {
       if (event.orderItemSeqId && event.statusId === 'ITEM_CANCELLED') {
         const time = event.statusDatetime;
-        if (!cancellationsByTime[time]) {
-          cancellationsByTime[time] = [];
+        let groupFound = false;
+        
+        for (const group of groupedCancellations) {
+          const firstEventTime = group[0].statusDatetime;
+          // Group if within 1 minute (60000ms)
+          if (Math.abs(time - firstEventTime) <= 60000) {
+            group.push(event);
+            groupFound = true;
+            break;
+          }
         }
-        cancellationsByTime[time].push(event);
+        
+        if (!groupFound) {
+          groupedCancellations.push([event]);
+        }
       } else {
         processedTimeline.push(event);
       }
     });
 
     // Handle grouped cancellations
-    Object.keys(cancellationsByTime).forEach((time: any) => {
-      const groupedEvents = cancellationsByTime[time];
-      const timestamp = Number(time);
+    groupedCancellations.forEach((groupedEvents: any[]) => {
+      const timestamp = groupedEvents[0].statusDatetime;
       
       if (groupedEvents.length > 1) {
         const items = groupedEvents.map((event: any) => {
@@ -164,7 +174,7 @@ export function useOrderTimeline(orderId: Ref<string>) {
           orderId: orderId.value,
         },
         entityName: 'OrderStatus',
-        viewSize: '100',
+        viewSize: '250',
         sortBy: 'statusDatetime ASC',
         fieldList: ['statusId', 'statusDatetime', 'orderItemSeqId', 'statusUserLogin'],
       });
