@@ -86,7 +86,7 @@
             <ion-item lines="none" button @click="updateAppliedFilters('', 'sort')">
               <ion-icon slot="start" :icon="swapVerticalOutline" />
               <ion-label>{{ translate("Sort by") }}</ion-label>
-              <ion-label>{{ translate("Created date") }}</ion-label>
+              <ion-label slot="end">{{ translate("Created date") }}</ion-label>
               <ion-icon slot="end" :icon="arrowUpOutline" :class="query.sort === 'orderDate asc' ? 'sort-icon rotate' : 'sort-icon'" />
             </ion-item>
           </section>
@@ -557,7 +557,6 @@ ion-accordion {
 .order {
   --columns-desktop: 3;
   --columns-tablet:3;
-  grid-template-columns: 1fr auto 1fr;
 }
 
 .order {
@@ -605,6 +604,10 @@ ion-accordion {
   .sort  > ion-item {
     flex: 0 1 343px;
     border-left: var(--border-medium);
+  }
+
+  .order {
+    grid-template-columns: 1fr auto 1fr;
   }
 }
 </style>
