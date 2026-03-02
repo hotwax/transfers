@@ -259,7 +259,7 @@
           <ion-buttons slot="end">
             <ion-button v-for="action in OrderActionValidator.getFooterActions(currentOrder, selectedItemSeqIds)" :key="action.id" fill="outline" :color="action.color || 'primary'" :disabled="!action.validation.allowed" @click="handleFooterAction(action)">
               <ion-icon :icon="getIcon(action.icon)" slot="start" v-if="action.icon" />
-              {{ translate(action.label) }}
+              {{ getFooterActionLabel(action) }}
             </ion-button>
           </ion-buttons>
         </ion-item>
@@ -341,12 +341,26 @@ async function handleFooterAction(action: OrderFooterAction) {
       addProduct();
       break;
     case 'CANCEL':
-      changeOrderStatus('ORDER_CANCELLED');
+      if (selectedItemSeqIds.value.size > 0 && !isAllSelected.value) {
+        closeSelectedItems();
+      } else {
+        changeOrderStatus('ORDER_CANCELLED');
+      }
       break;
     case 'BULK_RECEIVE':
       openBulkActionModal('RECEIVE');
       break;
   }
+}
+
+function getFooterActionLabel(action: any) {
+  if (action.id === 'CANCEL') {
+    if (selectedItemSeqIds.value.size > 0 && !isAllSelected.value) {
+      return translate("Close @size items", { size: selectedItemSeqIds.value.size });
+    }
+    return translate("Close order");
+  }
+  return translate(action.label);
 }
 
 function getIcon(iconName: string) {
@@ -478,6 +492,43 @@ const flattenedScrollerItems = computed(() => {
 const { orderTimeline, fetchOrderTimeline } = useOrderTimeline(computed(() => props.orderId));
 const carrierMethods = ref([]) as any;
 const isUpdatingOrderStatus = ref(false);
+
+async function closeSelectedItems() {
+  const alert = await alertController.create({
+    header: translate("Close items"),
+    message: translate("This will cancel the unfulfilled quantity and release reservations for the selected items. This action cannot be reverted. Are you sure you want to proceed?"),
+    buttons: [{
+      text: translate("Dismiss"),
+      role: "cancel"
+    }, {
+      text: translate("Confirm"),
+      handler: async () => {
+        try {
+          const resp = await OrderService.closeFulfillment({
+            orderId: currentOrder.value.orderId,
+            items: Array.from(selectedItemSeqIds.value).map(id => ({ orderItemSeqId: id }))
+          })
+
+          if (!hasError(resp)) {
+            showToast(translate("Items closed successfully."));
+            selectedItemSeqIds.value = new Set();
+            await Promise.all([
+              store.dispatch("order/fetchOrderDetails", props.orderId),
+              fetchOrderTimeline()
+            ]);
+          } else {
+            throw resp.data;
+          }
+        } catch (error) {
+          logger.error(error);
+          showToast(translate("Failed to close items."));
+        }
+      }
+    }]
+  });
+  alert.present();
+}
+
 const selectedStatusFilter = ref("ALL");
 const selectedDiscrepancyFilter = ref("ALL");
 

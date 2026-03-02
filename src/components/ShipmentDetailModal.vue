@@ -18,6 +18,18 @@
             {{ formatDateTime(event.statusDatetime) }}
           </ion-label>
         </ion-item>
+        <ion-item>
+          <ion-label>
+            <p>{{ translate("Received by") }}</p>
+            {{ event.receivedByUserLoginId || "-" }}
+          </ion-label>
+        </ion-item>
+        <ion-item lines="none">
+          <ion-label>
+            <p>{{ translate("Items received") }}</p>
+            {{ event.items?.length || 0 }}
+          </ion-label>
+        </ion-item>
       </template>
       <template v-else>
         <ion-item>

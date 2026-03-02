@@ -20,6 +20,32 @@ export function useOrderTimeline(orderId: Ref<string>) {
 
   const orderTimeline = computed(() => {
     const timeline = JSON.parse(JSON.stringify(rawTimeline.value));
+    
+    // Add shipments to timeline reactively
+    const shipments = currentOrder.value?.shipments || [];
+    shipments.forEach((shipment: any) => {
+      timeline.push({
+        ...shipment,
+        statusDatetime: Number(shipment.statusDate),
+        eventType: 'SHIPMENT',
+        statusDesc: translate('Shipped'),
+        carrierDesc: getCarrierDesc.value(shipment.routeSegCarrierPartyId),
+        shipmentMethodDesc: getShipmentMethodDesc.value(shipment.routeSegShipmentMethodTypeId),
+      });
+    });
+
+    // Add receipts to timeline reactively
+    const receipts = currentOrder.value?.receipts || {};
+    Object.keys(receipts).forEach((datetimeReceived: any) => {
+      const respReceipts = receipts[datetimeReceived];
+      timeline.push({
+        statusDatetime: Number(datetimeReceived),
+        eventType: 'RECEIPT',
+        statusDesc: translate('Receipt'),
+        items: respReceipts,
+        receivedByUserLoginId: respReceipts[0]?.receivedByUserLoginId
+      });
+    });
 
     // Resolve labels and diffs reactively
     const eventsWithLabels = timeline.map((event: any) => {
@@ -90,12 +116,14 @@ export function useOrderTimeline(orderId: Ref<string>) {
     // Sort timeline chronologically
     processedTimeline.sort((a: any, b: any) => (a.statusDatetime || 0) - (b.statusDatetime || 0));
 
-    // Calculate time differences
-    if (processedTimeline.length > 0) {
-      const baseTime = processedTimeline[0].statusDatetime;
+    // Calculate time differences relative to previous event
+    if (processedTimeline.length > 1) {
       processedTimeline.forEach((event: any, index: number) => {
         if (event.statusDatetime && index > 0) {
-          event['timeDiff'] = findTimeDiff(baseTime, event.statusDatetime);
+          const prevEvent = processedTimeline[index - 1];
+          if (prevEvent.statusDatetime) {
+            event['timeDiff'] = findTimeDiff(prevEvent.statusDatetime, event.statusDatetime);
+          }
         }
       });
     }
@@ -146,29 +174,6 @@ export function useOrderTimeline(orderId: Ref<string>) {
         // Filter: include all order-level statuses (no orderItemSeqId) 
         // AND item-level statuses only if they are cancelled
         timeline = timeline.filter((status: any) => !status.orderItemSeqId || status.statusId === 'ITEM_CANCELLED');
-
-        // Add shipments to timeline
-        const shipments = currentOrder.value?.shipments || [];
-        shipments.forEach((shipment: any) => {
-          timeline.push({
-            ...shipment,
-            statusDatetime: Number(shipment.statusDate),
-            eventType: 'SHIPMENT',
-            statusDesc: translate('Shipped'), // explicitly set description
-            carrierDesc: getCarrierDesc.value(shipment.routeSegCarrierPartyId),
-            shipmentMethodDesc: getShipmentMethodDesc.value(shipment.routeSegShipmentMethodTypeId),
-          });
-        });
-
-        // Add receipts to timeline
-        const receipts = currentOrder.value?.receipts || {};
-        Object.keys(receipts).forEach((datetimeReceived: any) => {
-          timeline.push({
-            statusDatetime: Number(datetimeReceived),
-            eventType: 'RECEIPT',
-            statusDesc: translate('Receipt'), // explicitly set description
-          });
-        });
       } else {
         throw resp.data;
       }
