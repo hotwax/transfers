@@ -239,7 +239,7 @@
                       <ion-label>{{ item.receivedQty || 0 }}</ion-label>
                     </ion-chip>
                   </div>
-                  <div> 
+                  <div class="outcome"> 
                     <ion-badge :color="(STATUSCOLOR as any)[item.statusId] || 'medium'">{{ getStatusDesc(item.statusId) }}</ion-badge>
                     <ion-badge color="warning" v-if="isUnderShipped(item)" :title="translate('Under shipped')">{{ translate("Under shipped") }}</ion-badge>
                     <ion-badge color="danger" v-if="isUnderReceived(item)" :title="translate('Under received')">{{ translate("Under received") }}</ion-badge>
@@ -858,6 +858,11 @@ ion-card-header {
 
 .no-pointer-events {
   pointer-events: none;
+}
+
+.outcome {
+  display: flex;
+  gap: var(--spacer-xs);
 }
 
 .virtual-list {
