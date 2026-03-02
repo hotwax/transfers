@@ -1,6 +1,6 @@
 export type OrderHeaderActionId = 'APPROVE';
 export type OrderItemActionId = 'EDIT' | 'REMOVE' | 'FULFILL' | 'RECEIVE' | 'CLOSE_FULFILLMENT' | 'APPROVE' | 'CANCEL';
-export type OrderFooterActionId = 'ADD_ITEMS' | 'CANCEL' | 'BULK_RECEIVE';
+export type OrderFooterActionId = 'ADD_ITEMS' | 'CANCEL' | 'BULK_RECEIVE' | 'APPROVE';
 
 export interface ActionValidationResult {
   allowed: boolean;
@@ -200,6 +200,17 @@ export const OrderActionValidator = {
       });
     }
 
+    // Include header actions in the footer
+    const headerActions = this.getHeaderActions(order);
+    headerActions.forEach(action => {
+      actions.push({
+        id: action.id as OrderFooterActionId,
+        label: action.label,
+        validation: action.validation,
+        color: action.color
+      });
+    });
+
     return actions;
   },
 
@@ -266,6 +277,8 @@ export const OrderActionValidator = {
    */
   isItemSelectable(order: any, item: any): boolean {
     return this.validateItemAction(order, item, 'FULFILL').allowed || 
-           this.validateItemAction(order, item, 'RECEIVE').allowed;
+           this.validateItemAction(order, item, 'RECEIVE').allowed ||
+           this.validateItemAction(order, item, 'APPROVE').allowed ||
+           this.validateItemAction(order, item, 'CANCEL').allowed;
   }
 };

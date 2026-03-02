@@ -24,12 +24,9 @@
               <ion-label>
                 <p class="overline">{{ getStatusDesc(currentOrder.statusId) }}</p>
                 <h1>{{ currentOrder.orderName ? currentOrder.orderName : currentOrder.orderId }}</h1>
+                <p>{{ statusFlowDesc }}</p>
               </ion-label>
-              <div slot="end">
-                <ion-button v-for="action in OrderActionValidator.getHeaderActions(currentOrder)" :key="action.id" fill="outline" :color="action.color || 'primary'" size="small" :disabled="isOrderStatusUpdateDisabled || !action.validation.allowed" @click="handleHeaderAction(action)">
-                  {{ translate(action.label) }}
-                </ion-button>
-              </div>
+
             </ion-item>
           </div>
 
@@ -38,14 +35,20 @@
               <ion-card-header>
                 <ion-card-title>{{ currentOrder.originFacility?.facilityName ? currentOrder.originFacility.facilityName : getFacilityName(currentOrder.facilityId) }}</ion-card-title>
               </ion-card-header>
-              <ion-item v-if="currentOrder?.originFacility" lines="none">
+              <ion-item v-if="currentOrder?.facilityId" lines="none">
                 <ion-icon :icon="sendOutline" slot="start" />
-                <ion-label>
-                  <h3 v-if="currentOrder.originFacility?.address1">{{ currentOrder.originFacility.address1 }}</h3>
+                <ion-label v-if="currentOrder.originFacility?.address1">
+                  <h3>{{ currentOrder.originFacility.address1 }}</h3>
                   <h3 v-if="currentOrder.originFacility?.address2">{{ currentOrder.originFacility.address2 }}</h3>
                   <p>{{ currentOrder.originFacility?.city ?? "" }}{{ (currentOrder.originFacility?.city && currentOrder.originFacility?.postalCode) && ", " }}{{ currentOrder.originFacility?.postalCode ?? "" }}</p>
                   <p>{{ currentOrder.originFacility?.stateGeoName ?? "" }}{{ (currentOrder.originFacility?.stateGeoName && currentOrder.originFacility?.countryGeoName) && ", " }}{{ currentOrder.originFacility?.countryGeoName ?? "" }}</p>
                 </ion-label>
+                <ion-label v-else>
+                  <p>{{ translate("Add address to facility in the Facilities app.") }}</p>
+                </ion-label>
+                <ion-button slot="end" fill="clear" color="medium" @click="viewFacilityInFacilitiesApp(currentOrder.facilityId)">
+                  <ion-icon :icon="openOutline" slot="icon-only" />
+                </ion-button>
               </ion-item>
               <ion-item>
                 <ion-select :label="translate('Carrier')" :value="currentOrder.carrierPartyId" interface="popover" :placeholder="translate('Select')" :disabled="isOrderFinished()" @ionChange="updateCarrierAndShipmentMethod($event, $event.detail.value, '')">
@@ -67,14 +70,20 @@
               <ion-card-header>
                 <ion-card-title>{{ currentOrder.destinationFacility?.facilityName ? currentOrder.destinationFacility.facilityName : getFacilityName(currentOrder.orderFacilityId) }}</ion-card-title>
               </ion-card-header>
-              <ion-item v-if="currentOrder?.destinationFacility" lines="none">
+              <ion-item v-if="currentOrder?.orderFacilityId" lines="none">
                 <ion-icon :icon="downloadOutline" slot="start" />
-                <ion-label>
-                  <h3 v-if="currentOrder.destinationFacility?.address1">{{ currentOrder.destinationFacility.address1 }}</h3>
+                <ion-label v-if="currentOrder.destinationFacility?.address1">
+                  <h3>{{ currentOrder.destinationFacility.address1 }}</h3>
                   <h3 v-if="currentOrder.destinationFacility?.address2">{{ currentOrder.destinationFacility.address2 }}</h3>
                   <p>{{ currentOrder.destinationFacility?.city ?? "" }}{{ (currentOrder.destinationFacility?.city && currentOrder.destinationFacility?.postalCode) && ", " }}{{ currentOrder.destinationFacility?.postalCode ?? "" }}</p>
                   <p>{{ currentOrder.destinationFacility?.stateGeoName ?? "" }}{{ (currentOrder.destinationFacility?.stateGeoName && currentOrder.destinationFacility?.countryGeoName) && ", " }}{{ currentOrder.destinationFacility?.countryGeoName ?? "" }}</p>
                 </ion-label>
+                <ion-label v-else>
+                  <p>{{ translate("Add address to facility in the Facilities app.") }}</p>
+                </ion-label>
+                <ion-button slot="end" fill="clear" color="medium" @click="viewFacilityInFacilitiesApp(currentOrder.orderFacilityId)">
+                  <ion-icon :icon="openOutline" slot="icon-only" />
+                </ion-button>
               </ion-item>
             </ion-card>
           </div>
@@ -104,7 +113,6 @@
           <ion-item lines="none">
             <ion-label>
               <h1>{{ translate("Summary") }}</h1>
-              <p>{{ statusFlowDesc }}</p>
             </ion-label>
           </ion-item>
 
@@ -143,8 +151,8 @@
         </section>
 
         <section class="ion-margin-top">
-          <ion-item lines="none">
-            <ion-checkbox slot="start" :indeterminate="isIndeterminate" :checked="isAllSelected" @ionChange="toggleSelectAll($event)"></ion-checkbox>
+          <ion-item lines="none" button @click="toggleSelectAll()" :detail="false">
+            <ion-checkbox slot="start" :indeterminate="isIndeterminate" :checked="isAllSelected" class="no-pointer-events"></ion-checkbox>
             <ion-icon slot="start" :icon="shirtOutline" />
             <ion-label>
               <h1>{{ translate("Items") }}</h1>
@@ -271,7 +279,7 @@
 <script setup lang="ts">
 import { IonBackButton, IonBadge, IonButton, IonButtons, IonCard, IonCardContent, IonCardHeader, IonCardTitle, IonCheckbox, IonChip, IonContent, IonFooter, IonHeader, IonIcon, IonItem, IonLabel, IonList, IonNote, IonPage, IonSegment, IonSegmentButton, IonSelect, IonSelectOption, IonSpinner, IonThumbnail, IonTitle, IonToolbar, onIonViewWillEnter, alertController, modalController, popoverController } from "@ionic/vue";
 import { getProductIdentificationValue, translate, useProductIdentificationStore } from '@hotwax/dxp-components';
-import { chevronDownOutline, checkmarkDoneOutline, playOutline, ellipsisVerticalOutline, ticketOutline, downloadOutline, sendOutline, shirtOutline, informationCircleOutline, closeCircleOutline } from "ionicons/icons";
+import { chevronDownOutline, checkmarkDoneOutline, playOutline, ellipsisVerticalOutline, ticketOutline, downloadOutline, sendOutline, shirtOutline, informationCircleOutline, closeCircleOutline, openOutline } from "ionicons/icons";
 import Image from "@/components/Image.vue";
 import OrderItemDetailActionsPopover from '@/components/OrderItemDetailActionsPopover.vue';
 import ShipmentDetailModal from '@/components/ShipmentDetailModal.vue';
@@ -289,7 +297,7 @@ import { DateTime } from "luxon";
 import { showToast } from "@/utils";
 import emitter from "@/event-bus";
 import { formatCurrency } from "@/utils";
-import { OrderActionValidator, OrderHeaderAction, OrderFooterAction } from "@/utils/OrderActionValidator";
+import { OrderActionValidator, OrderFooterAction } from "@/utils/OrderActionValidator";
 import ProgressBar from "@/components/ProgressBar.vue";
 import { DynamicScroller, DynamicScrollerItem } from 'vue-virtual-scroller';
 
@@ -325,9 +333,8 @@ function toggleSelectedItem(itemSeqId: string) {
   selectedItemSeqIds.value = newSet;
 }
 
-function toggleSelectAll(event: any) {
-  const isChecked = event.detail.checked;
-  if (!isChecked) {
+function toggleSelectAll() {
+  if (isAllSelected.value) {
     selectedItemSeqIds.value = new Set();
   } else {
     const selectAllValidItems = OrderActionValidator.getBulkSelectableItems(currentOrder.value);
@@ -349,6 +356,9 @@ async function handleFooterAction(action: OrderFooterAction) {
       break;
     case 'BULK_RECEIVE':
       openBulkActionModal('RECEIVE');
+      break;
+    case 'APPROVE':
+      updateOrderStatus('ORDER_APPROVED');
       break;
   }
 }
@@ -618,13 +628,7 @@ onIonViewWillEnter(async () => {
   carrierMethods.value = shipmentMethodsByCarrier.value[currentOrder.value.carrierPartyId]
 })
 
-function handleHeaderAction(action: OrderHeaderAction) {
-  if (action.handler === 'changeOrderStatus') {
-    changeOrderStatus(action.statusId);
-  } else {
-    updateOrderStatus(action.statusId);
-  }
-}
+
 
 async function changeOrderStatus(updatedStatusId: string) {
   if(updatedStatusId === "ORDER_APPROVED") {
@@ -793,6 +797,10 @@ async function openOrderItemDetailActionsPopover(event: any, item: any){
 
 function formatDateTime(date: any) {
   return DateTime.fromMillis(date).toLocaleString({ hour: "numeric", minute: "2-digit", day: "numeric", month: "short", year: "numeric", hourCycle: "h12" })
+}
+
+function viewFacilityInFacilitiesApp(facilityId: string) {
+  window.open(`https://facilities.hotwax.io/facility-details/${facilityId}`, '_blank', 'noopener, noreferrer');
 }
 </script>
 
