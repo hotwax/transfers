@@ -1,19 +1,19 @@
 <template>
   <ion-page>
-    <ion-tabs>
-      <ion-router-outlet></ion-router-outlet>
-      <ion-tab-bar slot="bottom" v-if="showFooter()">
+      <ion-tabs>
+      <ion-router-outlet data-testid="tabs-router-outlet"></ion-router-outlet>
+      <ion-tab-bar data-testid="tabs-bottom-bar" slot="bottom" v-if="showFooter()">
         <ion-tab-button tab="transfers" href="/tabs/transfers">
           <ion-icon :icon="businessOutline" />
-          <ion-label>{{ translate("Transfers") }}</ion-label>
+          <ion-label data-testid="tabs-transfers-btn">{{ translate("Transfers") }}</ion-label>
         </ion-tab-button>
         <ion-tab-button tab="discrepancies" href="/tabs/discrepancies">
           <ion-icon :icon="alertCircleOutline" />
-          <ion-label>{{ translate("Discrepancies") }}</ion-label>
+          <ion-label data-testid="tabs-discrepancies-btn">{{ translate("Discrepancies") }}</ion-label>
         </ion-tab-button>
         <ion-tab-button tab="settings" href="/tabs/settings">
           <ion-icon :icon="settingsOutline" />
-          <ion-label>{{ translate("Settings") }}</ion-label>
+          <ion-label data-testid="tabs-settings-btn">{{ translate("Settings") }}</ion-label>
         </ion-tab-button>
       </ion-tab-bar>
     </ion-tabs>

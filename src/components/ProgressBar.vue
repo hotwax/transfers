@@ -1,8 +1,8 @@
 <template>
-  <div class="progress-bar-wrapper ion-padding">
-    <ion-label>{{ translate("Loading order details...") }}</ion-label>
-    <ion-progress-bar class="ion-margin-vertical bar-width" :value="progressValue"></ion-progress-bar>
-    <ion-note>{{ loadedItems }} / {{ totalItems }}</ion-note>
+  <div class="progress-bar-wrapper ion-padding" data-testid="progress-bar">
+    <ion-label data-testid="progress-bar-label">{{ translate("Loading order details...") }}</ion-label>
+    <ion-progress-bar data-testid="progress-bar-progress" class="ion-margin-vertical bar-width" :value="progressValue"></ion-progress-bar>
+    <ion-note data-testid="progress-bar-note">{{ loadedItems }} / {{ totalItems }}</ion-note>
   </div>
 </template>
 
