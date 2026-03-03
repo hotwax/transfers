@@ -30,7 +30,7 @@
               </ion-label>
             </ion-item>
             <ion-item lines="none">
-              <ion-select :label="translate('Discrepancy Type')" interface="popover" v-model="selectedTab">
+              <ion-select data-testid="discrepancies-type-select" :label="translate('Discrepancy Type')" interface="popover" v-model="selectedTab">
                 <ion-select-option value="TransferOrderOverReceived">{{ translate("Over") }}</ion-select-option>
                 <ion-select-option value="TransferOrderUnderReceived">{{ translate("Under") }}</ion-select-option>
                 <ion-select-option value="TransferOrderMisshipped">{{ translate("Mis-shipped") }}</ion-select-option>
@@ -43,7 +43,7 @@
               </ion-label>
             </ion-item>
             <ion-item lines="none">
-              <ion-select :label="translate('Origin')" interface="popover" v-model="originFacilityId">
+              <ion-select data-testid="discrepancies-origin-select" :label="translate('Origin')" interface="popover" v-model="originFacilityId">
                 <ion-select-option value="">{{ translate("All") }}</ion-select-option>
                 <ion-select-option v-for="facility in facilities" :key="facility.facilityId" :value="facility.facilityId">
                   {{ facility.facilityName || facility.facilityId }}
@@ -51,7 +51,7 @@
               </ion-select>
             </ion-item>
             <ion-item lines="none">
-              <ion-select :label="translate('Destination')" interface="popover" v-model="destinationFacilityId">
+              <ion-select data-testid="discrepancies-destination-select" :label="translate('Destination')" interface="popover" v-model="destinationFacilityId">
                 <ion-select-option value="">{{ translate("All") }}</ion-select-option>
                 <ion-select-option v-for="facility in facilities" :key="facility.facilityId" :value="facility.facilityId">
                   {{ facility.facilityName || facility.facilityId }}
@@ -62,7 +62,7 @@
         </aside>
 
         <main class="ion-content-scroll-host">
-          <div v-if="isLoading" class="empty-state">
+          <div v-if="isLoading" data-testid="discrepancies-loading" class="empty-state">
             <ion-spinner name="crescent" />
             <p>{{ translate("Fetching discrepancies...") }}</p>
           </div>
@@ -71,7 +71,7 @@
             <p>{{ translate("No discrepancies found for this category.") }}</p>
           </div>
           <div v-else>
-            <div class="list-item" v-for="(item, index) in discrepancies" :key="index" @click="viewOrder(item.orderId)">
+            <div class="list-item" :data-testid="`discrepancy-row-${item.orderId}`" v-for="(item, index) in discrepancies" :key="index" @click="viewOrder(item.orderId)">
               <ion-item lines="none">
                 <ion-label>
                   {{ item.orderName || item.orderId }}

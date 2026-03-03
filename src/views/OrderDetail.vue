@@ -2,12 +2,12 @@
   <ion-page>
     <ion-header>
       <ion-toolbar>
-        <ion-back-button slot="start" default-href="/tabs/transfers" />
+        <ion-back-button data-testid="order-detail-back-btn" slot="start" default-href="/tabs/transfers" />
         <ion-title>{{ translate("Transfer order details") }}</ion-title>
       </ion-toolbar>
     </ion-header>
     <ion-content>
-      <main v-if="isFetchingOrderDetail">
+      <main data-testid="order-detail-loading" v-if="isFetchingOrderDetail">
         <div class="empty-state">
           <ProgressBar :total-items="currentOrder.totalItems || 0" :loaded-items="currentOrder.loadedItems || 0" v-if="currentOrder.isFetching" />
           <template v-else>
@@ -51,12 +51,12 @@
                 </ion-button>
               </ion-item>
               <ion-item>
-                <ion-select :label="translate('Carrier')" :value="currentOrder.carrierPartyId" interface="popover" :placeholder="translate('Select')" :disabled="isOrderFinished()" @ionChange="updateCarrierAndShipmentMethod($event, $event.detail.value, '')">
+                <ion-select data-testid="order-carrier-select" :label="translate('Carrier')" :value="currentOrder.carrierPartyId" interface="popover" :placeholder="translate('Select')" :disabled="isOrderFinished()" @ionChange="updateCarrierAndShipmentMethod($event, $event.detail.value, '')">
                   <ion-select-option :value="carrierPartyId" v-for="(carrierPartyId, index) in Object.keys(shipmentMethodsByCarrier)" :key="index">{{ getCarrierDesc(carrierPartyId) ? getCarrierDesc(carrierPartyId) : carrierPartyId }}</ion-select-option>
                 </ion-select>
               </ion-item>
               <ion-item lines="none">
-                <ion-select :label="translate('Method')" :value="currentOrder.shipmentMethodTypeId" v-if="carrierMethods?.length" :placeholder="translate('Select')" interface="popover" :disabled="isOrderFinished()" @ionChange="updateCarrierAndShipmentMethod($event, currentOrder.carrierPartyId, $event.detail.value)">
+                <ion-select data-testid="order-method-select" :label="translate('Method')" :value="currentOrder.shipmentMethodTypeId" v-if="carrierMethods?.length" :placeholder="translate('Select')" interface="popover" :disabled="isOrderFinished()" @ionChange="updateCarrierAndShipmentMethod($event, currentOrder.carrierPartyId, $event.detail.value)">
                   <ion-select-option :value="shipmentMethod.shipmentMethodTypeId" v-for="(shipmentMethod, index) in carrierMethods" :key="index">{{ shipmentMethod.description ? shipmentMethod.description : shipmentMethod.shipmentMethodTypeId }}</ion-select-option>
                 </ion-select>
                 <template v-else>
@@ -89,7 +89,7 @@
           </div>
 
           <div class="timeline" v-if="orderTimeline?.length">
-            <ion-list class="desktop-only">
+            <ion-list data-testid="order-timeline-list" class="desktop-only">
               <ion-item lines="none">
                 <h2>{{ translate("Timeline") }}</h2>
               </ion-item>
@@ -122,7 +122,7 @@
                 <ion-card-title>{{ translate("Status") }}</ion-card-title>
               </ion-card-header>
               <ion-card-content>
-                <ion-chip :outline="selectedStatusFilter !== filter.value" v-for="filter in availableStatusFilters" :key="filter.value" @click="handleStatusFilterChange(filter.value)">
+                <ion-chip :outline="selectedStatusFilter !== filter.value" :data-testid="`order-status-filter-${filter.value}`" v-for="filter in availableStatusFilters" :key="filter.value" @click="handleStatusFilterChange(filter.value)">
                   <ion-label>{{ translate(filter.label) }} ({{ orderStatusCounts[filter.value] || 0 }})</ion-label>
                 </ion-chip>
               </ion-card-content>
@@ -162,6 +162,7 @@
           <hr />
 
           <DynamicScroller
+            data-testid="order-items-scroller"
             :items="flattenedScrollerItems"
             :min-item-size="70"
             key-field="id"
@@ -203,7 +204,7 @@
                 </div>
 
                 <!-- ITEM ROW -->
-                <div v-else-if="item.type === 'item'" class="list-item" :class="{ 'disabled': !OrderActionValidator.isItemSelectable(currentOrder, item) }" @click="OrderActionValidator.isItemSelectable(currentOrder, item) && toggleSelectedItem(item.orderItemSeqId)">
+                <div v-else-if="item.type === 'item'" :data-testid="`order-item-row-${item.orderItemSeqId}`" class="list-item" :class="{ 'disabled': !OrderActionValidator.isItemSelectable(currentOrder, item) }" @click="OrderActionValidator.isItemSelectable(currentOrder, item) && toggleSelectedItem(item.orderItemSeqId)">
                   <div class="item-key">
                     <ion-checkbox :checked="selectedItemSeqIds.has(item.orderItemSeqId)" :disabled="!OrderActionValidator.isItemSelectable(currentOrder, item)" class="no-pointer-events"></ion-checkbox>
                     <ion-item lines="none">
@@ -264,7 +265,7 @@
           {{ selectedItemSeqIds.size }} {{ translate("items selected") }}
         </ion-label>
         <ion-buttons slot="end">
-          <ion-button v-for="action in OrderActionValidator.getFooterActions(currentOrder, selectedItemSeqIds)" :key="action.id" fill="outline" :color="action.color || 'primary'" :disabled="!action.validation.allowed" @click="handleFooterAction(action)">
+          <ion-button v-for="action in OrderActionValidator.getFooterActions(currentOrder, selectedItemSeqIds)" :key="action.id" :data-testid="`order-footer-${action.id.replace(/_/g,'-').toLowerCase()}`" fill="outline" :color="action.color || 'primary'" :disabled="!action.validation.allowed" @click="handleFooterAction(action)">
             <ion-icon :icon="getIcon(action.icon)" slot="start" v-if="action.icon" />
             {{ getFooterActionLabel(action) }}
           </ion-button>

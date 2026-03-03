@@ -34,3 +34,6 @@ npm-debug.log*
 .env
 .env.*
 !.env.example
+
+# Playwright HTML report
+playwright/playwright-report/
