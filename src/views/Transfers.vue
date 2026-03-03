@@ -19,8 +19,8 @@
 
     <ion-content id="filter-content" :scroll-y="false">
       <div class="find">
-        <section class="search">
-          <ion-searchbar :placeholder="translate('Search transfer orders')" v-model="orderName" @keyup.enter="orderName = $event.target.value; updateAppliedFilters($event.target.value, 'orderName')" />
+          <section class="search">
+          <ion-searchbar data-testid="transfers-search-input" :placeholder="translate('Search transfer orders')" v-model="orderName" @keyup.enter="orderName = $event.target.value; updateAppliedFilters($event.target.value, 'orderName')" />
         </section>
 
         <aside class="filters">
@@ -31,11 +31,11 @@
           <section class="sort">
             <ion-item lines="none">
               <ion-icon slot="start" :icon="documentTextOutline" />
-              <ion-select :label="translate('Group by')" interface="popover" :value="selectedGroupBy.id" @ionChange="updateGroupByFilter($event.detail.value)">
+              <ion-select data-testid="transfers-groupby-select" :label="translate('Group by')" interface="popover" :value="selectedGroupBy.id" @ionChange="updateGroupByFilter($event.detail.value)">
                 <ion-select-option v-for="option in groupByOptions" :value="option.id" :key="option.id">{{ option.description }}</ion-select-option>
               </ion-select>
             </ion-item>
-            <ion-item lines="none" button @click="updateAppliedFilters('', 'sort')">
+            <ion-item data-testid="transfers-sort-btn" lines="none" button @click="updateAppliedFilters('', 'sort')">
               <ion-icon slot="start" :icon="swapVerticalOutline" />
               <ion-label>{{ translate("Sort by") }}</ion-label>
               <ion-label slot="end">{{ translate("Created date") }}</ion-label>
@@ -45,11 +45,11 @@
 
           <hr />
 
-          <div class="empty-state" v-if="isFetchingOrders">
+          <div class="empty-state" data-testid="transfers-loading" v-if="isFetchingOrders">
             <ion-spinner name="crescent" />
             <p>{{ translate("Fetching transfer orders") }}</p>
           </div>
-          <div class="empty-state" v-else-if="!ordersList?.length">
+          <div class="empty-state" data-testid="transfers-empty" v-else-if="!ordersList?.length">
             <template v-if="isAnyFilterApplied">
               <p>{{ translate("No transfer orders found for the applied filters.") }}</p>
             </template>
@@ -63,7 +63,7 @@
             </template>
           </div>
           <template v-if="query.groupBy === 'ORDER_ID'">
-            <div class="list-item order" v-for="(order, index) in ordersList" :key="index" @click="router.push(`/order-detail/${order.orderId}`)">
+            <div class="list-item order" :data-testid="`orders-row-${order.orderId}`" v-for="(order, index) in ordersList" :key="index" @click="router.push(`/order-detail/${order.orderId}`)">
               <ion-item lines="none">
                 <ion-label>
                   {{ order.orderName }}
@@ -132,7 +132,7 @@
                       <p>{{ translate("Loading") }}</p>
                     </div>
                     <!-- order items -->
-                    <div v-else class="list-item" v-for="(item, index) in orderItemsList(query.groupBy === 'ORIGIN' ? order.facilityId : order.orderFacilityId)" :key="index" @click="router.push(`/order-detail/${item.orderId}`)">
+                    <div v-else class="list-item" :data-testid="`orders-row-${item.orderId}`" v-for="(item, index) in orderItemsList(query.groupBy === 'ORIGIN' ? order.facilityId : order.orderFacilityId)" :key="index" @click="router.push(`/order-detail/${item.orderId}`)">
                       <ion-item lines="none">
                         <ion-label class="ion-text-wrap">
                           {{ item.orderName }}
@@ -255,7 +255,7 @@
             </template>
           </ion-accordion-group>
 
-          <ion-infinite-scroll @ionInfinite="loadMoreOrders($event)" threshold="100px" v-if="isScrollable">
+          <ion-infinite-scroll data-testid="transfers-infinite-scroll" @ionInfinite="loadMoreOrders($event)" threshold="100px" v-if="isScrollable">
             <ion-infinite-scroll-content loading-spinner="crescent" :loading-text="translate('Loading')"/>
           </ion-infinite-scroll>
         </main>
