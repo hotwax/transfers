@@ -1,19 +1,9 @@
-export type OrderHeaderActionId = 'APPROVE';
 export type OrderItemActionId = 'EDIT' | 'REMOVE' | 'FULFILL' | 'RECEIVE' | 'CLOSE_FULFILLMENT' | 'APPROVE' | 'CANCEL';
-export type OrderFooterActionId = 'ADD_ITEMS' | 'CANCEL' | 'BULK_RECEIVE' | 'APPROVE';
+export type OrderFooterActionId = 'ADD_ITEMS' | 'CANCEL' | 'CLOSE_FULFILLMENT' | 'BULK_RECEIVE' | 'APPROVE';
 
 export interface ActionValidationResult {
   allowed: boolean;
   reason?: string;
-}
-
-export interface OrderHeaderAction {
-  id: OrderHeaderActionId;
-  label: string;
-  color?: string;
-  validation: ActionValidationResult;
-  handler: 'updateOrderStatus' | 'changeOrderStatus';
-  statusId: string;
 }
 
 export interface OrderItemAction {
@@ -33,26 +23,9 @@ export interface OrderFooterAction {
 
 export const OrderActionValidator = {
   /**
-   * VALIDATION MODE: Validates a specific header action.
-   */
-  validateHeaderAction(order: any, actionId: OrderHeaderActionId): ActionValidationResult {
-    switch (actionId) {
-      case 'APPROVE':
-        if (order.statusId !== 'ORDER_CREATED') {
-          return { allowed: false, reason: 'Order must be in Created status to be approved.' };
-        }
-        return { allowed: true };
-
-      default:
-        return { allowed: false, reason: 'Unknown action.' };
-    }
-  },
-
-  /**
    * VALIDATION MODE: Validates a specific footer action.
    */
   validateFooterAction(order: any, actionId: OrderFooterActionId, selectedItemSeqIds: Set<string>): ActionValidationResult {
-    const selectedItemCount = selectedItemSeqIds.size;
     switch (actionId) {
       case 'ADD_ITEMS':
         if (order.statusId !== 'ORDER_CREATED') {
@@ -60,17 +33,18 @@ export const OrderActionValidator = {
         }
         return { allowed: true };
 
-      case 'CANCEL':
+      case 'CANCEL': {
         if (order.statusId === 'ORDER_CREATED') return { allowed: true };
         if (order.statusId !== 'ORDER_APPROVED') {
           return { allowed: false, reason: 'Only Created or Approved orders can be cancelled.' };
         }
-        if (order.statusFlowId === 'TO_Receive_Only') {
-          const hasReceipts = order.items?.some((item: any) => (item.receivedQty || 0) > 0);
-          if (hasReceipts) return { allowed: false, reason: 'Cannot cancel order once items have been received.' };
-        } else {
-          // Fulfill Flows: Block if any inventory has been impacted (issued, packed, or shipped)
-          const hasInventoryImpact = order.shipments?.some((shipment: any) => 
+        // Receipts always block cancellation, regardless of flow
+        const hasReceipts = order.items?.some((item: any) => (item.receivedQty || 0) > 0);
+        if (hasReceipts) return { allowed: false, reason: 'Cannot cancel order once items have been received.' };
+
+        // Fulfillment impact only blocks cancellation for non-receive-only flows
+        if (order.statusFlowId !== 'TO_Receive_Only') {
+          const hasInventoryImpact = order.shipments?.some((shipment: any) =>
             shipment.shipmentTypeId === 'OUT_TRANSFER' && ['SHIPMENT_PACKED', 'SHIPMENT_SHIPPED'].includes(shipment.statusId)
           ) || order.items?.some((item: any) => (item.totalIssuedQuantity || 0) > 0);
 
@@ -79,20 +53,55 @@ export const OrderActionValidator = {
           }
         }
         return { allowed: true };
+      }
 
-      case 'BULK_RECEIVE':
-        if (selectedItemSeqIds.size === 0) return { allowed: false, reason: 'No items selected.' };
-        if (order.statusId !== 'ORDER_APPROVED') return { allowed: false, reason: 'Order must be Approved.' };
-        
-        // Logic: Disable if ALL selected items are pending fulfillment (cannot be received yet)
-        const selectedItems = (order.items || []).filter((item: any) => selectedItemSeqIds.has(item.orderItemSeqId));
-        const allPendingFulfillment = selectedItems.length > 0 && selectedItems.every((item: any) => this.isItemPendingFulfillment(order, item));
-        
-        if (allPendingFulfillment) {
-          return { allowed: false, reason: 'All selected items are pending fulfillment and cannot be received.' };
+      case 'CLOSE_FULFILLMENT': {
+        // Only applicable to non-receive-only flows
+        if (order.statusFlowId === 'TO_Receive_Only') {
+          return { allowed: false, reason: 'Close Fulfillment is not applicable for Receive Only orders.' };
+        }
+        if (order.statusId !== 'ORDER_APPROVED') {
+          return { allowed: false, reason: 'Order must be Approved to close fulfillment.' };
+        }
+        // Only available once cancellation is blocked (i.e., inventory has been impacted)
+        const hasInventoryImpact = order.shipments?.some((shipment: any) =>
+          shipment.shipmentTypeId === 'OUT_TRANSFER' && ['SHIPMENT_PACKED', 'SHIPMENT_SHIPPED'].includes(shipment.statusId)
+        ) || order.items?.some((item: any) => (item.totalIssuedQuantity || 0) > 0 || (item.receivedQty || 0) > 0);
+        if (!hasInventoryImpact) {
+          return { allowed: false, reason: 'Close Fulfillment is only available after inventory has been impacted.' };
+        }
+
+        // Only available if there are items pending fulfillment
+        const hasPendingFulfillmentItems = (order.items || []).some((item: any) => this.isItemPendingFulfillment(order, item));
+        if (!hasPendingFulfillmentItems) {
+          return { allowed: false, reason: 'No items are currently pending fulfillment.' };
         }
 
         return { allowed: true };
+      }
+
+      case 'BULK_RECEIVE': {
+        if (order.statusId !== 'ORDER_APPROVED') return { allowed: false, reason: 'Order must be Approved.' };
+        
+        // If items are selected, validate based on that selection
+        if (selectedItemSeqIds.size > 0) {
+          const selectedItems = (order.items || []).filter((item: any) => selectedItemSeqIds.has(item.orderItemSeqId));
+          const allPendingFulfillment = selectedItems.length > 0 && selectedItems.every((item: any) => this.isItemPendingFulfillment(order, item));
+          
+          if (allPendingFulfillment) {
+            return { allowed: false, reason: 'All selected items are pending fulfillment and cannot be received.' };
+          }
+          return { allowed: true };
+        }
+
+        // If no items are selected, enable if ANY item is eligible for receiving
+        const hasReceivableItems = (order.items || []).some((item: any) => this.validateItemAction(order, item, 'RECEIVE').allowed);
+        if (!hasReceivableItems) {
+          return { allowed: false, reason: 'No items are currently eligible for receiving.' };
+        }
+
+        return { allowed: true };
+      }
 
       default:
         return { allowed: false, reason: 'Unknown action.' };
@@ -151,23 +160,6 @@ export const OrderActionValidator = {
   },
 
   /**
-   * DISCOVERY MODE: Returns all available header actions.
-   */
-  getHeaderActions(order: any): OrderHeaderAction[] {
-    const actions: OrderHeaderAction[] = [];
-    if (order.statusId === 'ORDER_CREATED') {
-      actions.push({
-        id: 'APPROVE',
-        label: 'Approve',
-        validation: this.validateHeaderAction(order, 'APPROVE'),
-        handler: 'updateOrderStatus',
-        statusId: 'ORDER_APPROVED'
-      });
-    }
-    return actions.filter(action => action.validation.allowed);
-  },
-
-  /**
    * DISCOVERY MODE: Returns all available footer actions.
    */
   getFooterActions(order: any, selectedItemSeqIds: Set<string>): OrderFooterAction[] {
@@ -191,6 +183,16 @@ export const OrderActionValidator = {
 
     const flow = order.statusFlowId;
 
+    if (flow !== 'TO_Receive_Only') {
+      actions.push({
+        id: 'CLOSE_FULFILLMENT',
+        label: 'Close Fulfillment',
+        color: 'warning',
+        icon: 'warningOutline',
+        validation: this.validateFooterAction(order, 'CLOSE_FULFILLMENT', selectedItemSeqIds)
+      });
+    }
+
     if (flow === 'TO_Receive_Only' || flow === 'TO_Fulfill_And_Receive') {
       actions.push({
         id: 'BULK_RECEIVE',
@@ -200,16 +202,13 @@ export const OrderActionValidator = {
       });
     }
 
-    // Include header actions in the footer
-    const headerActions = this.getHeaderActions(order);
-    headerActions.forEach(action => {
+    if (order.statusId === 'ORDER_CREATED') {
       actions.push({
-        id: action.id as OrderFooterActionId,
-        label: action.label,
-        validation: action.validation,
-        color: action.color
+        id: 'APPROVE',
+        label: 'Approve',
+        validation: { allowed: true }
       });
-    });
+    }
 
     return actions;
   },

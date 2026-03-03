@@ -168,7 +168,7 @@
             class="virtual-list"
             v-if="flattenedScrollerItems.length"
           >
-            <template #default="{ item, index, active }">
+            <template #default="{ item, active }">
               <DynamicScrollerItem :item="item" :active="active" :size-dependencies="[item.type]">
                 
                 <!-- HEADER ROW -->
@@ -279,11 +279,12 @@
 <script setup lang="ts">
 import { IonBackButton, IonBadge, IonButton, IonButtons, IonCard, IonCardContent, IonCardHeader, IonCardTitle, IonCheckbox, IonChip, IonContent, IonFooter, IonHeader, IonIcon, IonItem, IonLabel, IonList, IonNote, IonPage, IonSegment, IonSegmentButton, IonSelect, IonSelectOption, IonSpinner, IonThumbnail, IonTitle, IonToolbar, onIonViewWillEnter, alertController, modalController, popoverController } from "@ionic/vue";
 import { getProductIdentificationValue, translate, useProductIdentificationStore } from '@hotwax/dxp-components';
-import { chevronDownOutline, checkmarkDoneOutline, playOutline, ellipsisVerticalOutline, ticketOutline, downloadOutline, sendOutline, shirtOutline, informationCircleOutline, closeCircleOutline, openOutline } from "ionicons/icons";
+import { chevronDownOutline, checkmarkDoneOutline, playOutline, ellipsisVerticalOutline, ticketOutline, downloadOutline, sendOutline, shirtOutline, informationCircleOutline, closeCircleOutline, openOutline, warningOutline } from "ionicons/icons";
 import Image from "@/components/Image.vue";
 import OrderItemDetailActionsPopover from '@/components/OrderItemDetailActionsPopover.vue';
 import ShipmentDetailModal from '@/components/ShipmentDetailModal.vue';
 import CancellationDetailModal from '@/components/CancellationDetailModal.vue';
+import CloseFulfillmentModal from '@/components/CloseFulfillmentModal.vue';
 import AddProductModal from "@/components/AddProductModal.vue"
 import { useOrderQueue } from '@/composables/useProductQueue';
 import { useOrderTimeline } from '@/composables/useOrderTimeline';
@@ -291,7 +292,7 @@ import { computed, ref, watch } from "vue";
 import { useStore } from "vuex";
 import logger from "@/logger";
 import { OrderService } from "@/services/OrderService";
-import BulkActionModal from "@/components/BulkActionModal.vue";
+import BulkReceiveModal from "@/components/BulkReceiveModal.vue";
 import { hasError, STATUSCOLOR } from "@/adapter";
 import { DateTime } from "luxon";
 import { showToast } from "@/utils";
@@ -355,7 +356,10 @@ async function handleFooterAction(action: OrderFooterAction) {
       }
       break;
     case 'BULK_RECEIVE':
-      openBulkActionModal('RECEIVE');
+      openBulkReceiveModal('RECEIVE');
+      break;
+    case 'CLOSE_FULFILLMENT':
+      openCloseFulfillmentModal();
       break;
     case 'APPROVE':
       updateOrderStatus('ORDER_APPROVED');
@@ -378,18 +382,29 @@ function getIcon(iconName: string) {
     shirtOutline,
     closeCircleOutline,
     playOutline,
-    checkmarkDoneOutline
+    checkmarkDoneOutline,
+    warningOutline
   } as any;
   return icons[iconName];
 }
 
-async function openBulkActionModal(actionType: string) {
-  const selectedItems = currentOrder.value.items.filter((item: any) => selectedItemSeqIds.value.has(item.orderItemSeqId));
+async function openBulkReceiveModal(actionType: string) {
+  let selectedItems = currentOrder.value.items.filter((item: any) => selectedItemSeqIds.value.has(item.orderItemSeqId));
+  
+  // If no items are selected, default to all eligible items for the action
+  if (selectedItems.length === 0) {
+    selectedItems = currentOrder.value.items.filter((item: any) => 
+      actionType === 'RECEIVE' 
+        ? OrderActionValidator.validateItemAction(currentOrder.value, item, 'RECEIVE').allowed
+        : OrderActionValidator.validateItemAction(currentOrder.value, item, 'FULFILL').allowed
+    );
+  }
+
   // Use originFacilityId for fulfillment (FULFILL) and orderFacilityId (destination) for receipt (RECEIVE)
   const facilityId = actionType === 'FULFILL' ? currentOrder.value.facilityId : currentOrder.value.orderFacilityId;
 
-  const bulkActionModal = await modalController.create({
-    component: BulkActionModal,
+  const bulkReceiveModal = await modalController.create({
+    component: BulkReceiveModal,
     componentProps: {
       items: selectedItems,
       actionType,
@@ -399,14 +414,35 @@ async function openBulkActionModal(actionType: string) {
     }
   });
 
-  bulkActionModal.onDidDismiss().then((result) => {
+  bulkReceiveModal.onDidDismiss().then((result) => {
     if (result.data?.isCompleted) {
       selectedItemSeqIds.value = new Set();
       store.dispatch("order/fetchOrderDetails", props.orderId);
     }
   });
 
-  return bulkActionModal.present();
+  return bulkReceiveModal.present();
+}
+
+async function openCloseFulfillmentModal() {
+  const modal = await modalController.create({
+    component: CloseFulfillmentModal,
+    componentProps: {
+      order: currentOrder.value,
+      selectedItemSeqIds: selectedItemSeqIds.value
+    }
+  });
+
+  modal.onDidDismiss().then(async (result) => {
+    if (result.data?.isCompleted) {
+      await Promise.all([
+        store.dispatch("order/fetchOrderDetails", props.orderId),
+        fetchOrderTimeline()
+      ]);
+    }
+  });
+
+  return modal.present();
 }
 const shipmentMethodsByCarrier = computed(() => store.getters["util/getShipmentMethodsByCarrier"])
 const getProduct = computed(() => store.getters["product/getProduct"])
@@ -546,8 +582,8 @@ const isExcluded = (item: any) => currentOrder.value?.statusId === "ORDER_CANCEL
 const isReceiptFinished = (item: any) => item.statusId === "ITEM_COMPLETED";
 
 const isUnderShipped = (item: any) => !isExcluded(item) && item.cancelQuantity > 0;
-const isUnderReceived = (item: any) => !isExcluded(item) && isReceiptFinished(item) && (item.receivedQty || 0) < (item.shippedQty || 0);
-const isOverReceived = (item: any) => !isExcluded(item) && (item.receivedQty || 0) > (item.shippedQty || 0);
+const isUnderReceived = (item: any) => !isExcluded(item) && currentOrder.value?.statusFlowId !== "TO_Fulfill_Only" && isReceiptFinished(item) && (item.receivedQty || 0) < (item.shippedQty || 0);
+const isOverReceived = (item: any) => !isExcluded(item) && currentOrder.value?.statusFlowId !== "TO_Fulfill_Only" && (item.receivedQty || 0) > (item.shippedQty || 0);
 
 const availableStatusFilters = computed(() => {
   const flow = currentOrder.value?.statusFlowId;

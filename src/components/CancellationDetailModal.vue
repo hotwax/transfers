@@ -17,9 +17,9 @@
           {{ formatDateTime(event.statusDatetime) }}
         </ion-label>
       </ion-item>
-      <ion-item-divider>
-        <ion-label>{{ translate("Items") }}</ion-label>
-      </ion-item-divider>
+      <ion-list-header>
+        {{ translate("Items") }}
+      </ion-list-header>
       <ion-item v-for="(item, index) in event.items" :key="index" lines="none">
         <ion-thumbnail slot="start">
           <Image :src="getProduct(item.productId)?.mainImageUrl" />
@@ -36,7 +36,7 @@
 </template>
 
 <script setup lang="ts">
-import { IonButton, IonButtons, IonContent, IonHeader, IonIcon, IonItem, IonItemDivider, IonLabel, IonList, IonThumbnail, IonTitle, IonToolbar, modalController } from "@ionic/vue";
+import { IonButton, IonButtons, IonContent, IonHeader, IonIcon, IonItem, IonListHeader, IonLabel, IonList, IonThumbnail, IonTitle, IonToolbar, modalController } from "@ionic/vue";
 import { closeOutline } from "ionicons/icons";
 import { getProductIdentificationValue, translate, useProductIdentificationStore } from '@hotwax/dxp-components';
 import { DateTime } from "luxon";
