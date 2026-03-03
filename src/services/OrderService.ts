@@ -259,10 +259,26 @@ const approveOrder = async (payload: any): Promise<any> => {
   })
 }
 
+const uploadTransferOrders = async (payload: any): Promise<any> => {
+  return api({
+    url: `poorti/transferOrders/upload`,
+    method: "post",
+    ...payload
+  })
+}
+
 const approveWarehouseFulfillOrder = async (payload: any): Promise<any> => { 
   return api({
     url: `oms/transferOrders/${payload.orderId}/approveWhFulfill`,
-    method: "post",
+    method: "POST",
+  })
+}
+
+const closeFulfillment = async (payload: any): Promise<any> => {
+  return api({
+    url: `poorti/transferOrders/${payload.orderId}/closeFulfillment`,
+    method: "POST",
+    data: payload
   })
 }
 
@@ -288,6 +304,30 @@ const fetchOrderReceipts = async (params :any): Promise<any> => {
   });
 }
 
+const createTransferOrderShipment = async (payload: any): Promise<any> => {
+  return api({
+    url: "poorti/transferShipments",
+    method: "post",
+    data: payload
+  });
+}
+
+const shipTransferOrderShipment = async (payload: any): Promise<any> => {
+  return api({
+    url: `poorti/transferShipments/${payload.shipmentId}/ship`,
+    method: "post",
+    data: payload
+  });
+}
+
+const receiveTransferOrder = async (payload: any): Promise<any> => {
+  return api({
+    url: `poorti/transferOrders/${payload.orderId}/receipts`,
+    method: "post",
+    data: payload
+  });
+}
+
 export const OrderService = {
   addOrderItem,
   approveOrder,
@@ -303,8 +343,13 @@ export const OrderService = {
   fetchShippedTransferShipments,
   findTransferOrders,
   findTransferOrderItems,
+  createTransferOrderShipment,
+  shipTransferOrderShipment,
+  receiveTransferOrder,
   updateOrderItem,
   updateOrderItemShipGroup,
   updateOrderStatus,
-  fetchOrderReceipts
+  fetchOrderReceipts,
+  closeFulfillment,
+  uploadTransferOrders
 }

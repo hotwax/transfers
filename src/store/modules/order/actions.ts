@@ -140,10 +140,11 @@ const actions: ActionTree<OrderState, RootState> = {
     await dispatch("findTransferOrders", { pageSize: process.env.VUE_APP_VIEW_SIZE, pageIndex: 0, groupByConfig })
   },
   
-  async fetchOrderDetails({ commit }, orderId) {
+  async fetchOrderDetails({ commit, state }, orderId) {
     let orderDetail = {} as any;
     let orderResp, shipmentResp;
     try {
+      commit(types.ORDER_CURRENT_UPDATED, { ...state.current, isFetching: true, loadedItems: 0, totalItems: 0 });
       // Fetch main transfer order details
       orderResp = await OrderService.fetchTransferOrderDetail(orderId);
       if (!hasError(orderResp)) {
@@ -193,18 +194,30 @@ const actions: ActionTree<OrderState, RootState> = {
           })
         }
 
-        const productIds = [...new Set(orderDetail.items.map((item:any) => item.productId))];
+        const uniqueProductIds = [...new Set(orderDetail.items.map((item:any) => item.productId))];
+        const totalProducts = uniqueProductIds.length;
+        commit(types.ORDER_CURRENT_UPDATED, { ...orderDetail, isFetching: true, loadedItems: 0, totalItems: totalProducts });
+
+        const productIds = [...uniqueProductIds];
         const batchSize = 250;
         const productIdBatches = [];
         while(productIds.length) {
           productIdBatches.push(productIds.splice(0, batchSize))
         }
-          await Promise.allSettled([productIdBatches.map(async (productIds) => await this.dispatch('product/fetchProducts', { productIds }))])
-          commit(types.ORDER_CURRENT_UPDATED, orderDetail);
+        
+        let loadedProducts = 0;
+        await Promise.allSettled(productIdBatches.map(async (batchIds) => {
+          await this.dispatch('product/fetchProducts', { productIds: batchIds });
+          loadedProducts += batchIds.length;
+          commit(types.ORDER_CURRENT_UPDATED, { ...orderDetail, isFetching: true, loadedItems: loadedProducts, totalItems: totalProducts });
+        }));
+          
+        commit(types.ORDER_CURRENT_UPDATED, { ...orderDetail, isFetching: false });
       } else {
         throw orderResp.data;
       }
     }catch(err:any){
+      commit(types.ORDER_CURRENT_UPDATED, { ...state.current, isFetching: false });
       logger.error("error", err);
       return Promise.reject(new Error(err));
     }

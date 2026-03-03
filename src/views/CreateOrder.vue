@@ -4,6 +4,9 @@
       <ion-toolbar>
         <ion-back-button slot="start" :default-href="`/tabs/transfers`" />
         <ion-title>{{ translate("Create transfer order") }}</ion-title>
+        <ion-buttons slot="end">
+          <ion-button @click="router.push('/bulk-upload')">{{ translate("Bulk upload") }}</ion-button>
+        </ion-buttons>
       </ion-toolbar>
     </ion-header>
 
@@ -93,28 +96,17 @@
             </ion-item>
           </ion-card>
 
-          <ion-item>
-            <ion-icon :icon="cloudUploadOutline" slot="start" />
-            <ion-label>
-              {{ translate("Import items CSV") }}
-              <p @click="downloadSampleCsv()">
-                <a>{{ translate("Download example") }}</a>
-              </p>
-            </ion-label>
-            <input @change="parse" ref="file" class="ion-hide" type="file" id="updateProductFile" :key="fileUploaded.toString()"/>
-            <label for="updateProductFile" class="pointer">{{ translate("Upload") }}</label>
-          </ion-item>
         </aside>
 
         <ion-modal class="date-time-modal" :is-open="dateTimeModalOpen" @didDismiss="closeDateTimeModal">
-          <ion-content force-overscroll="false">
+          <ion-content :force-overscroll="false">
             <ion-datetime 
               :value="currentOrder[selectedDateFilter] ? currentOrder[selectedDateFilter] : DateTime.now().toISO()"
-              show-clear-button
+              :show-clear-button="true"
               show-default-buttons
               presentation="date"
-              :min="currentOrder.shipDate"
-              :max="currentOrder.deliveryDate" 
+              :min="currentOrder.shipDate ? currentOrder.shipDate : undefined"
+              :max="currentOrder.deliveryDate ? currentOrder.deliveryDate : undefined" 
               @ionChange="updateDateTimeFilter($event.detail.value)"
             />
           </ion-content>
@@ -206,16 +198,15 @@
 
 <script setup lang="ts">
 import { IonBackButton, IonButton, IonCard, IonCardHeader, IonCardTitle, IonCheckbox, IonChip, IonContent, IonDatetime, IonFab, IonFabButton, IonHeader, IonIcon, IonInput, IonItem, IonLabel, IonModal, IonPage, IonSelect, IonSelectOption, IonSpinner, IonThumbnail, IonTitle, IonToolbar, onIonViewDidEnter, alertController, modalController, popoverController } from '@ionic/vue';
-import { addCircleOutline, checkmarkCircle, checkmarkDoneOutline, cloudUploadOutline, downloadOutline, ellipsisVerticalOutline, informationCircleOutline, listOutline, sendOutline, storefrontOutline } from 'ionicons/icons';
+import { addCircleOutline, checkmarkCircle, checkmarkDoneOutline, ellipsisVerticalOutline, informationCircleOutline, listOutline, sendOutline, storefrontOutline, downloadOutline } from 'ionicons/icons';
 import { getProductIdentificationValue, translate, useProductIdentificationStore, useUserStore } from '@hotwax/dxp-components'
 import { computed, ref, watch } from "vue";
-import { getDateWithOrdinalSuffix, jsonToCsv, parseCsv, showToast } from '@/utils';
+import { getDateWithOrdinalSuffix, showToast } from '@/utils';
 import logger from '@/logger';
 import { useStore } from 'vuex';
 import Image from '@/components/Image.vue';
 import OrderItemActionsPopover from '@/components/OrderItemActionsPopover.vue';
 import SelectFacilityModal from '@/components/SelectFacilityModal.vue';
-import ImportCsvModal from '@/components/ImportCsvModal.vue';
 import { ProductService } from '@/services/ProductService';
 import { UtilService } from '@/services/UtilService';
 import { OrderService } from '@/services/OrderService';
@@ -236,7 +227,19 @@ const dateTimeModalOpen = ref(false);
 const isAddingProduct = ref(false)
 const selectedDateFilter = ref("");
 const currencyUom = ref("");
-const currentOrder = ref({
+const currentOrder = ref<{
+  name: string;
+  productStoreId: string;
+  originFacilityId: string;
+  destinationFacilityId: string;
+  carrierPartyId: string;
+  shipmentMethodTypeId: string; 
+  items: any[];
+  statusFlowId: string;
+  shipDate: string;
+  deliveryDate: string;
+  [key: string]: any;
+}>({
   name: "",
   productStoreId: "",
   originFacilityId: "",
@@ -244,8 +247,10 @@ const currentOrder = ref({
   carrierPartyId: "",
   shipmentMethodTypeId: "", 
   items: [],
-  statusFlowId: ""
-}) as any;
+  statusFlowId: "TO_Fulfill_And_Receive",
+  shipDate: "",
+  deliveryDate: ""
+});
 //TODO: In future when transfers app is migrated to Moqui, fetch the status flows using API
 const statusFlows = [
   {
@@ -262,15 +267,9 @@ const statusFlows = [
   }
 ]
 
-let content = ref([]) as any 
-let fileColumns = ref([]) as any 
-let uploadedFile = ref({}) as any
-const fileUploaded = ref(false);
-
 const getProduct = computed(() => store.getters["product/getProduct"])
 const shipmentMethodsByCarrier = computed(() => store.getters["util/getShipmentMethodsByCarrier"])
 const getCarrierDesc = computed(() => store.getters["util/getCarrierDesc"])
-const sampleProducts = computed(() => store.getters["util/getSampleProducts"])
 const facilities = computed(() => store.getters["util/getFacilitiesByProductStore"])
 
 // Implemented watcher to display the search spinner correctly. Mainly the watcher is needed to not make the findProduct call always and to create the debounce effect.
@@ -300,37 +299,16 @@ watch(queryString, (value) => {
 onIonViewDidEnter(async () => {
   emitter.emit("presentLoader")
   stores.value = useUserStore().eComStores
-  const currentProductStoreId = useUserStore().getCurrentEComStore?.productStoreId
+  const currentProductStoreId = (useUserStore().getCurrentEComStore as any)?.productStoreId || "";
   currentOrder.value.productStoreId = currentProductStoreId
-  await Promise.allSettled([store.dispatch("util/fetchFacilitiesByCurrentStore", currentOrder.value.productStoreId), store.dispatch("util/fetchStoreCarrierAndMethods", currentOrder.value.productStoreId), store.dispatch("util/fetchCarriersDetail"), store.dispatch("util/fetchSampleProducts")])
+  await Promise.allSettled([store.dispatch("util/fetchStoreCarrierAndMethods", currentProductStoreId), store.dispatch("util/fetchCarriersDetail")])
   await fetchProductStoreDetails(currentProductStoreId);
   if(Object.keys(shipmentMethodsByCarrier.value)?.length) {
     currentOrder.value.carrierPartyId = Object.keys(shipmentMethodsByCarrier.value)[0]
     selectUpdatedMethod()
   }
-  uploadedFile.value = {}
-  content.value = []
   emitter.emit("dismissLoader")
 })
-
-async function parse(event: any) {
-  let file = event.target.files[0];
-  try {
-    if (file) { 
-      uploadedFile.value = file;
-      content.value = await parseCsv(uploadedFile.value);
-      fileColumns.value = Object.keys(content.value[0]);
-      showToast(translate("File uploaded successfully"));
-      fileUploaded.value =!fileUploaded.value; 
-      openImportCsvModal();
-    } else {
-      showToast(translate("No new file upload. Please try again"));
-    }
-  } catch {
-    content.value = []
-    showToast(translate("Please upload a valid csv to continue"));
-  }
-}
 
 async function fetchProductStoreDetails(productStoreId: string) {
   try {
@@ -343,68 +321,6 @@ async function fetchProductStoreDetails(productStoreId: string) {
   } catch (err) {
     logger.error(err);
   }
-}
-
-async function findProductFromIdentifier(payload: any) {
-  const productField = payload.productField
-  const quantityField = payload.quantityField
-  const idType = payload.idType
-  const uploadedItemsByIdValue = {} as any;
-  content.value.map((row: any) => {
-    uploadedItemsByIdValue[row[productField]] = row
-  })
-
-  const idValues = Object.keys(uploadedItemsByIdValue);
-  const productIdsAlreadyAddedInList = currentOrder.value.items.map((item: any) => item.productId)
-  const filterString = (idType === 'productId') ? `${idType}: (${idValues.join(' OR ')})` : `goodIdentifications: (${idValues.map((value: any) => `${idType}/${value}`).join(' OR ')})`;
-  
-  emitter.emit("presentLoader", { message: "Uploading items...", backdropDismiss: false });
-
-  try {
-    const resp = await ProductService.fetchProducts({
-      "filters": [filterString],
-      "viewSize": idValues.length
-    })
-
-    if(!hasError(resp) && resp.data.response?.docs?.length) {
-      const productsToAdd = resp.data.response.docs
-      store.dispatch("product/addProductToCachedMultiple", { products: productsToAdd })
-      const productsByIdValue = {} as any;
-      productsToAdd.map((product: any) => {
-        if(idType === "SKU") {
-          productsByIdValue[product["sku"]] = product
-        } else {
-          const idValue = getProductIdentificationValue(idType, product)
-          productsByIdValue[idValue] = product
-        }
-      })
-
-      for (const [idValue, product] of Object.entries(productsByIdValue)) {
-        if(productIdsAlreadyAddedInList.includes(product.productId)) {
-          if(quantityField) {
-            const item = currentOrder.value.items.find((item: any) => item.productId === product.productId)
-            item.quantity = Number(item.quantity) + (Number(uploadedItemsByIdValue[idValue][quantityField]) || 0)
-          }
-        } else {
-          const stock = currentOrder.value.originFacilityId ?  await fetchStock(product.productId) : null;
-          currentOrder.value.items.push({
-            productId: product.productId,
-            sku: product.sku,
-            quantity: quantityField && uploadedItemsByIdValue[idValue]?.[quantityField] ? Number(uploadedItemsByIdValue[idValue][quantityField]) || 0 : 0,
-            isChecked: false,
-            qoh: stock?.qoh ?? null,
-            atp: stock?.atp || 0
-          })
-        }
-      }
-    } else {
-      throw resp.data;
-    }
-  } catch(error) {
-    logger.error(error)
-    showToast(translate("Failed to add items to the order due to incorrect SKU mapping or invalid SKUs."))
-  }
-  emitter.emit("dismissLoader")
 }
 
 async function addProductToCount() {
@@ -431,7 +347,7 @@ async function addProductToCount() {
 }
 
 async function productStoreUpdated() {
-  await store.dispatch("util/fetchFacilitiesByCurrentStore", currentOrder.value.productStoreId);
+
   const isFacilityUpdated = currentOrder.value.originFacilityId !== facilities.value[0]?.facilityId
   if(isFacilityUpdated) {
     currentOrder.value.originFacilityId = "";
@@ -649,29 +565,6 @@ async function openOrderItemActionsPopover(event: any, selectedItem: any, isBulk
   })
 
   await popover.present();
-}
-
-async function openImportCsvModal() {
-  const importCsvModal = await modalController.create({
-    component: ImportCsvModal,
-    componentProps: {
-      fileColumns: fileColumns.value,
-      content: content.value
-    }
-  })
-  importCsvModal.onDidDismiss().then((result: any) => {
-    if (result?.data?.identifierData && Object.keys(result?.data?.identifierData).length) {
-      findProductFromIdentifier(result.data.identifierData)
-    }
-  })
-  importCsvModal.present();
-}
-
-function downloadSampleCsv() {
-  jsonToCsv(sampleProducts.value, {
-    download: true,
-    name: "Sample CSV.csv"
-  })
 }
 
 async function openSelectFacilityModal(facilityType: any) {

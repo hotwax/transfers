@@ -20,7 +20,8 @@ const orderModule: Module<OrderState, RootState> = {
       carrierPartyId: "",
       shipmentMethodTypeId: "",
       sort: 'orderDate desc',
-      groupBy: "ORDER_ID"
+      groupBy: "ORDER_ID",
+      statusFlowId: ""
     },
     current: {},
     orderReceipts: []

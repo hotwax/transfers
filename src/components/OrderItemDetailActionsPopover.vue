@@ -2,20 +2,9 @@
   <ion-content>
     <ion-list>
       <ion-list-header>{{ getProductIdentificationValue(productIdentificationStore.getProductIdentificationPref.primaryId, getProduct(item.productId)) || getProduct(item.productId).productName }}</ion-list-header>
-      <ion-item button :disabled="item.statusId !== 'ITEM_CREATED'" @click="editOrderedQuantity()">
-        {{ translate("Edit ordered qty") }}
+      <ion-item v-for="action in OrderActionValidator.getItemActions(currentOrder, item)" :key="action.id" button :color="action.color" @click="handleItemAction(action.id)">
+        {{ translate(action.label) }}
       </ion-item>
-      <ion-item button :disabled="!isEligibleToFulfill(item)" @click="redirectToFulfillItem()">
-        {{ translate("Fulfill") }}
-      </ion-item>
-      <ion-item button :disabled="!isEligibleToReceive(item)" @click="redirectToReceiveItem()">
-        {{ translate("Receive") }}
-      </ion-item>
-      <!--
-      TODO: Need to identify real workflow around the item completion for different transfer orders (fulfillment only, fulfill and receive and receive only)
-      <ion-item button lines="none" :disabled="!isEligibleToComplete()" @click="completeItem()">
-        {{ translate("Complete item") }}
-      </ion-item>-->
     </ion-list>
   </ion-content>
 </template>
@@ -23,13 +12,14 @@
 <script setup lang="ts">
 import { IonContent, IonItem, IonList, IonListHeader, alertController, popoverController } from "@ionic/vue"
 import { getProductIdentificationValue, translate, useProductIdentificationStore } from '@hotwax/dxp-components';
-import { computed, defineProps } from "vue";
+import { computed } from "vue";
 import store from "@/store";
 import { OrderService } from "@/services/OrderService";
 import logger from "@/logger";
 import { hasError } from "@/adapter";
 import { showToast } from "@/utils";
 import { useAuthStore } from "@hotwax/dxp-components";
+import { OrderActionValidator, OrderItemActionId } from "@/utils/OrderActionValidator";
 
 const authStore = useAuthStore()
 const productIdentificationStore = useProductIdentificationStore();
@@ -38,6 +28,65 @@ const props = defineProps(["item"]);
 const getProduct = computed(() => store.getters["product/getProduct"])
 const currentOrder = computed(() => store.getters["order/getCurrent"])
 const getOmsBaseUrl = computed(() => store.getters["user/getOmsBaseUrl"])
+
+function handleItemAction(actionId: OrderItemActionId) {
+  switch (actionId) {
+    case 'EDIT':
+      editOrderedQuantity();
+      break;
+    case 'FULFILL':
+      redirectToFulfillItem();
+      break;
+    case 'RECEIVE':
+      redirectToReceiveItem();
+      break;
+    case 'CLOSE_FULFILLMENT':
+      closeFulfillment();
+      break;
+    case 'REMOVE':
+      // Handler not implemented yet
+      break;
+    case 'APPROVE':
+      updateItemStatus('ITEM_APPROVED', 'Approve Item');
+      break;
+    case 'CANCEL':
+      updateItemStatus('ITEM_CANCELLED', 'Cancel Item');
+      break;
+  }
+}
+
+async function updateItemStatus(statusId: string, header: string) {
+  const alert = await alertController.create({
+    header: translate(header),
+    message: translate(`Are you sure you want to ${header.toLowerCase()}?`),
+    buttons: [{
+      text: translate("Cancel"),
+      role: "cancel"
+    }, {
+      text: translate("Confirm"),
+      handler: async () => {
+        try {
+          const resp = await OrderService.updateOrderItem({
+            orderId: currentOrder.value.orderId,
+            orderItemSeqId: props.item.orderItemSeqId,
+            statusId
+          })
+
+          if (!hasError(resp)) {
+            showToast(translate("Item status updated successfully."));
+            popoverController.dismiss({ isItemUpdated: true });
+          } else {
+            throw resp.data;
+          }
+        } catch (error) {
+          logger.error(error);
+          showToast(translate("Failed to update item status."));
+        }
+      }
+    }]
+  });
+  alert.present();
+}
 
 async function editOrderedQuantity() {
   let isUpdatingQuantity = false;
@@ -105,32 +154,38 @@ async function editOrderedQuantity() {
   alert.present()
 }
 
-// Determines if a transfer order item is eligible for fulfillment
-function isEligibleToFulfill(item: any) {
-  const excludedItemStatuses = ["ITEM_PENDING_RECEIPT", "ITEM_COMPLETED"];
-  const order = currentOrder.value;
+async function closeFulfillment() {
+  const alert = await alertController.create({
+    header: translate("Close fulfillment"),
+    message: translate("This will cancel the remaining unfulfilled quantity and release reservations. This action cannot be reverted. Are you sure you want to proceed?"),
+    buttons: [{
+      text: translate("Cancel"),
+      role: "cancel"
+    }, {
+      text: translate("Confirm"),
+      handler: async () => {
+        try {
+          const resp = await OrderService.closeFulfillment({
+            orderId: currentOrder.value.orderId,
+            items: [{
+              orderItemSeqId: props.item.orderItemSeqId
+            }]
+          })
 
-  // Disable if order is in CREATED state or has RECEIVE_ONLY flow
-  if (order.statusId === "ORDER_CREATED" || order.statusFlowId === "TO_Receive_Only") return false;
-
-  // Disable if the item is in PENDING_RECEIPT or COMPLETED state
-  const orderItem = order.items?.find((orderItem: any) => orderItem.orderItemSeqId === item.orderItemSeqId);
-  if (orderItem && excludedItemStatuses.includes(orderItem.statusId)) return false;
-
-  return true;
-}
-
-function isEligibleToReceive(item: any) {
-  const order = currentOrder.value;
-
-  // Disable if order is created or has Fulfill-Only flow
-  if (order.statusId === "ORDER_CREATED" || order.statusFlowId === "TO_Fulfill_Only") return false;
-
-  // Disable if the item is completed
-  const orderItem = order.items?.find((orderItem: any) => orderItem.orderItemSeqId === item.orderItemSeqId);
-  if (orderItem?.statusId === "ITEM_COMPLETED") return false;
-
-  return true;
+          if (!hasError(resp)) {
+            showToast(translate("Fulfillment closed successfully."));
+            popoverController.dismiss({ isItemUpdated: true });
+          } else {
+            throw resp.data;
+          }
+        } catch (error) {
+          logger.error(error);
+          showToast(translate("Failed to close fulfillment."));
+        }
+      }
+    }]
+  });
+  alert.present();
 }
 
 function redirectToFulfillItem() {

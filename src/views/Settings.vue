@@ -99,8 +99,10 @@ async function timeZoneUpdated(tzId: string) {
 }
 
 async function updateProductStore(selectedProductStore: any) {
-  await useProductIdentificationStore().getIdentificationPref(selectedProductStore.productStoreId)
-    .catch((error) => logger.error(error));
+  await Promise.all([
+    useProductIdentificationStore().getIdentificationPref(selectedProductStore.productStoreId).catch((error) => logger.error(error)),
+    store.dispatch("util/fetchFacilitiesByCurrentStore", selectedProductStore.productStoreId).catch((error) => logger.error(error))
+  ])
 }
 
 function goToLaunchpad() {

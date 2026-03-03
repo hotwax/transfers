@@ -7,6 +7,10 @@
           <ion-icon :icon="businessOutline" />
           <ion-label>{{ translate("Transfers") }}</ion-label>
         </ion-tab-button>
+        <ion-tab-button tab="discrepancies" href="/tabs/discrepancies">
+          <ion-icon :icon="alertCircleOutline" />
+          <ion-label>{{ translate("Discrepancies") }}</ion-label>
+        </ion-tab-button>
         <ion-tab-button tab="settings" href="/tabs/settings">
           <ion-icon :icon="settingsOutline" />
           <ion-label>{{ translate("Settings") }}</ion-label>
@@ -18,14 +22,14 @@
 
 <script setup lang="ts">
 import { IonIcon, IonLabel, IonPage, IonRouterOutlet, IonTabBar, IonTabButton, IonTabs } from "@ionic/vue";
-import { businessOutline, settingsOutline } from "ionicons/icons";
+import { alertCircleOutline, businessOutline, settingsOutline } from "ionicons/icons";
 import { useRouter } from "vue-router";
 import { translate } from "@hotwax/dxp-components";
 
 const router = useRouter();
 
 function showFooter() {
-  if (['/tabs/transfers', '/tabs/settings'].includes(router.currentRoute.value.path)) return true
+  if (['/tabs/transfers', '/tabs/discrepancies', '/tabs/settings'].includes(router.currentRoute.value.path)) return true
   return false
 }
 </script>

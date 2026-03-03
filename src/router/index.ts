@@ -6,6 +6,7 @@ import { DxpLogin, useAuthStore } from "@hotwax/dxp-components";
 import { loader } from '@/user-utils';
 import OrderDetail from "@/views/OrderDetail.vue";
 import CreateOrder from "@/views/CreateOrder.vue";
+import BulkUpload from "@/views/BulkUpload.vue";
 
 const authGuard = async (to: any, from: any, next: any) => {
   const authStore = useAuthStore()
@@ -46,6 +47,11 @@ const routes: Array<RouteRecordRaw> = [
         component: () => import("@/views/Transfers.vue")
       },
       {
+        path: "discrepancies",
+        name: "Discrepancies",
+        component: () => import("@/views/Discrepancies.vue")
+      },
+      {
         path: "settings",
         name: "Settings",
         component: () => import("@/views/Settings.vue")
@@ -57,6 +63,12 @@ const routes: Array<RouteRecordRaw> = [
     path: "/create-order",
     name: "CreateOrder",
     component: CreateOrder,
+    beforeEnter: authGuard
+  },
+  {
+    path: "/bulk-upload",
+    name: "BulkUpload",
+    component: BulkUpload,
     beforeEnter: authGuard
   },
   {
