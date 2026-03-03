@@ -21,8 +21,8 @@
               <ion-card-title>{{ userProfile?.userFullName }}</ion-card-title>
             </ion-card-header>
           </ion-item>
-          <ion-button color="danger" @click="logout()">{{ translate("Logout") }}</ion-button>
-          <ion-button :standalone-hidden="!hasPermission(Actions.APP_PWA_STANDALONE_ACCESS)" fill="outline" @click="goToLaunchpad()">
+          <ion-button data-testid="settings-logout-btn" color="danger" @click="logout()">{{ translate("Logout") }}</ion-button>
+          <ion-button data-testid="settings-go-launchpad-btn" :standalone-hidden="!hasPermission(Actions.APP_PWA_STANDALONE_ACCESS)" fill="outline" @click="goToLaunchpad()">
             {{ translate("Go to Launchpad") }}
             <ion-icon slot="end" :icon="openOutline" />
           </ion-button>
@@ -52,16 +52,16 @@
             <ion-icon slot="end" :icon="openOutline" />
           </ion-button>
         </ion-card>
-        <DxpProductStoreSelector @updateEComStore="updateProductStore" />
+        <DxpProductStoreSelector data-testid="settings-productstore-selector" @updateEComStore="updateProductStore" />
       </section>
 
       <hr />
 
-      <DxpAppVersionInfo />
+      <DxpAppVersionInfo data-testid="settings-app-version" />
 
       <section>
-        <DxpProductIdentifier />
-        <TimeZoneSwitcher @timeZoneUpdated="timeZoneUpdated" />
+        <DxpProductIdentifier data-testid="settings-product-identifier" />
+        <TimeZoneSwitcher data-testid="settings-timezone-switcher" @timeZoneUpdated="timeZoneUpdated" />
       </section>
     </ion-content>
   </ion-page>
