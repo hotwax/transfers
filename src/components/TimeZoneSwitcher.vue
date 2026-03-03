@@ -25,6 +25,7 @@
           <ion-button id="time-zone-modal" data-testid="time-zone-change-btn" slot="end" fill="outline" color="dark">{{ translate("Change") }}</ion-button>
     </ion-item>
   </ion-card>
+  </ion-card>
   <!-- Using inline modal(as recommended by ionic), also using it inline as the component inside modal is not getting mounted when using modalController -->
   <ion-modal ref="timeZoneModal" trigger="time-zone-modal" @didPresent="search()" @didDismiss="clearSearch()">
     <ion-header>
