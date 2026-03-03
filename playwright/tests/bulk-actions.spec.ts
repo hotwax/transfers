@@ -1,20 +1,7 @@
 import { test, expect } from '@playwright/test';
-import { OrderDetailPage } from './pages/orderDetail.page';
-
-/**
- * Bulk Actions - Playwright Test Suite
- *
- * Expanded spec covering end-to-end flows and edge-cases for Bulk Fulfill / Bulk Receive
- * Uses `data-testid` attributes added to the templates for robust selectors.
- *
- * CI notes:
- * - Prefer seeding data via API before running these tests.
- * - Provide environment vars for `BASE_URL`, `TEST_ORDER_ID`, and item seq ids.
- */
+import { OrderDetailPage } from '../pages/orderDetail.page';
 
 const BASE_URL = process.env.BASE_URL || 'http://localhost:8080';
-
-// Replace these in CI with real seeded fixtures
 const TEST_ORDER_ID = process.env.TEST_ORDER_ID || 'TEST_ORDER_1001';
 const ELIGIBLE_ITEM_SEQ = process.env.ELIGIBLE_ITEM_SEQ || 'ITEMSEQ_1';
 const ELIGIBLE_ITEM_SEQ_2 = process.env.ELIGIBLE_ITEM_SEQ_2 || 'ITEMSEQ_2';
@@ -27,17 +14,10 @@ async function gotoOrderDetail(page, orderId: string) {
 }
 
 test.describe('Bulk Actions - Transfer Orders (E2E + edge cases)', () => {
-  test.beforeEach(async ({ page }) => {
-    // TODO: implement auth helper for CI
-    // e.g. set auth cookie or navigate to a mock-login route
-    // await page.goto(`${BASE_URL}/login?mock=true`);
-  });
+  test.beforeEach(async ({ page }) => {});
 
   test('Bulk Fulfill: happy path (selected items) - modal flows and result counts', async ({ page }) => {
-    // Scenario: user selects specific eligible items and fulfills them in bulk
     const od = await gotoOrderDetail(page, TEST_ORDER_ID);
-
-    // Use the POM methods for selecting items
     const checkbox1 = od.itemCheckbox(ELIGIBLE_ITEM_SEQ);
     const checkbox2 = od.itemCheckbox(ELIGIBLE_ITEM_SEQ_2);
     await expect(checkbox1).toBeVisible();
@@ -46,15 +26,12 @@ test.describe('Bulk Actions - Transfer Orders (E2E + edge cases)', () => {
     await checkbox2.click();
 
     const bulkFulfillBtn = od.footerButton('BULK_RECEIVE');
-    // bulk fulfill button id in footer mapping may be different; we assert presence of a bulk action
     if ((await bulkFulfillBtn.count()) === 0) {
-      // fallback: try fulfill button variant
       await od.footerButton('CLOSE_FULFILLMENT').click();
     } else {
       await bulkFulfillBtn.click();
     }
 
-    // Modal should expose a confirm button and summary
     const modalConfirm = od.bulkModalConfirm();
     await expect(modalConfirm).toBeVisible();
     await expect(od.page.locator('text=items')).toBeVisible();
@@ -75,7 +52,6 @@ test.describe('Bulk Actions - Transfer Orders (E2E + edge cases)', () => {
   });
 
   test('Bulk Receive: verify receive-mode options and failures for ineligible items', async ({ page }) => {
-    // Scenario: mix of eligible and ineligible items. Modal allows selecting receive mode.
     const od2 = await gotoOrderDetail(page, TEST_ORDER_ID);
     await od2.itemCheckbox(ELIGIBLE_ITEM_SEQ).click();
     await od2.itemCheckbox(INELIGIBLE_ITEM_SEQ).click();
@@ -111,3 +87,9 @@ test.describe('Bulk Actions - Transfer Orders (E2E + edge cases)', () => {
     await expect(failList2).toContainText(/status changed/i);
   });
 });
+
+import { test, expect } from '@playwright/test';
+import { OrderDetailPage } from '../pages/orderDetail.page';
+
+// (file contents moved from root playwright folder)
+import "../bulk-actions.spec.ts";

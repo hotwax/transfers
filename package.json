@@ -10,6 +10,9 @@
     "test:e2e": "vue-cli-service test:e2e",
     "lint": "vue-cli-service lint"
   },
+    "test:playwright": "npx playwright test --config=playwright/playwright.config.ts",
+    "test:playwright:headed": "npx playwright test --config=playwright/playwright.config.ts --headed",
+    "test:playwright:report": "npx playwright show-report playwright/playwright-report",
   "dependencies": {
     "@capacitor/android": "^2.4.7",
     "@capacitor/core": "^2.4.7",
@@ -58,5 +61,8 @@
     "eslint-plugin-vue": "^8.0.3",
     "papaparse": "^5.3.1",
     "typescript": "~4.7.4"
+    "playwright": "^1.31.0",
+    "@playwright/test": "^1.31.0",
+    "node-fetch": "^2.6.7"
   }
 }
