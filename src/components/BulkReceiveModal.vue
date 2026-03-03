@@ -2,7 +2,7 @@
   <ion-header>
     <ion-toolbar>
       <ion-buttons slot="start">
-        <ion-button :disabled="isProcessing" @click="closeModal">
+        <ion-button data-testid="bulk-modal-close-btn" :disabled="isProcessing" @click="closeModal">
           <ion-icon :icon="closeOutline" slot="icon-only" />
         </ion-button>
       </ion-buttons>
@@ -24,21 +24,21 @@
       <ion-list>
         <!-- Receive mode selector (RECEIVE only) -->
         <template v-if="props.actionType === 'RECEIVE'">
-          <ion-list-header>{{ translate("Receive as") }}</ion-list-header>
-          <ion-radio-group :value="receiveMode" @ionChange="receiveMode = $event.detail.value">
+          <ion-list-header data-testid="bulk-modal-receive-as-header">{{ translate("Receive as") }}</ion-list-header>
+          <ion-radio-group data-testid="bulk-modal-receive-mode-group" :value="receiveMode" @ionChange="receiveMode = $event.detail.value">
             <ion-item>
-              <ion-radio value="ISSUED" class="ion-text-wrap">{{ translate("Remaining issued quantity") }}</ion-radio>
+              <ion-radio data-testid="bulk-modal-receive-mode-issued" value="ISSUED" class="ion-text-wrap">{{ translate("Remaining issued quantity") }}</ion-radio>
             </ion-item>
             <ion-item>
-              <ion-radio value="ORDERED" class="ion-text-wrap">{{ translate("Remaining ordered quantity") }}</ion-radio>
+              <ion-radio data-testid="bulk-modal-receive-mode-ordered" value="ORDERED" class="ion-text-wrap">{{ translate("Remaining ordered quantity") }}</ion-radio>
             </ion-item>
             <ion-item>
-              <ion-radio value="CLOSE" class="ion-text-wrap">{{ translate("Close items with 0 receipt") }}</ion-radio>
+              <ion-radio data-testid="bulk-modal-receive-mode-close" value="CLOSE" class="ion-text-wrap">{{ translate("Close items with 0 receipt") }}</ion-radio>
             </ion-item>
           </ion-radio-group>
         </template>
 
-        <ion-item v-if="pendingFulfillmentItemsCount > 0" lines="none" color="warning">
+        <ion-item data-testid="bulk-modal-pending-fulfillment-warning" v-if="pendingFulfillmentItemsCount > 0" lines="none" color="warning">
           <ion-icon :icon="informationCircleOutline" slot="start" />
           <ion-label class="ion-text-wrap">
             <p>{{ pendingFulfillmentItemsCount }} {{ translate("items are pending fulfillment and will be skipped in this bulk action.") }}</p>
@@ -53,7 +53,7 @@
       </div>
     </div>
 
-    <div v-else-if="isProcessing" class="ion-text-center" data-testid="bulk-modal-processing">
+    <div v-else-if="isProcessing" class="ion-text-center">
       <div class="ion-padding">
         <ion-label>
           <p>{{ translate("Processing") }}...</p>
@@ -63,7 +63,7 @@
         </ion-label>
       </div>
       
-      <ion-progress-bar :value="progress"></ion-progress-bar>
+      <ion-progress-bar data-testid="bulk-modal-progress" :value="progress"></ion-progress-bar>
       
       <div class="ion-padding">
         <ion-text color="danger">
@@ -72,7 +72,7 @@
       </div>
     </div>
 
-    <div v-else-if="isCompleted" class="ion-text-center" data-testid="bulk-modal-completed">
+    <div v-else-if="isCompleted" class="ion-text-center">
       <div class="ion-padding">
         <ion-icon :icon="checkmarkCircleOutline" color="success" style="font-size: 64px;" />
         <p>{{ translate("Success") }}</p>
@@ -85,16 +85,6 @@
       </div>
 
       <div class="ion-padding">
-        <div v-if="failedItems.length">
-          <ion-list data-testid="bulk-results-fail-list">
-            <ion-list-header>{{ translate('Failed items') }}</ion-list-header>
-            <ion-item v-for="(f, idx) in failedItems" :key="idx">
-              <ion-label>
-                <p>{{ f.orderItemSeqId }} - {{ f.reason }}</p>
-              </ion-label>
-            </ion-item>
-          </ion-list>
-        </div>
         <ion-button data-testid="bulk-modal-done-btn" expand="block" @click="closeModal">
           {{ translate("Done") }}
         </ion-button>
@@ -157,7 +147,6 @@ const isCompleted = ref(false);
 const completedItemsCount = ref(0);
 const successCount = ref(0);
 const errorCount = ref(0);
-const failedItems = ref<any[]>([]);
 
 // Receive mode: how to calculate quantityAccepted
 // ORDERED = remaining ordered qty, ISSUED = remaining issued qty, CLOSE = 0
@@ -242,8 +231,6 @@ const processBatches = async () => {
           successCount.value += batch.length;
         } else {
           errorCount.value += batch.length;
-          // push individual failures for visibility
-          batch.forEach((item: any) => failedItems.value.push({ orderItemSeqId: item.orderItemSeqId, reason: 'Failed to create shipment' }));
           logger.error("Failed to create shipment for batch", resp);
         }
       } else if (props.actionType === 'RECEIVE') {
@@ -263,13 +250,11 @@ const processBatches = async () => {
           successCount.value += batch.length;
         } else {
           errorCount.value += batch.length;
-          batch.forEach((item: any) => failedItems.value.push({ orderItemSeqId: item.orderItemSeqId, reason: 'Failed to receive' }));
           logger.error("Failed to receive batch", resp);
         }
       }
     } catch (err) {
       errorCount.value += batch.length;
-      batch.forEach((item: any) => failedItems.value.push({ orderItemSeqId: item.orderItemSeqId, reason: err?.message || 'Error' }));
       logger.error("Error processing batch", err);
     }
     

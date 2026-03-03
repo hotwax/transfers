@@ -151,7 +151,7 @@
         </section>
 
         <section class="ion-margin-top">
-          <ion-item lines="none" button @click="toggleSelectAll()" :detail="false">
+          <ion-item data-testid="order-items-select-row" lines="none" button @click="toggleSelectAll()" :detail="false">
             <ion-checkbox data-testid="order-items-select-all" slot="start" :indeterminate="isIndeterminate" :checked="isAllSelected" class="no-pointer-events"></ion-checkbox>
             <ion-icon slot="start" :icon="shirtOutline" />
             <ion-label>
@@ -173,7 +173,7 @@
               <DynamicScrollerItem :item="item" :active="active" :size-dependencies="[item.type]">
                 
                 <!-- HEADER ROW -->
-                <div v-if="item.type === 'header'" class="list-item product-header">
+                <div v-if="item.type === 'header'" class="list-item product-header" :data-testid="`order-product-header-${item.parentProductId}`">
                   <ion-item lines="none">
                     <ion-thumbnail slot="start">
                       <Image :src="getProduct(item.groupItems[0].productId)?.mainImageUrl" />
@@ -206,7 +206,7 @@
                 <!-- ITEM ROW -->
                 <div v-else-if="item.type === 'item'" :data-testid="`order-item-row-${item.orderItemSeqId}`" class="list-item" :class="{ 'disabled': !OrderActionValidator.isItemSelectable(currentOrder, item) }" @click="OrderActionValidator.isItemSelectable(currentOrder, item) && toggleSelectedItem(item.orderItemSeqId)">
                   <div class="item-key">
-                    <ion-checkbox :checked="selectedItemSeqIds.has(item.orderItemSeqId)" :disabled="!OrderActionValidator.isItemSelectable(currentOrder, item)" class="no-pointer-events"></ion-checkbox>
+                    <ion-checkbox :data-testid="`order-item-checkbox-${item.orderItemSeqId}`" :checked="selectedItemSeqIds.has(item.orderItemSeqId)" :disabled="!OrderActionValidator.isItemSelectable(currentOrder, item)" class="no-pointer-events"></ion-checkbox>
                     <ion-item lines="none">
                       <ion-thumbnail slot="start" v-if="!item.hasHeader">
                         <Image :src="getProduct(item.productId)?.mainImageUrl" />
@@ -246,7 +246,7 @@
                     <ion-badge color="danger" v-if="isUnderReceived(item)" :title="translate('Under received')">{{ translate("Under received") }}</ion-badge>
                     <ion-badge color="primary" v-if="isOverReceived(item)" :title="translate('Over received')">{{ translate("Over received") }}</ion-badge>
                   </div>
-                  <ion-button fill="clear" color="medium" :disabled="!OrderActionValidator.getItemActions(currentOrder, item).length" @click.stop="openOrderItemDetailActionsPopover($event, item)">
+                  <ion-button :data-testid="`order-item-actions-btn-${item.orderItemSeqId}`" fill="clear" color="medium" :disabled="!OrderActionValidator.getItemActions(currentOrder, item).length" @click.stop="openOrderItemDetailActionsPopover($event, item)">
                     <ion-icon :icon="ellipsisVerticalOutline" slot="icon-only" />
                   </ion-button>
                 </div>
@@ -265,12 +265,6 @@
           {{ selectedItemSeqIds.size }} {{ translate("items selected") }}
         </ion-label>
         <ion-buttons slot="end">
-          <ion-button data-testid="order-footer-bulk-fulfill" fill="outline" :disabled="!canBulkFulfill()" @click="openBulkReceiveModal('FULFILL')">
-            {{ translate('Bulk Fulfill') }}
-          </ion-button>
-          <ion-button data-testid="order-footer-bulk-receive" fill="outline" :disabled="!canBulkReceive()" @click="openBulkReceiveModal('RECEIVE')">
-            {{ translate('Bulk Receive') }}
-          </ion-button>
           <ion-button v-for="action in OrderActionValidator.getFooterActions(currentOrder, selectedItemSeqIds)" :key="action.id" :data-testid="`order-footer-${action.id.replace(/_/g,'-').toLowerCase()}`" fill="outline" :color="action.color || 'primary'" :disabled="!action.validation.allowed" @click="handleFooterAction(action)">
             <ion-icon :icon="getIcon(action.icon)" slot="start" v-if="action.icon" />
             {{ getFooterActionLabel(action) }}
@@ -386,26 +380,6 @@ function toggleSelectAll() {
     const selectAllValidItems = OrderActionValidator.getBulkSelectableItems(currentOrder.value);
     selectedItemSeqIds.value = new Set(selectAllValidItems.map((item: any) => item.orderItemSeqId));
   }
-}
-
-function canBulkFulfill() {
-  const order = currentOrder.value;
-  if (!order) return false;
-  if (selectedItemSeqIds.value.size > 0) {
-    const ids = Array.from(selectedItemSeqIds.value);
-    return (order.items || []).some((item: any) => ids.includes(item.orderItemSeqId) && OrderActionValidator.validateItemAction(order, item, 'FULFILL').allowed);
-  }
-  return (order.items || []).some((item: any) => OrderActionValidator.validateItemAction(order, item, 'FULFILL').allowed);
-}
-
-function canBulkReceive() {
-  const order = currentOrder.value;
-  if (!order) return false;
-  if (selectedItemSeqIds.value.size > 0) {
-    const ids = Array.from(selectedItemSeqIds.value);
-    return (order.items || []).some((item: any) => ids.includes(item.orderItemSeqId) && OrderActionValidator.validateItemAction(order, item, 'RECEIVE').allowed);
-  }
-  return (order.items || []).some((item: any) => OrderActionValidator.validateItemAction(order, item, 'RECEIVE').allowed);
 }
 
 async function handleFooterAction(action: OrderFooterAction) {
