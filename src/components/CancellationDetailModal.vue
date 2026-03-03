@@ -2,7 +2,7 @@
   <ion-header>
     <ion-toolbar>
       <ion-buttons slot="start">
-        <ion-button @click="closeModal"> 
+        <ion-button data-testid="cancellation-modal-close-btn" @click="closeModal"> 
           <ion-icon slot="icon-only" :icon="closeOutline" />
         </ion-button>
       </ion-buttons>
@@ -11,16 +11,16 @@
   </ion-header>
   <ion-content>
     <ion-list>
-      <ion-item>
+      <ion-item data-testid="cancellation-modal-date">
         <ion-label>
           <p>{{ translate("Date") }}</p>
           {{ formatDateTime(event.statusDatetime) }}
         </ion-label>
       </ion-item>
-      <ion-list-header>
+      <ion-list-header data-testid="cancellation-modal-items">
         {{ translate("Items") }}
       </ion-list-header>
-      <ion-item v-for="(item, index) in event.items" :key="index" lines="none">
+      <ion-item v-for="(item, index) in event.items" :key="index" lines="none" :data-testid="`cancellation-item-${item.orderItemSeqId || index}`">
         <ion-thumbnail slot="start">
           <Image :src="getProduct(item.productId)?.mainImageUrl" />
         </ion-thumbnail>

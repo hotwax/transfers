@@ -1,6 +1,6 @@
 <template>
-  <img :src="imageUrl" v-if="imageUrl" />
-  <ion-skeleton-text v-else animated />
+  <img :src="imageUrl" v-if="imageUrl" data-testid="image-component" />
+  <ion-skeleton-text v-else animated data-testid="image-skeleton" />
 </template>
 
 <script lang="ts">

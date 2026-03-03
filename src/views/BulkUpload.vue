@@ -2,7 +2,7 @@
   <ion-page>
     <ion-header :translucent="true">
       <ion-toolbar>
-        <ion-back-button slot="start" default-href="/create-order" />
+        <ion-back-button data-testid="bulk-upload-back-btn" slot="start" default-href="/create-order" />
         <ion-title>{{ translate("Bulk upload") }}</ion-title>
       </ion-toolbar>
     </ion-header>
@@ -12,11 +12,11 @@
         <ion-item lines="full">
           <ion-label>{{ translate("Transfer orders") }}</ion-label>
           <ion-label class="ion-text-right ion-padding-end">{{ uploadedFile.name }}</ion-label>
-          <input @change="parse" ref="file" class="ion-hide" type="file" id="transferOrderInputFile"/>
-          <label for="transferOrderInputFile">{{ translate("Upload") }}</label>
+          <input @change="parse" ref="file" class="ion-hide" type="file" id="transferOrderInputFile" data-testid="bulk-upload-file-input" />
+          <label for="transferOrderInputFile" data-testid="bulk-upload-file-label">{{ translate("Upload") }}</label>
         </ion-item>
 
-        <ion-button color="medium" expand="block" @click="downloadTemplate">
+        <ion-button data-testid="bulk-download-template-btn" color="medium" expand="block" @click="downloadTemplate">
           {{ translate("Download template") }}
           <ion-icon slot="end" :icon="downloadOutline" />
         </ion-button>
@@ -26,7 +26,7 @@
             <ion-label>{{ translate("Required") }} </ion-label>
           </ion-item-divider>
           <ion-item :key="field" v-for="(fieldValues, field) in getFilteredFields(fields, true)">
-            <ion-select interface="popover" :disabled="!content.length" :placeholder="translate('Select')" v-model="fieldMapping[field]">
+            <ion-select :data-testid="`bulk-field-select-${field}`" interface="popover" :disabled="!content.length" :placeholder="translate('Select')" v-model="fieldMapping[field]">
               <ion-label slot="label" class="ion-text-wrap">
                 {{ translate(fieldValues.label) }}
                 <p>{{ fieldValues.description }}</p>
@@ -39,7 +39,7 @@
             <ion-label>{{ translate("Optional") }} </ion-label>
           </ion-item-divider>
           <ion-item :key="field" v-for="(fieldValues, field) in getFilteredFields(fields, false)">
-            <ion-select interface="popover" :disabled="!content.length" :placeholder="translate('Select')" v-model="fieldMapping[field]">
+            <ion-select :data-testid="`bulk-field-select-${field}`" interface="popover" :disabled="!content.length" :placeholder="translate('Select')" v-model="fieldMapping[field]">
               <ion-label slot="label" class="ion-text-wrap">
                 {{ translate(fieldValues.label) }}
                 <p>{{ fieldValues.description }}</p>
@@ -49,18 +49,18 @@
           </ion-item>
         </ion-list>
 
-        <ion-button :disabled="!content.length" @click="save" expand="block">
+        <ion-button data-testid="bulk-upload-submit-btn" :disabled="!content.length" @click="save" expand="block">
           {{ translate("Submit") }}
           <ion-icon slot="end" :icon="cloudUploadOutline" />
         </ion-button>
 
-        <ion-list v-if="systemMessages.length" class="system-message-section">
+        <ion-list v-if="systemMessages.length" class="system-message-section" data-testid="bulk-upload-systemmessages">
           <ion-list-header>
             <ion-label>
                 {{ translate("Recently uploaded files") }}
               </ion-label>
           </ion-list-header>
-          <ion-item v-for="systemMessage in systemMessages" :key="systemMessage.systemMessageId">
+          <ion-item v-for="systemMessage in systemMessages" :key="systemMessage.systemMessageId" :data-testid="`bulk-upload-message-${systemMessage.systemMessageId}`">
             <ion-label>
               <p class="overline">{{ systemMessage.systemMessageId }}</p>
               {{ extractFilename(systemMessage.messageText) }}

@@ -1,5 +1,5 @@
 <template>
-  <ion-menu side="end" type="overlay">
+  <ion-menu data-testid="filters-menu" side="end" type="overlay">
     <ion-header>
       <ion-toolbar>
         <ion-title>{{ translate("Filters") }}</ion-title>

@@ -1,5 +1,5 @@
 <template>
-  <figure>
+  <figure data-testid="app-logo">
     <img class="light" src="../assets/images/hc.png"/>
     <img class="dark" src="../assets/images/HWCLogoDarkMode.png"/>
   </figure>
