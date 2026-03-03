@@ -258,26 +258,34 @@
         </section>
       </main>
     </ion-content>
-    <ion-footer>
+    <ion-footer class="desktop-only">
       <ion-toolbar>
-        <ion-item lines="none">
-          <ion-label v-if="selectedItemSeqIds.size">
-            {{ selectedItemSeqIds.size }} {{ translate("items selected") }}
-          </ion-label>
-          <ion-buttons slot="end">
-            <ion-button v-for="action in OrderActionValidator.getFooterActions(currentOrder, selectedItemSeqIds)" :key="action.id" fill="outline" :color="action.color || 'primary'" :disabled="!action.validation.allowed" @click="handleFooterAction(action)">
-              <ion-icon :icon="getIcon(action.icon)" slot="start" v-if="action.icon" />
-              {{ getFooterActionLabel(action) }}
-            </ion-button>
-          </ion-buttons>
-        </ion-item>
+        <ion-label v-if="selectedItemSeqIds.size">
+          {{ selectedItemSeqIds.size }} {{ translate("items selected") }}
+        </ion-label>
+        <ion-buttons slot="end">
+          <ion-button v-for="action in OrderActionValidator.getFooterActions(currentOrder, selectedItemSeqIds)" :key="action.id" fill="outline" :color="action.color || 'primary'" :disabled="!action.validation.allowed" @click="handleFooterAction(action)">
+            <ion-icon :icon="getIcon(action.icon)" slot="start" v-if="action.icon" />
+            {{ getFooterActionLabel(action) }}
+          </ion-button>
+        </ion-buttons>
       </ion-toolbar>
     </ion-footer>
+    <ion-toast
+      class="mobile-only"
+      :is-open="selectedItemSeqIds.size > 0"
+      :message="selectedItemSeqIds.size + ' ' + translate('items selected')"
+      :buttons="[{
+        text: translate('Actions'),
+        handler: () => { openMobileActions(); return false; }
+      }]"
+      position="bottom"
+    ></ion-toast>
   </ion-page>
 </template>
 
 <script setup lang="ts">
-import { IonBackButton, IonBadge, IonButton, IonButtons, IonCard, IonCardContent, IonCardHeader, IonCardTitle, IonCheckbox, IonChip, IonContent, IonFooter, IonHeader, IonIcon, IonItem, IonLabel, IonList, IonNote, IonPage, IonSegment, IonSegmentButton, IonSelect, IonSelectOption, IonSpinner, IonThumbnail, IonTitle, IonToolbar, onIonViewWillEnter, alertController, modalController, popoverController } from "@ionic/vue";
+import { IonBackButton, IonBadge, IonButton, IonButtons, IonCard, IonCardContent, IonCardHeader, IonCardTitle, IonCheckbox, IonChip, IonContent, IonFooter, IonHeader, IonIcon, IonItem, IonLabel, IonList, IonNote, IonPage, IonSegment, IonSegmentButton, IonSelect, IonSelectOption, IonSpinner, IonThumbnail, IonTitle, IonToolbar, IonToast, onIonViewWillEnter, onIonViewWillLeave, actionSheetController, alertController, modalController, popoverController } from "@ionic/vue";
 import { getProductIdentificationValue, translate, useProductIdentificationStore } from '@hotwax/dxp-components';
 import { chevronDownOutline, checkmarkDoneOutline, playOutline, ellipsisVerticalOutline, ticketOutline, downloadOutline, sendOutline, shirtOutline, informationCircleOutline, closeCircleOutline, openOutline, warningOutline } from "ionicons/icons";
 import Image from "@/components/Image.vue";
@@ -303,6 +311,36 @@ import ProgressBar from "@/components/ProgressBar.vue";
 import { DynamicScroller, DynamicScrollerItem } from 'vue-virtual-scroller';
 
 const store = useStore();
+
+async function openMobileActions() {
+  const actions = OrderActionValidator.getFooterActions(currentOrder.value, selectedItemSeqIds.value);
+  
+  const buttons = actions.map((action: any) => ({
+    text: getFooterActionLabel(action),
+    role: action.id === 'CANCEL' ? 'destructive' : undefined,
+    cssClass: action.validation.allowed ? '' : 'action-disabled',
+    icon: action.icon ? getIcon(action.icon) : undefined,
+    handler: () => {
+      if (action.validation.allowed) {
+        handleFooterAction(action);
+      } else {
+        return false;
+      }
+    }
+  } as any));
+
+  buttons.push({
+    text: translate("Cancel"),
+    role: "cancel"
+  } as any);
+
+  const actionSheet = await actionSheetController.create({
+    header: translate("Actions"),
+    buttons
+  });
+
+  await actionSheet.present();
+}
 const productIdentificationStore = useProductIdentificationStore();
 const orderQueue = useOrderQueue();
 const props = defineProps(["orderId"]);
@@ -664,6 +702,12 @@ onIonViewWillEnter(async () => {
   carrierMethods.value = shipmentMethodsByCarrier.value[currentOrder.value.carrierPartyId]
 })
 
+onIonViewWillLeave(() => {
+  selectedItemSeqIds.value = new Set();
+  selectedStatusFilter.value = "ALL";
+  selectedDiscrepancyFilter.value = "ALL";
+})
+
 
 
 async function changeOrderStatus(updatedStatusId: string) {
@@ -858,6 +902,7 @@ function viewFacilityInFacilitiesApp(facilityId: string) {
 
 .list-item {
   --columns-desktop: 6;
+  --columns-mobile: 3;
   cursor: pointer;
 }
 
@@ -924,9 +969,14 @@ ion-card-header {
   .summary .info {
     flex: 1;
   }
-
   .summary .related-details {
     flex-basis: 343px;
+  }
+}
+
+@media (max-width: 991px) {
+  ion-content {
+    --padding-bottom: var(--spacer-xl);
   }
 }
 </style>

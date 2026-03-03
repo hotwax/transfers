@@ -24,61 +24,7 @@
         </section>
 
         <aside class="filters">
-          <ion-list>
-            <ion-item lines="none">
-              <ion-label>
-                <h1>{{ translate("Location") }}</h1>
-              </ion-label>
-            </ion-item>
-            <ion-item lines="none">
-              <ion-select :label="translate('Product Store')" interface="popover" :value="query.productStoreId" @ionChange="updateAppliedFilters($event['detail'].value, 'productStoreId')">
-                <ion-select-option value="">{{ translate("All") }}</ion-select-option>
-                <ion-select-option v-for="store in productStores" :key="store.productStoreId" :value="store.productStoreId">{{ store.storeName ? store.storeName : store.productStoreId }}</ion-select-option>
-              </ion-select>
-            </ion-item>
-            <ion-item lines="none">
-              <ion-select :label="translate('Origin')" interface="popover" :value="query.facilityId" @ionChange="updateAppliedFilters($event['detail'].value, 'facilityId')">
-                <ion-select-option value="">{{ translate("All") }}</ion-select-option>
-                <ion-select-option v-for="facility in facilities" :key="facility.facilityId" :value="facility.facilityId">{{ facility.facilityName ? facility.facilityName : facility.facilityId }}</ion-select-option>
-              </ion-select>
-            </ion-item>
-            <ion-item lines="none">
-              <ion-select :label="translate('Destination')" interface="popover" :value="query.orderFacilityId" @ionChange="updateAppliedFilters($event['detail'].value, 'orderFacilityId')">
-                <ion-select-option value="">{{ translate("All") }}</ion-select-option>
-                <ion-select-option v-for="facility in facilities" :key="facility.facilityId" :value="facility.facilityId">{{ facility.facilityName ? facility.facilityName : facility.facilityId }}</ion-select-option>
-              </ion-select>
-            </ion-item>
-            
-            <ion-item lines="none">
-              <ion-label>
-                <h1>{{ translate("Fulfillment") }}</h1>
-              </ion-label>
-            </ion-item>
-            <ion-item lines="none">
-              <ion-select :label="translate('Method')" interface="popover" :value="query.shipmentMethodTypeId" @ionChange="updateAppliedFilters($event['detail'].value, 'shipmentMethodTypeId')">
-                <ion-select-option value="">{{ translate("All") }}</ion-select-option>
-                <ion-select-option v-for="(shipmentMethodTypeDesc, shipmentMethodTypeId) in shipmentMethods" :key="shipmentMethodTypeId" :value="shipmentMethodTypeId">{{ shipmentMethodTypeDesc ? shipmentMethodTypeDesc : shipmentMethodTypeId }}</ion-select-option>
-              </ion-select>
-            </ion-item>
-            <ion-item lines="none">
-              <ion-select :label="translate('Carrier')" interface="popover" :value="query.carrierPartyId" @ionChange="updateAppliedFilters($event['detail'].value, 'carrierPartyId')">
-                <ion-select-option value="">{{ translate("All") }}</ion-select-option>
-                <ion-select-option v-for="(carrierDesc, carrierPartyId) in carriersList" :key="carrierPartyId" :value="carrierPartyId">{{ carrierDesc ? carrierDesc : carrierPartyId }}</ion-select-option>
-              </ion-select>
-            </ion-item>
-            <ion-item lines="none">
-              <ion-select :label="translate('Type')" interface="popover" :value="query.statusFlowId" @ionChange="updateAppliedFilters($event['detail'].value, 'statusFlowId')">
-                <ion-select-option value="">{{ translate("All") }}</ion-select-option>
-                <ion-select-option v-for="flow in statusFlows" :key="flow.statusFlowId" :value="flow.statusFlowId">{{ translate(flow.description) }}</ion-select-option>
-              </ion-select>
-            </ion-item>
-            <ion-item lines="none">
-              <ion-select :label="translate('Status')" interface="popover" :value="query.orderStatusId" @ionChange="updateAppliedFilters($event['detail'].value, 'orderStatusId')">
-                <ion-select-option value="">{{ translate("All") }}</ion-select-option>
-                <ion-select-option v-for="statusId in orderStatusIds" :key="statusId" :value="statusId">{{ getStatusDesc(statusId) }}</ion-select-option>
-              </ion-select>
-            </ion-item>
-          </ion-list>
+          <TransferFiltersContent />
         </aside>
 
         <main class="ion-content-scroll-host">
@@ -325,18 +271,18 @@
 </template>
 
 <script setup lang="ts">
-import { IonAccordion, IonAccordionGroup, IonBadge, IonButtons, IonChip, IonContent, IonFab, IonFabButton, IonHeader, IonIcon, IonInfiniteScroll, IonInfiniteScrollContent, IonItem, IonLabel, IonList, IonMenuButton, IonNote, IonPage, IonSearchbar, IonSelect, IonSelectOption, IonSpinner, IonThumbnail, IonTitle, IonToolbar, onIonViewWillEnter } from '@ionic/vue';
+import { IonAccordion, IonAccordionGroup, IonBadge, IonButton, IonButtons, IonChip, IonContent, IonFab, IonFabButton, IonHeader, IonIcon, IonInfiniteScroll, IonInfiniteScrollContent, IonItem, IonLabel, IonMenuButton, IonNote, IonPage, IonSearchbar, IonSelect, IonSelectOption, IonSpinner, IonThumbnail, IonTitle, IonToolbar, onIonViewWillEnter } from '@ionic/vue';
 import { addOutline, arrowUpOutline, chevronDownOutline, documentTextOutline, downloadOutline, filterOutline, sendOutline, swapVerticalOutline } from 'ionicons/icons';
 import { getProductIdentificationValue, translate, useProductIdentificationStore, useUserStore } from '@hotwax/dxp-components'
 import router from '@/router';
 import Image from '@/components/Image.vue';
 import Filters from "@/components/Filters.vue";
+import TransferFiltersContent from "@/components/TransferFiltersContent.vue";
 import logger from '@/logger';
 import { useStore } from 'vuex';
 import { computed, ref } from "vue";
-import { hasError, STATUSCOLOR } from "@/adapter";
+import { STATUSCOLOR } from "@/adapter";
 import { formatUtcDate } from "@/utils"
-import { UtilService } from '@/services/UtilService';
 
 const productIdentificationStore = useProductIdentificationStore();
 const store = useStore();
@@ -384,31 +330,11 @@ const selectedGroupBy = ref(groupByOptions[0])
 
 const orderName = ref("");
 const isFetchingOrders = ref(false);
-const productStores = ref({}) as any;
-const facilities = ref([]) as any;
-const orderStatusIds = ["ORDER_APPROVED", "ORDER_CANCELLED", "ORDER_COMPLETED", "ORDER_CREATED"];
-const statusFlows = [
-  {
-    statusFlowId: "TO_Fulfill_And_Receive",
-    description: "Fulfill & Receive"
-  },
-  {
-    statusFlowId: "TO_Fulfill_Only",
-    description: "Fulfill only"
-  },
-  {
-    statusFlowId: "TO_Receive_Only",
-    description: "Receive only"
-  }
-]
-
 const query = computed(() => store.getters["order/getQuery"])
 const getProduct = computed(() => store.getters["product/getProduct"])
 const ordersList = computed(() => store.getters["order/getOrders"])
 const orderItemsList = computed(() => store.getters["order/getItemsByGroupId"])
 const getStatusDesc = computed(() => store.getters["util/getStatusDesc"])
-const shipmentMethods = computed(() => store.getters["util/getShipmentMethods"])
-const carriersList = computed(() => store.getters["util/getCarriers"])
 const isScrollable = computed(() => store.getters["order/isScrollable"])
 
 const isAnyFilterApplied = computed(() => {
@@ -420,37 +346,8 @@ onIonViewWillEnter(async () => {
   await store.dispatch("order/updateOrdersList", { orders: [], ordersCount: 0 })
   isFetchingOrders.value = true;
   await Promise.allSettled([store.dispatch('order/findTransferOrders', { pageSize: process.env.VUE_APP_VIEW_SIZE, pageIndex: 0, groupByConfig: selectedGroupBy.value }), store.dispatch('util/fetchStatusDesc'), store.dispatch("util/fetchCarriersDetail"), store.dispatch("util/fetchShipmentMethodTypeDesc")])
-  await fetchFacilities();
-  productStores.value = await userStore.getEComStores();
   isFetchingOrders.value = false;
 })
-
-async function fetchFacilities() {
-  let pageIndex = 0, resp
-  try {
-    do {
-      resp = await UtilService.fetchFacilities({
-        facilityTypeId: "VIRTUAL_FACILITY",
-        facilityTypeId_not: "Y",
-        parentTypeId: "VIRTUAL_FACILITY",
-        parentTypeId_not: "Y",
-        pageSize: 100,
-        pageIndex
-      });
-
-      if (!hasError(resp)) {
-        if (resp.data.length) {
-          facilities.value = facilities.value.concat(resp.data);
-        }
-      } else {
-        throw resp.data;
-      }
-      pageIndex++;
-    } while (resp.data.length >= 100);
-  } catch (error) {
-    logger.error(error);
-  }
-}
 
 function updateGroupByFilter(groupById: string) {
   const option = groupByOptions.find(value => value.id === groupById)
@@ -491,7 +388,7 @@ async function showOrderItems($event: any) {
 }
 
 function getFacilityName(facilityId: string) {
-  const facility = facilities.value.find((facility: any) => facility.facilityId === facilityId)
+  const facility = store.getters["util/getFacilitiesByProductStore"]?.find((facility: any) => facility.facilityId === facilityId)
   return facility ? facility.facilityName || facility.facilityId : facilityId
 }
 </script>
