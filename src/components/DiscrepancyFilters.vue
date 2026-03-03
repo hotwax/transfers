@@ -6,14 +6,14 @@
       </ion-toolbar>
     </ion-header>
     <ion-content>
-      <ion-list>
+      <ion-list data-testid="discrepancy-filters-list">
         <ion-item lines="none">
           <ion-label>
             <h1>{{ translate("Type") }}</h1>
           </ion-label>
         </ion-item>
         <ion-item lines="none">
-          <ion-select :label="translate('Discrepancy Type')" interface="popover" :value="selectedTab" @ionChange="$emit('update:selectedTab', $event.detail.value)">
+          <ion-select data-testid="discrepancy-filter-type-select" :label="translate('Discrepancy Type')" interface="popover" :value="selectedTab" @ionChange="$emit('update:selectedTab', $event.detail.value)">
             <ion-select-option value="TransferOrderOverReceived">{{ translate("Over") }}</ion-select-option>
             <ion-select-option value="TransferOrderUnderReceived">{{ translate("Under") }}</ion-select-option>
             <ion-select-option value="TransferOrderMisshipped">{{ translate("Mis-shipped") }}</ion-select-option>
@@ -26,7 +26,7 @@
           </ion-label>
         </ion-item>
         <ion-item lines="none">
-          <ion-select :label="translate('Origin')" interface="popover" :value="originFacilityId" @ionChange="$emit('update:originFacilityId', $event.detail.value)">
+          <ion-select data-testid="discrepancy-filter-origin-select" :label="translate('Origin')" interface="popover" :value="originFacilityId" @ionChange="$emit('update:originFacilityId', $event.detail.value)">
             <ion-select-option value="">{{ translate("All") }}</ion-select-option>
             <ion-select-option v-for="facility in facilities" :key="facility.facilityId" :value="facility.facilityId">
               {{ facility.facilityName || facility.facilityId }}
@@ -34,7 +34,7 @@
           </ion-select>
         </ion-item>
         <ion-item lines="none">
-          <ion-select :label="translate('Destination')" interface="popover" :value="destinationFacilityId" @ionChange="$emit('update:destinationFacilityId', $event.detail.value)">
+          <ion-select data-testid="discrepancy-filter-destination-select" :label="translate('Destination')" interface="popover" :value="destinationFacilityId" @ionChange="$emit('update:destinationFacilityId', $event.detail.value)">
             <ion-select-option value="">{{ translate("All") }}</ion-select-option>
             <ion-select-option v-for="facility in facilities" :key="facility.facilityId" :value="facility.facilityId">
               {{ facility.facilityName || facility.facilityId }}

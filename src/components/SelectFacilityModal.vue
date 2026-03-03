@@ -2,7 +2,7 @@
   <ion-header>
     <ion-toolbar>
       <ion-buttons slot="start">
-        <ion-button @click="closeModal"> 
+        <ion-button data-testid="select-facility-close-btn" @click="closeModal"> 
           <ion-icon slot="icon-only" :icon="closeOutline" />
         </ion-button>
       </ion-buttons>
@@ -10,9 +10,9 @@
     </ion-toolbar>
   </ion-header>
   <ion-content>
-    <ion-searchbar @ionFocus="selectSearchBarText($event)" :placeholder="$t('Search facilities')" v-model="queryString" @keyup.enter="queryString = $event.target.value; findFacility()" @keydown="preventSpecialCharacters($event)"/>
-    <ion-radio-group v-model="selectedFacilityIdValue">
-      <ion-item v-for="facility in facilities" :key="facility.facilityId">
+    <ion-searchbar data-testid="select-facility-searchbar" @ionFocus="selectSearchBarText($event)" :placeholder="$t('Search facilities')" v-model="queryString" @keyup.enter="queryString = $event.target.value; findFacility()" @keydown="preventSpecialCharacters($event)"/>
+    <ion-radio-group data-testid="select-facility-radio-group" v-model="selectedFacilityIdValue">
+      <ion-item v-for="facility in facilities" :key="facility.facilityId" :data-testid="`select-facility-row-${facility.facilityId}`">
         <ion-radio label-placement="end" justify="start" :value="facility.facilityId">
           <ion-label>
             {{ facility.facilityName ? facility.facilityName : facility.facilityId }}
@@ -27,8 +27,8 @@
     </div>
   </ion-content>
 
-  <ion-fab vertical="bottom" horizontal="end" slot="fixed">
-    <ion-fab-button :disabled="selectedFacilityIdValue === selectedFacilityId" @click="saveFacility">
+    <ion-fab vertical="bottom" horizontal="end" slot="fixed">
+    <ion-fab-button data-testid="select-facility-save-btn" :disabled="selectedFacilityIdValue === selectedFacilityId" @click="saveFacility">
       <ion-icon :icon="saveOutline" />
     </ion-fab-button>
   </ion-fab>

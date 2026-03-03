@@ -1,6 +1,6 @@
 <template>
-  <ion-app>
-    <ion-router-outlet />
+  <ion-app data-testid="app-root">
+    <ion-router-outlet data-testid="app-router-outlet" />
   </ion-app>
 </template>
 

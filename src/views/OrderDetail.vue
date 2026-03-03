@@ -152,7 +152,7 @@
 
         <section class="ion-margin-top">
           <ion-item lines="none" button @click="toggleSelectAll()" :detail="false">
-            <ion-checkbox slot="start" :indeterminate="isIndeterminate" :checked="isAllSelected" class="no-pointer-events"></ion-checkbox>
+            <ion-checkbox data-testid="order-items-select-all" slot="start" :indeterminate="isIndeterminate" :checked="isAllSelected" class="no-pointer-events"></ion-checkbox>
             <ion-icon slot="start" :icon="shirtOutline" />
             <ion-label>
               <h1>{{ translate("Items") }}</h1>
@@ -265,6 +265,12 @@
           {{ selectedItemSeqIds.size }} {{ translate("items selected") }}
         </ion-label>
         <ion-buttons slot="end">
+          <ion-button data-testid="order-footer-bulk-fulfill" fill="outline" :disabled="!canBulkFulfill()" @click="openBulkReceiveModal('FULFILL')">
+            {{ translate('Bulk Fulfill') }}
+          </ion-button>
+          <ion-button data-testid="order-footer-bulk-receive" fill="outline" :disabled="!canBulkReceive()" @click="openBulkReceiveModal('RECEIVE')">
+            {{ translate('Bulk Receive') }}
+          </ion-button>
           <ion-button v-for="action in OrderActionValidator.getFooterActions(currentOrder, selectedItemSeqIds)" :key="action.id" :data-testid="`order-footer-${action.id.replace(/_/g,'-').toLowerCase()}`" fill="outline" :color="action.color || 'primary'" :disabled="!action.validation.allowed" @click="handleFooterAction(action)">
             <ion-icon :icon="getIcon(action.icon)" slot="start" v-if="action.icon" />
             {{ getFooterActionLabel(action) }}
@@ -380,6 +386,26 @@ function toggleSelectAll() {
     const selectAllValidItems = OrderActionValidator.getBulkSelectableItems(currentOrder.value);
     selectedItemSeqIds.value = new Set(selectAllValidItems.map((item: any) => item.orderItemSeqId));
   }
+}
+
+function canBulkFulfill() {
+  const order = currentOrder.value;
+  if (!order) return false;
+  if (selectedItemSeqIds.value.size > 0) {
+    const ids = Array.from(selectedItemSeqIds.value);
+    return (order.items || []).some((item: any) => ids.includes(item.orderItemSeqId) && OrderActionValidator.validateItemAction(order, item, 'FULFILL').allowed);
+  }
+  return (order.items || []).some((item: any) => OrderActionValidator.validateItemAction(order, item, 'FULFILL').allowed);
+}
+
+function canBulkReceive() {
+  const order = currentOrder.value;
+  if (!order) return false;
+  if (selectedItemSeqIds.value.size > 0) {
+    const ids = Array.from(selectedItemSeqIds.value);
+    return (order.items || []).some((item: any) => ids.includes(item.orderItemSeqId) && OrderActionValidator.validateItemAction(order, item, 'RECEIVE').allowed);
+  }
+  return (order.items || []).some((item: any) => OrderActionValidator.validateItemAction(order, item, 'RECEIVE').allowed);
 }
 
 async function handleFooterAction(action: OrderFooterAction) {

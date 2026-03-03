@@ -1,8 +1,8 @@
 <template>
   <ion-content>
     <ion-list>
-      <ion-list-header>{{ getProductIdentificationValue(productIdentificationStore.getProductIdentificationPref.primaryId, getProduct(item.productId)) || getProduct(item.productId).productName }}</ion-list-header>
-      <ion-item v-for="action in OrderActionValidator.getItemActions(currentOrder, item)" :key="action.id" button :color="action.color" @click="handleItemAction(action.id)">
+      <ion-list-header data-testid="order-item-detail-popover-header">{{ getProductIdentificationValue(productIdentificationStore.getProductIdentificationPref.primaryId, getProduct(item.productId)) || getProduct(item.productId).productName }}</ion-list-header>
+      <ion-item v-for="action in OrderActionValidator.getItemActions(currentOrder, item)" :key="action.id" button :color="action.color" @click="handleItemAction(action.id)" :data-testid="`order-item-detail-action-${action.id.replace(/_/g,'-').toLowerCase()}`">
         {{ translate(action.label) }}
       </ion-item>
     </ion-list>

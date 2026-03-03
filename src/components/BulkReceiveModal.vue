@@ -47,13 +47,13 @@
       </ion-list>
       
       <div class="ion-padding">
-        <ion-button expand="block" @click="processBatches">
+        <ion-button data-testid="bulk-modal-confirm-btn" expand="block" @click="processBatches">
           {{ translate("Proceed") }}
         </ion-button>
       </div>
     </div>
 
-    <div v-else-if="isProcessing" class="ion-text-center">
+    <div v-else-if="isProcessing" class="ion-text-center" data-testid="bulk-modal-processing">
       <div class="ion-padding">
         <ion-label>
           <p>{{ translate("Processing") }}...</p>
@@ -72,20 +72,30 @@
       </div>
     </div>
 
-    <div v-else-if="isCompleted" class="ion-text-center">
+    <div v-else-if="isCompleted" class="ion-text-center" data-testid="bulk-modal-completed">
       <div class="ion-padding">
         <ion-icon :icon="checkmarkCircleOutline" color="success" style="font-size: 64px;" />
         <p>{{ translate("Success") }}</p>
-        <p v-if="props.actionType === 'RECEIVE'">{{ translate("Successfully received") }} {{ successCount }} {{ translate("items.") }}</p>
-        <p v-else-if="props.actionType === 'FULFILL'">{{ translate("Successfully fulfilled") }} {{ successCount }} {{ translate("items.") }}</p>
-        <p v-else>{{ translate("Successfully processed") }} {{ successCount }} {{ translate("items.") }}</p>
+        <p v-if="props.actionType === 'RECEIVE'">{{ translate("Successfully received") }} <span data-testid="bulk-results-success-count">{{ successCount }}</span> {{ translate("items.") }}</p>
+        <p v-else-if="props.actionType === 'FULFILL'">{{ translate("Successfully fulfilled") }} <span data-testid="bulk-results-success-count">{{ successCount }}</span> {{ translate("items.") }}</p>
+        <p v-else>{{ translate("Successfully processed") }} <span data-testid="bulk-results-success-count">{{ successCount }}</span> {{ translate("items.") }}</p>
         <p v-if="errorCount > 0" class="ion-text-color-danger">
-          {{ translate("Failed to process") }} {{ errorCount }} {{ translate("items.") }}
+          {{ translate("Failed to process") }} <span data-testid="bulk-results-fail-count">{{ errorCount }}</span> {{ translate("items.") }}
         </p>
       </div>
 
       <div class="ion-padding">
-        <ion-button expand="block" @click="closeModal">
+        <div v-if="failedItems.length">
+          <ion-list data-testid="bulk-results-fail-list">
+            <ion-list-header>{{ translate('Failed items') }}</ion-list-header>
+            <ion-item v-for="(f, idx) in failedItems" :key="idx">
+              <ion-label>
+                <p>{{ f.orderItemSeqId }} - {{ f.reason }}</p>
+              </ion-label>
+            </ion-item>
+          </ion-list>
+        </div>
+        <ion-button data-testid="bulk-modal-done-btn" expand="block" @click="closeModal">
           {{ translate("Done") }}
         </ion-button>
       </div>
@@ -147,6 +157,7 @@ const isCompleted = ref(false);
 const completedItemsCount = ref(0);
 const successCount = ref(0);
 const errorCount = ref(0);
+const failedItems = ref<any[]>([]);
 
 // Receive mode: how to calculate quantityAccepted
 // ORDERED = remaining ordered qty, ISSUED = remaining issued qty, CLOSE = 0
@@ -231,6 +242,8 @@ const processBatches = async () => {
           successCount.value += batch.length;
         } else {
           errorCount.value += batch.length;
+          // push individual failures for visibility
+          batch.forEach((item: any) => failedItems.value.push({ orderItemSeqId: item.orderItemSeqId, reason: 'Failed to create shipment' }));
           logger.error("Failed to create shipment for batch", resp);
         }
       } else if (props.actionType === 'RECEIVE') {
@@ -250,11 +263,13 @@ const processBatches = async () => {
           successCount.value += batch.length;
         } else {
           errorCount.value += batch.length;
+          batch.forEach((item: any) => failedItems.value.push({ orderItemSeqId: item.orderItemSeqId, reason: 'Failed to receive' }));
           logger.error("Failed to receive batch", resp);
         }
       }
     } catch (err) {
       errorCount.value += batch.length;
+      batch.forEach((item: any) => failedItems.value.push({ orderItemSeqId: item.orderItemSeqId, reason: err?.message || 'Error' }));
       logger.error("Error processing batch", err);
     }
     

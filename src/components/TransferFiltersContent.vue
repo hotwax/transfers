@@ -1,24 +1,24 @@
 <template>
-  <ion-list>
+  <ion-list data-testid="transfer-filters-content">
     <ion-item lines="none">
       <ion-label>
         <h1>{{ translate("Location") }}</h1>
       </ion-label>
     </ion-item>
     <ion-item lines="none">
-      <ion-select :label="translate('Product Store')" interface="popover" :value="query.productStoreId" @ionChange="updateAppliedFilters($event['detail'].value, 'productStoreId')">
+      <ion-select data-testid="transfer-filter-store-select" :label="translate('Product Store')" interface="popover" :value="query.productStoreId" @ionChange="updateAppliedFilters($event['detail'].value, 'productStoreId')">
         <ion-select-option value="">{{ translate("All") }}</ion-select-option>
         <ion-select-option v-for="store in productStores" :key="store.productStoreId" :value="store.productStoreId">{{ store.storeName ? store.storeName : store.productStoreId }}</ion-select-option>
       </ion-select>
     </ion-item>
     <ion-item lines="none">
-      <ion-select :label="translate('Origin')" interface="popover" :value="query.facilityId" @ionChange="updateAppliedFilters($event['detail'].value, 'facilityId')">
+      <ion-select data-testid="transfer-filter-origin-select" :label="translate('Origin')" interface="popover" :value="query.facilityId" @ionChange="updateAppliedFilters($event['detail'].value, 'facilityId')">
         <ion-select-option value="">{{ translate("All") }}</ion-select-option>
         <ion-select-option v-for="facility in facilities" :key="facility.facilityId" :value="facility.facilityId">{{ facility.facilityName ? facility.facilityName : facility.facilityId }}</ion-select-option>
       </ion-select>
     </ion-item>
     <ion-item lines="none">
-      <ion-select :label="translate('Destination')" interface="popover" :value="query.orderFacilityId" @ionChange="updateAppliedFilters($event['detail'].value, 'orderFacilityId')">
+      <ion-select data-testid="transfer-filter-destination-select" :label="translate('Destination')" interface="popover" :value="query.orderFacilityId" @ionChange="updateAppliedFilters($event['detail'].value, 'orderFacilityId')">
         <ion-select-option value="">{{ translate("All") }}</ion-select-option>
         <ion-select-option v-for="facility in facilities" :key="facility.facilityId" :value="facility.facilityId">{{ facility.facilityName ? facility.facilityName : facility.facilityId }}</ion-select-option>
       </ion-select>
@@ -30,25 +30,25 @@
       </ion-label>
     </ion-item>
     <ion-item lines="none">
-      <ion-select :label="translate('Method')" interface="popover" :value="query.shipmentMethodTypeId" @ionChange="updateAppliedFilters($event['detail'].value, 'shipmentMethodTypeId')">
+      <ion-select data-testid="transfer-filter-method-select" :label="translate('Method')" interface="popover" :value="query.shipmentMethodTypeId" @ionChange="updateAppliedFilters($event['detail'].value, 'shipmentMethodTypeId')">
         <ion-select-option value="">{{ translate("All") }}</ion-select-option>
         <ion-select-option v-for="(shipmentMethodTypeDesc, shipmentMethodTypeId) in shipmentMethods" :key="shipmentMethodTypeId" :value="shipmentMethodTypeId">{{ shipmentMethodTypeDesc ? shipmentMethodTypeDesc : shipmentMethodTypeId }}</ion-select-option>
       </ion-select>
     </ion-item>
     <ion-item lines="none">
-      <ion-select :label="translate('Carrier')" interface="popover" :value="query.carrierPartyId" @ionChange="updateAppliedFilters($event['detail'].value, 'carrierPartyId')">
+      <ion-select data-testid="transfer-filter-carrier-select" :label="translate('Carrier')" interface="popover" :value="query.carrierPartyId" @ionChange="updateAppliedFilters($event['detail'].value, 'carrierPartyId')">
         <ion-select-option value="">{{ translate("All") }}</ion-select-option>
         <ion-select-option v-for="(carrierDesc, carrierPartyId) in carriersList" :key="carrierPartyId" :value="carrierPartyId">{{ carrierDesc ? carrierDesc : carrierPartyId }}</ion-select-option>
       </ion-select>
     </ion-item>
     <ion-item lines="none">
-      <ion-select :label="translate('Type')" interface="popover" :value="query.statusFlowId" @ionChange="updateAppliedFilters($event['detail'].value, 'statusFlowId')">
+      <ion-select data-testid="transfer-filter-type-select" :label="translate('Type')" interface="popover" :value="query.statusFlowId" @ionChange="updateAppliedFilters($event['detail'].value, 'statusFlowId')">
         <ion-select-option value="">{{ translate("All") }}</ion-select-option>
         <ion-select-option v-for="flow in statusFlows" :key="flow.statusFlowId" :value="flow.statusFlowId">{{ translate(flow.description) }}</ion-select-option>
       </ion-select>
     </ion-item>
     <ion-item lines="none">
-      <ion-select :label="translate('Status')" interface="popover" :value="query.orderStatusId" @ionChange="updateAppliedFilters($event['detail'].value, 'orderStatusId')">
+      <ion-select data-testid="transfer-filter-status-select" :label="translate('Status')" interface="popover" :value="query.orderStatusId" @ionChange="updateAppliedFilters($event['detail'].value, 'orderStatusId')">
         <ion-select-option value="">{{ translate("All") }}</ion-select-option>
         <ion-select-option v-for="statusId in orderStatusIds" :key="statusId" :value="statusId">{{ getStatusDesc(statusId) }}</ion-select-option>
       </ion-select>

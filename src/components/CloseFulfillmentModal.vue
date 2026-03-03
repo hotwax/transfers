@@ -2,7 +2,7 @@
   <ion-header>
     <ion-toolbar>
       <ion-buttons slot="start">
-        <ion-button @click="closeModal">
+        <ion-button data-testid="close-fulfillment-back-btn" @click="closeModal">
           <ion-icon slot="icon-only" :icon="arrowBackOutline" />
         </ion-button>
       </ion-buttons>
@@ -21,8 +21,8 @@
         </p>
       </div>
 
-      <ion-list>
-        <ion-item v-for="item in previewItems" :key="item.orderItemSeqId">
+      <ion-list data-testid="close-fulfillment-list">
+        <ion-item v-for="item in previewItems" :key="item.orderItemSeqId" :data-testid="`close-fulfillment-item-${item.orderItemSeqId}`">
           <ion-thumbnail slot="start">
             <Image :src="getProduct(item.productId)?.mainImageUrl" />
           </ion-thumbnail>
@@ -45,7 +45,7 @@
       </ion-list>
 
       <div class="ion-padding">
-        <ion-button expand="block" color="warning" :disabled="!pendingItems.length || isProcessing" @click="confirmClose">
+        <ion-button data-testid="close-fulfillment-confirm-btn" expand="block" color="warning" :disabled="!pendingItems.length || isProcessing" @click="confirmClose">
           {{ translate("Close Fulfillment") }}
         </ion-button>
       </div>
@@ -79,7 +79,7 @@
       </div>
 
       <div class="ion-padding">
-        <ion-button expand="block" @click="closeModal({ isCompleted: true })">
+        <ion-button data-testid="close-fulfillment-done-btn" expand="block" @click="closeModal({ isCompleted: true })">
           {{ translate("Done") }}
         </ion-button>
       </div>
