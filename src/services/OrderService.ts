@@ -328,6 +328,22 @@ const receiveTransferOrder = async (payload: any): Promise<any> => {
   });
 }
 
+const fetchDiscrepancies = async (payload: any): Promise<any> => {
+  return api({
+    url: `poorti/transferOrders/discrepancies`,
+    method: "GET",
+    params: payload
+  });
+}
+
+const fetchMisShippedItems = async (payload: any): Promise<any> => {
+  return api({
+    url: `poorti/transferOrders/misShippedItems`,
+    method: "GET",
+    params: payload
+  });
+}
+
 export const OrderService = {
   addOrderItem,
   approveOrder,
@@ -351,5 +367,7 @@ export const OrderService = {
   updateOrderStatus,
   fetchOrderReceipts,
   closeFulfillment,
-  uploadTransferOrders
+  uploadTransferOrders,
+  fetchDiscrepancies,
+  fetchMisShippedItems
 }
