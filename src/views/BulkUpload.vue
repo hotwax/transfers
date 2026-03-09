@@ -81,10 +81,10 @@
         <ion-list>
           <ion-list-header>{{ selectedDataManagerLog?.logId }}</ion-list-header>
           <!-- TODO: Implement cancel upload functionality, once API is available -->
-          <!-- <ion-item v-if="selectedDataManagerLog?.statusId === 'DmlsPending' || selectedDataManagerLog?.statusId === 'DmlsRunning'" button @click="cancelUpload">
+          <ion-item v-if="selectedDataManagerLog?.statusId === 'DmlsPending' || selectedDataManagerLog?.statusId === 'DmlsRunning'" button @click="cancelUpload">
             <ion-icon slot="end" />
             {{ translate("Cancel") }}
-          </ion-item> -->
+          </ion-item>
           <ion-item v-if="selectedDataManagerLog?.failedRecordCount > 0" button @click="downloadDataManagerFile('error')">
             <ion-icon slot="end" />
             {{ translate("View error") }}
@@ -174,11 +174,9 @@ function getFilteredFields(fields, required = true) {
   return Object.keys(fields).reduce((row, key) => { if (fields[key].required === required) row[key] = fields[key]; return row; }, {});
 }
 function extractFilename(log, fileType) {
-  if (!log || !log.contents || log.contents.length === 0) return "";
-  const content = fileType === "error" 
-    ? log.contents.find(c => c.logContentTypeEnumId === "DmcntError") 
-    : (log.contents.find(c => c.logContentTypeEnumId === "DmcntImported") || log.contents[0]);
-  const fn = content?.fileName;
+  const fn = fileType === "error"
+    ? log.errorFileName
+    : log.fileName;
   return fn ? fn.replace(/_\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2}-\d{3}\.csv$/, ".csv") : "";
 }
 function resetFieldMapping() { fieldMapping.value = Object.keys(fields).reduce((mapping, key) => (mapping[key] = "", mapping), {}); }
@@ -274,9 +272,9 @@ function getFileProcessingStatus(dataManagerLog) {
 async function downloadDataManagerFile(fileType) {
   let logContentId = "";
   if (fileType === "error") {
-    logContentId = selectedDataManagerLog.value.contents.find(c => c.logContentTypeEnumId === 'DmcntError')?.logContentId;
+    logContentId = selectedDataManagerLog.value?.errorLogContentId;
   } else {
-    logContentId = selectedDataManagerLog.value.contents.find(c => c.logContentTypeEnumId === 'DmcntImported')?.logContentId;
+    logContentId = selectedDataManagerLog.value?.logContentId;
   }
   const resp = await UtilService.downloadLogDataManagerFile({
     logContentId,
@@ -290,7 +288,7 @@ async function downloadDataManagerFile(fileType) {
 
 const downloadCsv = (csv, fileName) => {
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  saveAs(blob, fileName ? fileName : "CycleCountImport.csv");
+  saveAs(blob, fileName ? fileName : "TransferOrders.csv");
 
   return blob;
 };
@@ -298,13 +296,13 @@ const downloadCsv = (csv, fileName) => {
 
 async function cancelUpload() {
   try {
-    const resp = await UtilService.cancelCycleCountFileProcessing({ logId: selectedDataManagerLog.value?.logId, statusId: "DmlsCancelled" });
+    const resp = await UtilService.cancelDataManagerFileProcessing({ logId: selectedDataManagerLog.value?.logId, statusId: "DmlsCancelled" });
     if (!hasError(resp)) {
-      showToast(translate("Cycle count cancelled successfully."));
+      showToast(translate("Transfer Order cancelled successfully."));
       await fetchDataManagerLogs();
     }
   } catch (err) {
-    showToast(translate("Failed to cancel uploaded cycle count."));
+    showToast(translate("Failed to cancel uploaded transfer order."));
     logger.error(err);
   }
   closeUploadPopover();
@@ -318,12 +316,11 @@ async function fetchDataManagerLogs() {
   const twentyFourHoursEarlier = DateTime.now().minus({ hours: 24 });
   const resp = await UtilService.getDataManagerLogs({
     configId: "IMP_TRANSFER_ORD",
-    createDate_from: twentyFourHoursEarlier.toMillis(),
-    orderByField: "createdDate desc",
+    fromDate: twentyFourHoursEarlier.toMillis(),
     pageSize: 100
   });
-  if(resp.data?.length) {
-    dataManagerLogs.value = resp.data;
+  if(resp.data?.dataManagerLogs?.length) {
+    dataManagerLogs.value = resp.data.dataManagerLogs;
   }
 }
 
