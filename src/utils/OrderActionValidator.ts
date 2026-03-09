@@ -83,7 +83,7 @@ export const OrderActionValidator = {
       case 'BULK_RECEIVE': {
         if (order.statusId !== 'ORDER_APPROVED') return { allowed: false, reason: 'Order must be Approved.' };
         if (!hasVisibleItems) {
-          return { allowed: false, reason: 'No items are visible.' };
+          return { allowed: false, reason: 'No items.' };
         }
         
         // If items are selected, validate based on that selection
