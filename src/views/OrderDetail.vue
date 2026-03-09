@@ -698,7 +698,7 @@ function handleDiscrepancyFilterChange(value: string) {
 }
 
 onIonViewWillEnter(async () => {
-  store.dispatch("order/fetchOrderDetails", props.orderId)
+  await store.dispatch("order/fetchOrderDetails", props.orderId)
   await Promise.allSettled([store.dispatch('util/fetchStatusDesc'), store.dispatch("util/fetchCarriersDetail"), fetchOrderTimeline(), store.dispatch("util/fetchShipmentMethodTypeDesc")])
   carrierMethods.value = shipmentMethodsByCarrier.value[currentOrder.value.carrierPartyId]
 })
