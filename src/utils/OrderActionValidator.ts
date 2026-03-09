@@ -25,7 +25,7 @@ export const OrderActionValidator = {
   /**
    * VALIDATION MODE: Validates a specific footer action.
    */
-  validateFooterAction(order: any, actionId: OrderFooterActionId, selectedItemSeqIds: Set<string>): ActionValidationResult {
+  validateFooterAction(order: any, actionId: OrderFooterActionId, selectedItemSeqIds: Set<string>, hasVisibleItems: boolean): ActionValidationResult {
     switch (actionId) {
       case 'ADD_ITEMS':
         if (order.statusId !== 'ORDER_CREATED') {
@@ -82,6 +82,9 @@ export const OrderActionValidator = {
 
       case 'BULK_RECEIVE': {
         if (order.statusId !== 'ORDER_APPROVED') return { allowed: false, reason: 'Order must be Approved.' };
+        if (!hasVisibleItems) {
+          return { allowed: false, reason: 'No items are visible.' };
+        }
         
         // If items are selected, validate based on that selection
         if (selectedItemSeqIds.size > 0) {
@@ -162,7 +165,7 @@ export const OrderActionValidator = {
   /**
    * DISCOVERY MODE: Returns all available footer actions.
    */
-  getFooterActions(order: any, selectedItemSeqIds: Set<string>): OrderFooterAction[] {
+  getFooterActions(order: any, selectedItemSeqIds: Set<string>, hasVisibleItems: boolean): OrderFooterAction[] {
     const actions: OrderFooterAction[] = [];
     
     // Always add these actions, they will be enabled/disabled via validation
@@ -170,7 +173,7 @@ export const OrderActionValidator = {
       id: 'ADD_ITEMS',
       label: 'Add items',
       icon: 'shirtOutline',
-      validation: this.validateFooterAction(order, 'ADD_ITEMS', selectedItemSeqIds)
+      validation: this.validateFooterAction(order, 'ADD_ITEMS', selectedItemSeqIds, hasVisibleItems)
     });
 
     actions.push({
@@ -178,7 +181,7 @@ export const OrderActionValidator = {
       label: 'Cancel',
       color: 'danger',
       icon: 'closeCircleOutline',
-      validation: this.validateFooterAction(order, 'CANCEL', selectedItemSeqIds)
+      validation: this.validateFooterAction(order, 'CANCEL', selectedItemSeqIds, hasVisibleItems)
     });
 
     const flow = order.statusFlowId;
@@ -189,7 +192,7 @@ export const OrderActionValidator = {
         label: 'Close Fulfillment',
         color: 'warning',
         icon: 'warningOutline',
-        validation: this.validateFooterAction(order, 'CLOSE_FULFILLMENT', selectedItemSeqIds)
+        validation: this.validateFooterAction(order, 'CLOSE_FULFILLMENT', selectedItemSeqIds, hasVisibleItems)
       });
     }
 
@@ -198,7 +201,7 @@ export const OrderActionValidator = {
         id: 'BULK_RECEIVE',
         label: 'Bulk Receive',
         icon: 'checkmarkDoneOutline',
-        validation: this.validateFooterAction(order, 'BULK_RECEIVE', selectedItemSeqIds)
+        validation: this.validateFooterAction(order, 'BULK_RECEIVE', selectedItemSeqIds, hasVisibleItems)
       });
     }
 

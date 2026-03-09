@@ -151,7 +151,7 @@
         </section>
 
         <section class="ion-margin-top">
-          <ion-item data-testid="order-items-select-row" lines="none" button @click="toggleSelectAll()" :detail="false">
+          <ion-item v-if="flattenedScrollerItems.length" data-testid="order-items-select-row" lines="none" button @click="toggleSelectAll()" :detail="false">
             <ion-checkbox data-testid="order-items-select-all" slot="start" :indeterminate="isIndeterminate" :checked="isAllSelected" class="no-pointer-events"></ion-checkbox>
             <ion-icon slot="start" :icon="shirtOutline" />
             <ion-label>
@@ -265,7 +265,7 @@
           {{ selectedItemSeqIds.size }} {{ translate("items selected") }}
         </ion-label>
         <ion-buttons slot="end">
-          <ion-button v-for="action in OrderActionValidator.getFooterActions(currentOrder, selectedItemSeqIds)" :key="action.id" :data-testid="`order-footer-${action.id.replace(/_/g,'-').toLowerCase()}`" fill="outline" :color="action.color || 'primary'" :disabled="!action.validation.allowed" @click="handleFooterAction(action)">
+          <ion-button v-for="action in OrderActionValidator.getFooterActions(currentOrder, selectedItemSeqIds, flattenedScrollerItems.length > 0)" :key="action.id" :data-testid="`order-footer-${action.id.replace(/_/g,'-').toLowerCase()}`" fill="outline" :color="action.color || 'primary'" :disabled="!action.validation.allowed" @click="handleFooterAction(action)">
             <ion-icon :icon="getIcon(action.icon)" slot="start" v-if="action.icon" />
             {{ getFooterActionLabel(action) }}
           </ion-button>
@@ -314,7 +314,7 @@ import { DynamicScroller, DynamicScrollerItem } from 'vue-virtual-scroller';
 const store = useStore();
 
 async function openMobileActions() {
-  const actions = OrderActionValidator.getFooterActions(currentOrder.value, selectedItemSeqIds.value);
+  const actions = OrderActionValidator.getFooterActions(currentOrder.value, selectedItemSeqIds.value, flattenedScrollerItems.value.length > 0);
   
   const buttons = actions.map((action: any) => ({
     text: getFooterActionLabel(action),
