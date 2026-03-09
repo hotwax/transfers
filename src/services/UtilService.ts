@@ -131,6 +131,31 @@ const fetchProductStoreDetails = async (payload: any): Promise<any> => {
   });
 }
 
+const getDataManagerLogs = async (payload: any): Promise<any> => {
+
+  return api({
+    url: `/admin/dataManager/logs`,
+    method: "GET",
+    params: payload
+  });
+}
+
+const downloadLogDataManagerFile = async (payload: any): Promise<any> => {
+  const baseURL = store.getters['user/getInstanceUrl'];
+  const token = store.getters['user/getUserToken'];
+  console.log("baseURL", baseURL)
+  console.log("payload", payload)
+  return client({
+    url: `apps/Oms/DataManager/DataManagerConfig/DataManagerConfigView/downloadContent?logContentId=${payload.logContentId}&configId=${payload.configId}`,
+    method: "GET",
+    baseURL: baseURL,
+    headers: {
+      Authorization: 'Bearer ' + token,
+      "Content-Type": "application/json"
+    },
+  });
+}
+
 
 export const UtilService = {
   fetchCarriers,
@@ -142,5 +167,7 @@ export const UtilService = {
   fetchShipmentMethodTypeDesc,
   fetchStatusDesc,
   fetchStoreCarrierAndMethods,
-  getInventoryAvailableByFacility
+  getInventoryAvailableByFacility,
+  getDataManagerLogs,
+  downloadLogDataManagerFile
 }

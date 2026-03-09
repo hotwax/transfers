@@ -261,7 +261,7 @@ const approveOrder = async (payload: any): Promise<any> => {
 
 const uploadTransferOrders = async (payload: any): Promise<any> => {
   return api({
-    url: `poorti/transferOrders/upload`,
+    url: `admin/uploadDataManagerFile`,
     method: "post",
     ...payload
   })
