@@ -2,39 +2,8 @@ import { chromium, FullConfig } from '@playwright/test';
 import fs from 'fs';
 import path from 'path';
 
-async function globalSetup(config: FullConfig) {
-  const { baseURL } = config.projects?.[0]?.use || {};
-  const username = process.env.TEST_USERNAME;
-  const password = process.env.TEST_PASSWORD;
-  const storagePath = path.resolve(__dirname, '.auth', 'storageState.json');
-
-  if (!fs.existsSync(path.dirname(storagePath))) {
-    fs.mkdirSync(path.dirname(storagePath), { recursive: true });
-  }
-
-  if (!username || !password) {
-    // create empty state so tests still run but unauthenticated
-    fs.writeFileSync(storagePath, JSON.stringify({}));
-    return;
-  }
-
-  const browser = await chromium.launch();
-  const page = await browser.newPage();
-  const loginUrl = process.env.AUTH_LOGIN_PATH || `${process.env.BASE_URL || 'http://localhost:8080'}/login`;
-  await page.goto(loginUrl);
-  await page.fill('input[name="username"]', username);
-  await page.fill('input[name="password"]', password);
-  await page.click('button[type="submit"]');
-  await page.waitForLoadState('networkidle');
-  const storage = await page.context().storageState();
-  fs.writeFileSync(storagePath, JSON.stringify(storage));
-  await browser.close();
-}
-
-export default globalSetup;
-import { chromium, FullConfig } from '@playwright/test';
-import fs from 'fs';
-import path from 'path';
+// Load env variables
+require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 
 // Global setup will perform a login via UI using provided env vars and save storage state
 // Env variables used:
@@ -44,11 +13,11 @@ import path from 'path';
 // - AUTH_SUCCESS_SELECTOR (selector that appears after successful login)
 
 export default async function globalSetup(config: FullConfig) {
-  const baseURL = process.env.BASE_URL || 'http://localhost:8080';
-  const loginPath = process.env.AUTH_LOGIN_PATH || '/login';
-  const username = process.env.TEST_USERNAME;
-  const password = process.env.TEST_PASSWORD;
-  const authSuccessSelector = process.env.AUTH_SUCCESS_SELECTOR || '[data-testid="order-items-scroller"]';
+  const baseURL = process.env.BASE_URL || process.env.PLAYWRIGHT_BASE_URL || 'https://transfers-dev.hotwax.io';
+  const loginPath = process.env.PLAYWRIGHT_OMS_URL || process.env.AUTH_LOGIN_PATH || '/login';
+  const username = process.env.TEST_USERNAME || process.env.VUE_APP_PLAYWRIGHT_USERNAME;
+  const password = process.env.TEST_PASSWORD || process.env.VUE_APP_PLAYWRIGHT_PASSWORD;
+  const authSuccessSelector = process.env.AUTH_SUCCESS_SELECTOR || '[data-testid="transfers-search-input"]';
 
   const storageDir = path.join(process.cwd(), 'playwright', '.auth');
   const storageFile = path.join(storageDir, 'storageState.json');
@@ -68,16 +37,38 @@ export default async function globalSetup(config: FullConfig) {
     await page.goto(loginUrl, { waitUntil: 'networkidle' });
 
     // Try common selectors for username/email and password
-    const usernameSelectors = ['input[name="username"]', 'input[name="email"]', '#username', '#email', 'input[type="email"]', 'input[type="text"]'];
-    const passwordSelectors = ['input[name="password"]', '#password', 'input[type="password"]'];
+    const usernameSelectors = [
+      '[data-testid="username-input"] input',
+      'ion-input[name="username"] input',
+      'input[name="username"]',
+      'input[name="email"]',
+      '#username'
+    ];
+    const passwordSelectors = [
+      '[data-testid="password-input"] input',
+      'ion-input[name="password"] input',
+      'input[name="password"]',
+      '#password'
+    ];
+
+    // Wait for the form to render (Ionic pages can take a moment to be visible)
+    await page.waitForTimeout(5000); // Wait explicitly to ensure elements are hydrated
+
+    // Check if we hit the multi-step OMS launchpad
+    const omsInput = page.locator('[data-testid="oms-input"] input');
+    if (await omsInput.count() > 0 && await omsInput.isVisible()) {
+      await omsInput.fill('https://dev-oms.hotwax.io');
+      await page.locator('[data-testid="next-button"]').click();
+      await page.waitForTimeout(3000); // wait for flip
+    }
 
     let filled = false;
     for (const us of usernameSelectors) {
-      if (await page.locator(us).count() > 0) {
-        await page.fill(us, username);
+      if ((await page.locator(us).count()) > 0) {
+        await page.locator(us).first().fill(username);
         for (const ps of passwordSelectors) {
-          if (await page.locator(ps).count() > 0) {
-            await page.fill(ps, password);
+          if ((await page.locator(ps).count()) > 0) {
+            await page.locator(ps).first().fill(password);
             filled = true;
             break;
           }
@@ -88,6 +79,7 @@ export default async function globalSetup(config: FullConfig) {
 
     if (!filled) {
       console.log('Could not find username/password inputs on', loginUrl, '— skipping auto-login.');
+      await page.screenshot({ path: path.join(process.cwd(), 'playwright', 'login-fail.png') });
       await browser.close();
       if (!fs.existsSync(storageDir)) fs.mkdirSync(storageDir, { recursive: true });
       if (!fs.existsSync(storageFile)) fs.writeFileSync(storageFile, JSON.stringify({}), 'utf-8');
