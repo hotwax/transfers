@@ -240,7 +240,7 @@ async function save() {
   const fd = new FormData();
   fd.append("contentFile", data, fileName.value);
   fd.append("fileName", fileName.value.replace(".csv", ""));
-  fd.append("configId", "IMP_TRANSFER_ORD");
+  fd.append("configId", "IMP_TRANS_ORD");
   try {
     const resp = await OrderService.uploadTransferOrders({ data: fd, headers: { "Content-Type": "multipart/form-data;" } });
     if (!hasError(resp)) {
@@ -278,7 +278,7 @@ async function downloadDataManagerFile(fileType) {
   }
   const resp = await UtilService.downloadLogDataManagerFile({
     logContentId,
-    configId: "IMP_TRANSFER_ORD"
+    configId: "IMP_TRANS_ORD"
   });
   if (resp?.status === 200 && resp.data) {
     downloadCsv(resp.data, extractFilename(selectedDataManagerLog.value, fileType));
@@ -315,7 +315,7 @@ function closeUploadPopover() {
 async function fetchDataManagerLogs() {
   const twentyFourHoursEarlier = DateTime.now().minus({ hours: 24 });
   const resp = await UtilService.getDataManagerLogs({
-    configId: "IMP_TRANSFER_ORD",
+    configId: "IMP_TRANS_ORD",
     fromDate: twentyFourHoursEarlier.toMillis(),
     pageSize: 100
   });
