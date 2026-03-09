@@ -411,7 +411,7 @@ function getFooterActionLabel(action: any) {
     if (selectedItemSeqIds.value.size > 0 && !isAllSelected.value) {
       return translate("Close @size items", { size: selectedItemSeqIds.value.size }).replace('@size', String(selectedItemSeqIds.value.size))
     }
-    return translate("Close order");
+    return translate("Cancel order");
   }
   return translate(action.label);
 }
