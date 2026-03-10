@@ -580,7 +580,7 @@ const isUpdatingOrderStatus = ref(false);
 
 async function closeSelectedItems() {
   const alert = await alertController.create({
-    header: translate("Close items"),
+    header: translate("Cancel items"),
     message: translate("This will cancel the unfulfilled quantity and release reservations for the selected items. This action cannot be reverted. Are you sure you want to proceed?"),
     buttons: [{
       text: translate("Dismiss"),
@@ -595,7 +595,7 @@ async function closeSelectedItems() {
           })
 
           if (!hasError(resp)) {
-            showToast(translate("Items closed successfully."));
+            showToast(translate("Items cancelled successfully."));
             selectedItemSeqIds.value = new Set();
             await Promise.all([
               store.dispatch("order/fetchOrderDetails", props.orderId),
@@ -606,7 +606,7 @@ async function closeSelectedItems() {
           }
         } catch (error) {
           logger.error(error);
-          showToast(translate("Failed to close items."));
+          showToast(translate("Failed to cancel items."));
         }
       }
     }]
