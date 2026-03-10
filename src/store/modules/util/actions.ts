@@ -37,6 +37,28 @@ const actions: ActionTree<UtilState, RootState> = {
     return shipmentMethodTypeDesc;
   },
 
+  async fetchDataManagerStatusDesc({ commit, state }) {
+    if(Object.keys(state.dataManagerStatusDesc)?.length) return;
+    
+    const dataManagerStatusDesc = {} as any;
+    try {
+      const payload = {
+        statusTypeId: "DataManagerLog",
+        pageSize: 100,
+      }
+
+      const resp = await UtilService.fetchStatusDesc(payload);
+      resp.data.map((dataManagerStatusInformation: any) => {
+        dataManagerStatusDesc[dataManagerStatusInformation.statusId] = dataManagerStatusInformation.description
+      })
+    } catch(err) {
+      logger.error('Error fetching data manager status description', err)
+    }
+
+    commit(types.UTIL_DATA_MANAGER_STATUS_UPDATED, dataManagerStatusDesc)
+    return dataManagerStatusDesc;
+  },
+
   async fetchStatusDesc({ commit, state }) {
     let statusDesc = JSON.parse(JSON.stringify(state.statusDesc))
     if(Object.keys(statusDesc)?.length) return;

@@ -103,7 +103,7 @@
 import { IonBackButton, IonButton, IonContent, IonHeader, IonIcon, IonItem, IonItemDivider, IonLabel, IonList, IonListHeader, IonNote, IonPage, IonPopover, IonSelect, IonSelectOption, IonTitle, IonToolbar, onIonViewDidEnter } from '@ionic/vue';
 import { cloudUploadOutline, downloadOutline, ellipsisVerticalOutline } from "ionicons/icons";
 import { translate } from '@hotwax/dxp-components';
-import { onBeforeUnmount, ref } from "vue";
+import { onBeforeUnmount, computed, ref } from "vue";
 import logger from "@/logger";
 import { showToast, jsonToCsv, parseCsv } from "@/utils"
 import { hasError } from '@/adapter';
@@ -111,6 +111,7 @@ import { OrderService } from '@/services/OrderService';
 import { UtilService } from '@/services/UtilService';
 import { DateTime } from 'luxon';
 import { saveAs } from 'file-saver';
+import store from '@/store';
 
 const dataManagerLogs = ref([]);
 let refreshInterval = null;
@@ -120,6 +121,7 @@ const popoverEvent = ref(null);
 
 onIonViewDidEnter(async () => {
   resetDefaults();
+  await store.dispatch('util/fetchDataManagerStatusDesc');
   await fetchDataManagerLogs();
 });
 
@@ -168,6 +170,8 @@ const templateRows = [
     deliveryDate: ""
   }
 ];
+
+const getDataManagerStatusDesc = computed(() => store.getters["util/getDataManagerStatusDesc"]);
 
 /* ---------- Bulk Upload Logic ---------- */
 function getFilteredFields(fields, required = true) {
@@ -261,12 +265,8 @@ function openUploadActionPopover(event, dataManagerLog) {
 }
 
 function getFileProcessingStatus(dataManagerLog) {
-  if (dataManagerLog.statusId === "DmlsFailed" || dataManagerLog.statusId === "DmlsCrashed" || (dataManagerLog.failedRecordCount > 0)) return "error";
-  if (dataManagerLog.statusId === "DmlsFinished") return "processed";
-  if (dataManagerLog.statusId === "DmlsPending") return "pending";
-  if (dataManagerLog.statusId === "DmlsRunning") return "processing";
-  if (dataManagerLog.statusId === "DmlsCancelled") return "cancelled";
-  return "pending";
+  if (dataManagerLog.failedRecordCount > 0) return 'Error';
+  return getDataManagerStatusDesc.value(dataManagerLog.statusId);
 }
 
 async function downloadDataManagerFile(fileType) {
