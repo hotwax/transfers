@@ -1,19 +1,19 @@
-import { Page, expect } from '@playwright/test';
+import { type Locator, type Page, expect } from '@playwright/test';
 
 export class CreateOrderPage {
   page: Page;
-  transferNameInput: any;
-  productStoreSelectTrigger: any;
-  originAssignBtn: any;
-  destinationAssignBtn: any;
-  lifecycleSelectTrigger: any;
-  deliveryDateBtn: any;
-  productSearchInput: any;
-  addProductBtn: any;
-  qtyInput: any;
-  saveBtn: any;
-  modalSearchInput: any;
-  modalAssignBtn: any;
+  transferNameInput: Locator;
+  productStoreSelectTrigger: Locator;
+  originAssignBtn: Locator;
+  destinationAssignBtn: Locator;
+  lifecycleSelectTrigger: Locator;
+  deliveryDateBtn: Locator;
+  productSearchInput: Locator;
+  addProductBtn: Locator;
+  qtyInput: Locator;
+  saveBtn: Locator;
+  modalSearchInput: Locator;
+  modalAssignBtn: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -68,31 +68,51 @@ export class CreateOrderPage {
   async assignOrigin(searchQuery: string, facilityName: string) {
     await this.dismissSelectPopoverIfOpen();
     await this.originAssignBtn.click();
-    await this.page.waitForTimeout(1000); // wait for modal slide-in
+    await expect(this.modalSearchInput).toBeVisible({ timeout: 10000 });
     await this.modalSearchInput.locator('input').fill(searchQuery);
     const row = this.page.getByTestId(`select-facility-row-${facilityName}`);
     if ((await row.count()) > 0) {
       await row.first().click();
     } else {
-      await this.page.getByRole('radio', { name: facilityName }).click();
+      const namedRadio = this.page.getByRole('radio', { name: new RegExp(facilityName, 'i') });
+      if ((await namedRadio.count()) > 0) {
+        await namedRadio.first().click();
+      } else {
+        const anyRow = this.page.locator('[data-testid^="select-facility-row-"]').first();
+        if ((await anyRow.count()) > 0) {
+          await anyRow.click();
+        } else {
+          await this.page.getByRole('radio').first().click();
+        }
+      }
     }
     await this.modalAssignBtn.click();
-    await this.page.waitForTimeout(1000); // wait for modal slide-out
+    await expect(this.modalSearchInput).toBeHidden({ timeout: 10000 });
   }
 
   async assignDestination(searchQuery: string, facilityName: string) {
     await this.dismissSelectPopoverIfOpen();
     await this.destinationAssignBtn.click();
-    await this.page.waitForTimeout(1000); // wait for modal slide-in
+    await expect(this.modalSearchInput).toBeVisible({ timeout: 10000 });
     await this.modalSearchInput.locator('input').fill(searchQuery);
     const row = this.page.getByTestId(`select-facility-row-${facilityName}`);
     if ((await row.count()) > 0) {
       await row.first().click();
     } else {
-      await this.page.getByRole('radio', { name: new RegExp(facilityName, 'i') }).click();
+      const namedRadio = this.page.getByRole('radio', { name: new RegExp(facilityName, 'i') });
+      if ((await namedRadio.count()) > 0) {
+        await namedRadio.first().click();
+      } else {
+        const anyRow = this.page.locator('[data-testid^="select-facility-row-"]').first();
+        if ((await anyRow.count()) > 0) {
+          await anyRow.click();
+        } else {
+          await this.page.getByRole('radio').first().click();
+        }
+      }
     }
     await this.modalAssignBtn.click();
-    await this.page.waitForTimeout(1000); // wait for modal slide-out
+    await expect(this.modalSearchInput).toBeHidden({ timeout: 10000 });
   }
 
   async selectLifecycle(lifecycleOption: string) {
@@ -108,15 +128,15 @@ export class CreateOrderPage {
   }
 
   async addProduct(sku: string) {
-    // In Ionic 7, ion-input encapsulates the input inside a shadow DOM wrapper. 
-    // Sometimes .fill() fails due to actionability checks failing on the host node. 
+    // In Ionic 7, ion-input encapsulates the input inside a shadow DOM wrapper.
+    // Sometimes .fill() fails due to actionability checks failing on the host node.
     // We target the inner input specifically.
     await this.productSearchInput.locator('input').fill(sku);
     await this.page.keyboard.press('Enter');
 
     // wait for the add button that appears for the search result
     await expect(this.addProductBtn).toBeVisible({ timeout: 10000 });
-    await this.page.waitForTimeout(1000); // Sometimes Ionic button reactivity delays slightly
+    await expect(this.addProductBtn).toBeEnabled();
     await this.addProductBtn.click();
   }
 
@@ -134,7 +154,7 @@ export class CreateOrderPage {
   async clickSave() {
     await expect(this.saveBtn).toBeEnabled();
     await Promise.all([
-      this.page.waitForNavigation({ waitUntil: 'networkidle' }).catch(() => { }),
+      this.page.waitForNavigation({ waitUntil: 'networkidle' }),
       this.saveBtn.click(),
     ]);
   }

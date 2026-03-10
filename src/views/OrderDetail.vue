@@ -256,6 +256,9 @@
               </DynamicScrollerItem>
             </template>
           </DynamicScroller>
+          <div v-else class="empty-state order-items-empty-state" data-testid="order-items-empty-state">
+            <ion-label>{{ translate("No items found for the selected status.") }}</ion-label>
+          </div>
         </section>
       </main>
     </ion-content>
@@ -265,7 +268,7 @@
           {{ selectedItemSeqIds.size }} {{ translate("items selected") }}
         </ion-label>
         <ion-buttons slot="end">
-          <ion-button v-for="action in OrderActionValidator.getFooterActions(currentOrder, selectedItemSeqIds)" :key="action.id" :data-testid="`order-footer-${action.id.replace(/_/g,'-').toLowerCase()}`" fill="outline" :color="action.color || 'primary'" :disabled="!action.validation.allowed" @click="handleFooterAction(action)">
+          <ion-button v-for="action in footerActions" :key="action.id" :data-testid="`order-footer-${action.id.replace(/_/g,'-').toLowerCase()}`" fill="outline" :color="action.color || 'primary'" :disabled="!action.validation.allowed" @click="handleFooterAction(action)">
             <ion-icon :icon="getIcon(action.icon)" slot="start" v-if="action.icon" />
             {{ getFooterActionLabel(action) }}
           </ion-button>
@@ -314,7 +317,7 @@ import { DynamicScroller, DynamicScrollerItem } from 'vue-virtual-scroller';
 const store = useStore();
 
 async function openMobileActions() {
-  const actions = OrderActionValidator.getFooterActions(currentOrder.value, selectedItemSeqIds.value);
+  const actions = footerActions.value;
   
   const buttons = actions.map((action: any) => ({
     text: getFooterActionLabel(action),
@@ -411,7 +414,7 @@ function getFooterActionLabel(action: any) {
     if (selectedItemSeqIds.value.size > 0 && !isAllSelected.value) {
       return translate("Close @size items", { size: selectedItemSeqIds.value.size }).replace('@size', String(selectedItemSeqIds.value.size))
     }
-    return translate("Close order");
+    return translate("Cancel order");
   }
   return translate(action.label);
 }
@@ -430,9 +433,11 @@ function getIcon(iconName: string) {
 async function openBulkReceiveModal(actionType: string) {
   let selectedItems = currentOrder.value.items.filter((item: any) => selectedItemSeqIds.value.has(item.orderItemSeqId));
   
-  // If no items are selected, default to all eligible items for the action
+  // If no items are selected, scope to the currently filtered list when a filter is active.
   if (selectedItems.length === 0) {
-    selectedItems = currentOrder.value.items.filter((item: any) => 
+    const hasActiveFilter = selectedStatusFilter.value !== 'ALL' || selectedDiscrepancyFilter.value !== 'ALL';
+    const candidateItems = hasActiveFilter ? orderFilteredItems.value : currentOrder.value.items;
+    selectedItems = candidateItems.filter((item: any) => 
       actionType === 'RECEIVE' 
         ? OrderActionValidator.validateItemAction(currentOrder.value, item, 'RECEIVE').allowed
         : OrderActionValidator.validateItemAction(currentOrder.value, item, 'FULFILL').allowed
@@ -515,6 +520,28 @@ const orderFilteredItems = computed(() => {
     }
     return true;
   });
+});
+
+const footerActions = computed(() => {
+  const actions = OrderActionValidator.getFooterActions(currentOrder.value, selectedItemSeqIds.value);
+  if (selectedItemSeqIds.value.size > 0 || selectedStatusFilter.value === 'ALL') {
+    return actions;
+  }
+
+  const bulkReceiveAction = actions.find((action) => action.id === 'BULK_RECEIVE');
+  if (!bulkReceiveAction) {
+    return actions;
+  }
+
+  const hasReceivableItemInSelectedStatus = orderFilteredItems.value.some((item: any) =>
+    OrderActionValidator.validateItemAction(currentOrder.value, item, 'RECEIVE').allowed
+  );
+
+  bulkReceiveAction.validation = hasReceivableItemInSelectedStatus
+    ? { allowed: true }
+    : { allowed: false, reason: 'No items are currently eligible for receiving in selected status.' };
+
+  return actions;
 });
 
 const orderItemsByParentProductId = computed(() => {
@@ -698,9 +725,14 @@ function handleDiscrepancyFilterChange(value: string) {
 }
 
 onIonViewWillEnter(async () => {
-  store.dispatch("order/fetchOrderDetails", props.orderId)
-  await Promise.allSettled([store.dispatch('util/fetchStatusDesc'), store.dispatch("util/fetchCarriersDetail"), fetchOrderTimeline(), store.dispatch("util/fetchShipmentMethodTypeDesc")])
-  carrierMethods.value = shipmentMethodsByCarrier.value[currentOrder.value.carrierPartyId]
+  await Promise.allSettled([
+    store.dispatch("order/fetchOrderDetails", props.orderId),
+    store.dispatch('util/fetchStatusDesc'),
+    store.dispatch("util/fetchCarriersDetail"),
+    fetchOrderTimeline(),
+    store.dispatch("util/fetchShipmentMethodTypeDesc")
+  ]);
+  carrierMethods.value = shipmentMethodsByCarrier.value[currentOrder.value?.carrierPartyId] || [];
 })
 
 onIonViewWillLeave(() => {
@@ -952,6 +984,14 @@ ion-card-header {
   width: 100%;
   max-height: calc(100vh - 280px);
   overflow-y: auto;
+}
+
+.order-items-empty-state {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 140px;
+  color: var(--ion-color-medium);
 }
 
 @media (min-width: 991px) {

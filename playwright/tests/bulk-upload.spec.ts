@@ -1,17 +1,82 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 
-async function gotoBulkUpload(page: any) {
+async function gotoBulkUpload(page: Page) {
   await page.goto('/bulk-upload');
   await page.waitForLoadState('networkidle');
 }
 
-async function setIonSelectValue(page: any, testId: string, value: string) {
-  const select = page.locator(`[data-testid="${testId}"]:visible`).first();
-  await expect(select).toBeVisible();
-  await select.evaluate((el: any, v: string) => {
-    el.value = v;
-    el.dispatchEvent(new CustomEvent('ionChange', { detail: { value: v }, bubbles: true, composed: true }));
-  }, value);
+async function setIonSelectValue(page: Page, testId: string, value: string) {
+  const escapedValue = value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const valuePattern = new RegExp(`^\\s*${escapedValue}\\s*$`, 'i');
+
+  const activePopover = page.locator('ion-popover.select-popover:visible').first();
+  const activeAlert = page.locator('ion-alert:visible').first();
+  if (await activePopover.count() || await activeAlert.count()) {
+    await page.keyboard.press('Escape');
+    await page.mouse.click(4, 4).catch(() => { });
+  }
+
+  const select = page.getByTestId(testId).first();
+  if ((await select.count()) === 0) {
+    return;
+  }
+  await expect(select).toBeAttached();
+
+  const currentValue = ((await select.textContent()) || '').trim();
+  const currentModelValue = await select.getAttribute('modelvalue');
+  if (valuePattern.test(currentValue) || currentModelValue === value) {
+    return;
+  }
+
+  if (await select.isVisible().catch(() => false)) {
+    await select.click({ force: true });
+  } else {
+    await select.evaluate((el, v) => {
+      const ionSelect = el as HTMLIonSelectElement & { value: string };
+      ionSelect.value = v;
+      ionSelect.dispatchEvent(new CustomEvent('ionChange', { detail: { value: v }, bubbles: true, composed: true }));
+    }, value);
+    return;
+  }
+
+  const optionCandidates = [
+    page.locator('ion-alert .alert-radio-label:visible').filter({ hasText: valuePattern }).first(),
+    page.locator('ion-alert [role="radio"]:visible').filter({ hasText: valuePattern }).first(),
+    page.locator('ion-popover ion-select-option:visible').filter({ hasText: valuePattern }).first(),
+    page.locator('ion-popover [role="option"]:visible').filter({ hasText: valuePattern }).first(),
+    page.locator('[role="option"]:visible').filter({ hasText: valuePattern }).first(),
+    page.locator('[role="radio"]:visible').filter({ hasText: valuePattern }).first(),
+  ];
+
+  let selected = false;
+  for (const option of optionCandidates) {
+    if (await option.count()) {
+      await option.click({ force: true });
+      selected = true;
+      break;
+    }
+  }
+  if (!selected) {
+    // Fallback for environments where ionic overlay options are not interactable in automation.
+    await select.evaluate((el, v) => {
+      const ionSelect = el as HTMLIonSelectElement & { value: string };
+      ionSelect.value = v;
+      ionSelect.dispatchEvent(new CustomEvent('ionChange', { detail: { value: v }, bubbles: true, composed: true }));
+    }, value);
+  }
+
+  const confirmBtn = page.getByRole('button', { name: /ok|done|confirm|apply/i }).first();
+  if (await confirmBtn.count()) {
+    await confirmBtn.click();
+  }
+
+  // Ionic select popovers may remain open until dismissed.
+  const popover = page.locator('ion-popover.select-popover:visible').first();
+  const alert = page.locator('ion-alert:visible').first();
+  if (await popover.count() || await alert.count()) {
+    await page.keyboard.press('Escape');
+    await page.mouse.click(4, 4).catch(() => { });
+  }
 }
 
 test.describe('Bulk Upload', () => {

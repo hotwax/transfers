@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { OrderDetailPage } from '../pages/orderDetail.page';
+import { CreateOrderPage } from '../pages/CreateOrderPage';
 
 /**
  * Order Action Logic - Playwright Test Suite (moved into tests folder)
@@ -37,6 +38,52 @@ function getChipCountFromText(text: string | null): number {
   if (!text) return 0;
   const match = text.match(/\((\d+)\)/);
   return match ? Number(match[1]) : 0;
+}
+
+async function createApprovedReceiveOnlyOrder(page: any, namePrefix: string): Promise<OrderDetailPage> {
+  const createOrderPage = new CreateOrderPage(page);
+  const orderDetailPage = new OrderDetailPage(page);
+
+  await createOrderPage.goto();
+  await expect(page.getByTestId('create-order-store-select')).toBeVisible({ timeout: 15_000 });
+
+  const orderName = `${namePrefix} ${Date.now()}`;
+  await createOrderPage.setTransferName(orderName);
+  await createOrderPage.assignOrigin('central', 'Central Warehouse');
+  await createOrderPage.assignDestination('A221', 'A221');
+  await createOrderPage.selectLifecycle('Receive only');
+  await createOrderPage.addProduct('WT09');
+  await createOrderPage.setQuantity(2);
+  await createOrderPage.clickSave();
+
+  await orderDetailPage.verifyOrderName(orderName);
+  await orderDetailPage.verifyStatus('Created');
+  await orderDetailPage.approveOrder();
+  await orderDetailPage.verifyStatus('Approved');
+
+  return orderDetailPage;
+}
+
+async function clickVisibleStatusChip(page: any, filterValue: string): Promise<void> {
+  const didClick = await page.evaluate((value: string) => {
+    const chips = Array.from(document.querySelectorAll(`[data-testid="order-status-filter-${value}"]`)) as HTMLElement[];
+    const visibleChip = chips.find((chip) => chip.offsetParent !== null);
+    if (!visibleChip) return false;
+    visibleChip.click();
+    return true;
+  }, filterValue);
+  expect(didClick).toBeTruthy();
+}
+
+async function expectNoItemsVisibleForActiveStatus(page: any): Promise<void> {
+  const emptyState = page.getByTestId('order-items-empty-state');
+  const itemRows = page.locator('[data-testid^="order-item-row-"]');
+
+  await expect.poll(async () => {
+    const hasEmptyState = (await emptyState.count()) > 0;
+    const rowCount = await itemRows.count();
+    return hasEmptyState ? 'empty-state' : rowCount === 0 ? 'no-rows' : 'has-rows';
+  }).not.toBe('has-rows');
 }
 
 test.describe('Order Action Logic', () => {
@@ -165,6 +212,29 @@ test.describe('Order Action Logic', () => {
         expect(completedRows).toBe(0);
       }
     }
+  });
+
+  test('Selecting a zero-count status filter clears the item list view', async ({ page }) => {
+    await createApprovedReceiveOnlyOrder(page, 'Zero Count Status');
+    const completedChip = page.locator('[data-testid="order-status-filter-COMPLETED"]:visible').first();
+    await expect(completedChip).toBeVisible();
+    await expect(completedChip).toContainText('(0)');
+    await clickVisibleStatusChip(page, 'COMPLETED');
+    await expectNoItemsVisibleForActiveStatus(page);
+  });
+
+  test('Bulk receive is disabled when selected status has no receivable items', async ({ page }) => {
+    const od = await createApprovedReceiveOnlyOrder(page, 'Bulk Receive Filter Gate');
+    const bulkReceiveBtn = page.locator('[data-testid="order-footer-bulk-receive"]:visible').first();
+    await expect(bulkReceiveBtn).toBeVisible();
+    await expect(bulkReceiveBtn).toBeEnabled();
+
+    const completedChip = page.locator('[data-testid="order-status-filter-COMPLETED"]:visible').first();
+    await expect(completedChip).toBeVisible();
+    await expect(completedChip).toContainText('(0)');
+    await clickVisibleStatusChip(page, 'COMPLETED');
+    await expectNoItemsVisibleForActiveStatus(page);
+    await expect(bulkReceiveBtn).toHaveAttribute('aria-disabled', 'true');
   });
 
   test('Meatball menu redirects to external fulfill/receive apps when actions are available', async ({ page }) => {

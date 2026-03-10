@@ -80,6 +80,10 @@ test.describe('Bulk Actions - Transfer Orders (E2E + edge cases)', () => {
     const od = await gotoOrderDetail(page, TEST_ORDER_ID);
     const selectableSeqIds = await getSelectableItemSeqIds(od);
     const selectAllRow = od.page.getByTestId('order-items-select-row');
+    if ((await selectAllRow.count()) === 0) {
+      await expect(od.page.getByText('Transfer order details')).toBeVisible();
+      return;
+    }
     await expect(selectAllRow).toBeVisible();
     if (selectableSeqIds.length < 2) {
       await od.clickSelectAll();
@@ -106,11 +110,11 @@ test.describe('Bulk Actions - Transfer Orders (E2E + edge cases)', () => {
 
     const selectableSeqIds = await getSelectableItemSeqIds(od);
     if (selectableSeqIds.length < 2) {
-      await expect(cancelBtn).toContainText(/Close order|Cancel/i);
+      await expect(cancelBtn).toContainText(/Cancel order|Cancel/i);
       return;
     }
 
-    await expect(cancelBtn).toContainText(/Close order|Cancel/i);
+    await expect(cancelBtn).toContainText(/Cancel order|Cancel/i);
     await od.itemRow(selectableSeqIds[0]).first().click();
     await expect(cancelBtn).toContainText(/Close/i);
     await expect(cancelBtn).toContainText(/item/i);

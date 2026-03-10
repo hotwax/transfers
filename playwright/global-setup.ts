@@ -18,6 +18,7 @@ export default async function globalSetup(config: FullConfig) {
   const username = process.env.TEST_USERNAME || process.env.VUE_APP_PLAYWRIGHT_USERNAME;
   const password = process.env.TEST_PASSWORD || process.env.VUE_APP_PLAYWRIGHT_PASSWORD;
   const authSuccessSelector = process.env.AUTH_SUCCESS_SELECTOR || '[data-testid="transfers-search-input"]';
+  const omsInstanceUrl = process.env.OMS_INSTANCE_URL || 'https://dev-oms.hotwax.io';
 
   const storageDir = path.join(process.cwd(), 'playwright', '.auth');
   const storageFile = path.join(storageDir, 'storageState.json');
@@ -51,15 +52,26 @@ export default async function globalSetup(config: FullConfig) {
       '#password'
     ];
 
-    // Wait for the form to render (Ionic pages can take a moment to be visible)
-    await page.waitForTimeout(5000); // Wait explicitly to ensure elements are hydrated
+    // Wait for either OMS step input or login form inputs to render.
+    await Promise.race([
+      page.locator('[data-testid="oms-input"] input').first().waitFor({ state: 'visible', timeout: 10_000 }),
+      page.locator('[data-testid="username-input"] input').first().waitFor({ state: 'visible', timeout: 10_000 }),
+      page.locator('ion-input[name="username"] input').first().waitFor({ state: 'visible', timeout: 10_000 }),
+      page.locator('input[name="username"]').first().waitFor({ state: 'visible', timeout: 10_000 }),
+      page.locator('input[name="email"]').first().waitFor({ state: 'visible', timeout: 10_000 }),
+    ]).catch(() => { });
 
     // Check if we hit the multi-step OMS launchpad
     const omsInput = page.locator('[data-testid="oms-input"] input');
     if (await omsInput.count() > 0 && await omsInput.isVisible()) {
-      await omsInput.fill('https://dev-oms.hotwax.io');
+      await omsInput.fill(omsInstanceUrl);
       await page.locator('[data-testid="next-button"]').click();
-      await page.waitForTimeout(3000); // wait for flip
+      await Promise.race([
+        page.locator('[data-testid="username-input"] input').first().waitFor({ state: 'visible', timeout: 10_000 }),
+        page.locator('ion-input[name="username"] input').first().waitFor({ state: 'visible', timeout: 10_000 }),
+        page.locator('input[name="username"]').first().waitFor({ state: 'visible', timeout: 10_000 }),
+        page.locator('input[name="email"]').first().waitFor({ state: 'visible', timeout: 10_000 }),
+      ]).catch(() => { });
     }
 
     let filled = false;
