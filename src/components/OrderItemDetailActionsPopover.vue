@@ -66,25 +66,21 @@ async function removeOrderItem() {
       text: translate("Confirm"),
       handler: async () => {
         try {
-          const resp = await OrderService.cancelOrderItem({
+          await OrderService.cancelOrderItem({
             orderId: currentOrder.value.orderId,
             orderItemSeqId: props.item.orderItemSeqId
           })
 
-          if (resp?.status === 200) {
-            const order = JSON.parse(JSON.stringify(currentOrder.value));
-            order.items.find((item: any) => {
-              if(item.orderItemSeqId === props.item.orderItemSeqId) {
-                item.statusId = "ITEM_CANCELLED"
-                return true;
-              }
-             })
-            store.dispatch("order/updateCurrent", order)
-            popoverController.dismiss({ isItemUpdated: true });
-            showToast(translate("Item removed successfully."));
-          } else {
-            throw resp.data;
-          }
+          const order = JSON.parse(JSON.stringify(currentOrder.value));
+          order.items.find((item: any) => {
+            if(item.orderItemSeqId === props.item.orderItemSeqId) {
+              item.statusId = "ITEM_CANCELLED"
+              return true;
+            }
+          })
+          store.dispatch("order/updateCurrent", order)
+          popoverController.dismiss({ isItemUpdated: true });
+          showToast(translate("Item removed successfully."));
         } catch (error) {
           logger.error(error);
           showToast(translate("Failed to remove item."));
@@ -92,7 +88,7 @@ async function removeOrderItem() {
       }
     }]
   });
-  alert.present();
+  await alert.present();
 }
 
 async function updateItemStatus(statusId: string, header: string) {
