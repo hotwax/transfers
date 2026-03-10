@@ -212,6 +212,14 @@ const updateOrderItem = async (payload: any): Promise<any> => {
   });
 }
 
+const changeOrderItemStatus = async (payload: any): Promise<any> => {
+  return api({
+    url: `oms/transferOrders/${payload.orderId}/items/${payload.orderItemSeqId}/status`,
+    method: "put",
+    data: payload
+  })
+}
+
 const updateOrderStatus = async (payload: any): Promise<any> => {
   const baseURL = store.getters['user/getOmsBaseUrl'];
   const omstoken = store.getters['user/getUserToken'];
@@ -369,5 +377,6 @@ export const OrderService = {
   closeFulfillment,
   uploadTransferOrders,
   fetchDiscrepancies,
-  fetchMisShippedItems
+  fetchMisShippedItems,
+  changeOrderItemStatus
 }
