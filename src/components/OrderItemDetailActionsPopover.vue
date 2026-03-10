@@ -66,10 +66,9 @@ async function removeOrderItem() {
       text: translate("Confirm"),
       handler: async () => {
         try {
-          const resp = await OrderService.changeOrderItemStatus({
+          const resp = await OrderService.cancelOrderItem({
             orderId: currentOrder.value.orderId,
-            orderItemSeqId: props.item.orderItemSeqId,
-            statusId: "ITEM_CANCELLED"
+            orderItemSeqId: props.item.orderItemSeqId
           })
 
           if (resp?.status === 200) {

@@ -212,11 +212,11 @@ const updateOrderItem = async (payload: any): Promise<any> => {
   });
 }
 
-const changeOrderItemStatus = async (payload: any): Promise<any> => {
+const cancelOrderItem = async (payload: any): Promise<any> => {
   return api({
     url: `oms/transferOrders/${payload.orderId}/items/${payload.orderItemSeqId}/status`,
     method: "put",
-    data: payload
+    data: { statusId: "ITEM_CANCELLED" }
   })
 }
 
@@ -378,5 +378,5 @@ export const OrderService = {
   uploadTransferOrders,
   fetchDiscrepancies,
   fetchMisShippedItems,
-  changeOrderItemStatus
+  cancelOrderItem
 }
