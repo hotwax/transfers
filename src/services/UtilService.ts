@@ -141,16 +141,18 @@ const getDataManagerLogs = async (payload: any): Promise<any> => {
 }
 
 const downloadLogDataManagerFile = async (payload: any): Promise<any> => {
-  const baseURL = store.getters['user/getInstanceUrl'];
+  let baseURL = store.getters['user/getInstanceUrl'];
+  baseURL = baseURL.startsWith("http") ? `${baseURL}/` : `https://${baseURL}.hotwax.io/`;
   const token = store.getters['user/getUserToken'];
   return client({
-    url: `apps/Oms/DataManager/DataManagerConfig/DataManagerConfigView/downloadContent?logContentId=${payload.logContentId}&configId=${payload.configId}`,
+    url: `apps/Oms/DataManager/DataManagerConfig/DataManagerConfigView/downloadContent`,
     method: "GET",
     baseURL: baseURL,
     headers: {
       Authorization: 'Bearer ' + token,
       "Content-Type": "application/json"
     },
+    params: payload
   });
 }
 
