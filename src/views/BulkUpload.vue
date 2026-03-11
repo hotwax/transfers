@@ -54,42 +54,75 @@
           <ion-icon slot="end" :icon="cloudUploadOutline" />
         </ion-button>
 
-        <ion-list v-if="systemMessages.length" class="system-message-section" data-testid="bulk-upload-systemmessages">
+        <ion-list v-if="dataManagerLogs.length" class="system-message-section" data-testid="bulk-upload-systemmessages">
           <ion-list-header>
             <ion-label>
                 {{ translate("Recently uploaded files") }}
               </ion-label>
           </ion-list-header>
-          <ion-item v-for="systemMessage in systemMessages" :key="systemMessage.systemMessageId" :data-testid="`bulk-upload-message-${systemMessage.systemMessageId}`">
+          <ion-item v-for="dataManagerLog in dataManagerLogs" :key="dataManagerLog.logId" :data-testid="`bulk-upload-message-${dataManagerLog.systemMessageId}`">
             <ion-label>
-              <p class="overline">{{ systemMessage.systemMessageId }}</p>
-              {{ extractFilename(systemMessage.messageText) }}
+              <p class="overline">{{ dataManagerLog.logId }}</p>
+              {{ extractFilename(dataManagerLog) }}
             </ion-label>
             <div slot="end" class="system-message-action">
-              <ion-note>{{ getFileProcessingStatus(systemMessage) }}</ion-note>
+              <ion-note>{{ getFileProcessingStatus(dataManagerLog) }}</ion-note>
+              <ion-button size="default" fill="clear" color="medium" @click="openUploadActionPopover($event, dataManagerLog)">
+                <ion-icon slot="icon-only" :icon="ellipsisVerticalOutline" />
+              </ion-button>
             </div>
           </ion-item>
         </ion-list>
       </div>
     </ion-content>
+
+    <ion-popover :is-open="isUploadPopoverOpen" :event="popoverEvent" @did-dismiss="closeUploadPopover" show-backdrop="false">
+      <ion-content>
+        <ion-list>
+          <ion-list-header>{{ selectedDataManagerLog?.logId }}</ion-list-header>
+          <!-- TODO: Implement cancel upload functionality, once API is available -->
+          <ion-item v-if="selectedDataManagerLog?.statusId === 'DmlsPending' || selectedDataManagerLog?.statusId === 'DmlsRunning'" button @click="cancelUpload">
+            <ion-icon slot="end" />
+            {{ translate("Cancel") }}
+          </ion-item>
+          <ion-item v-if="selectedDataManagerLog?.failedRecordCount > 0" button @click="downloadDataManagerFile('error')">
+            <ion-icon slot="end" />
+            {{ translate("View error") }}
+          </ion-item>
+          <ion-item lines="none" button @click="downloadDataManagerFile()">
+            <ion-icon slot="end" />
+            {{ translate("View file") }}
+          </ion-item>
+        </ion-list>
+      </ion-content>
+    </ion-popover>
   </ion-page>
 </template>
 
 <script setup>
-import { IonBackButton, IonButton, IonContent, IonHeader, IonIcon, IonItem, IonItemDivider, IonLabel, IonList, IonListHeader, IonNote, IonPage, IonSelect, IonSelectOption, IonTitle, IonToolbar, onIonViewDidEnter } from '@ionic/vue';
-import { cloudUploadOutline, downloadOutline } from "ionicons/icons";
+import { IonBackButton, IonButton, IonContent, IonHeader, IonIcon, IonItem, IonItemDivider, IonLabel, IonList, IonListHeader, IonNote, IonPage, IonPopover, IonSelect, IonSelectOption, IonTitle, IonToolbar, onIonViewDidEnter } from '@ionic/vue';
+import { cloudUploadOutline, downloadOutline, ellipsisVerticalOutline } from "ionicons/icons";
 import { translate } from '@hotwax/dxp-components';
-import { onBeforeUnmount, ref } from "vue";
+import { onBeforeUnmount, computed, ref } from "vue";
 import logger from "@/logger";
 import { showToast, jsonToCsv, parseCsv } from "@/utils"
 import { hasError } from '@/adapter';
 import { OrderService } from '@/services/OrderService';
+import { UtilService } from '@/services/UtilService';
+import { DateTime } from 'luxon';
+import { saveAs } from 'file-saver';
+import store from '@/store';
 
-const systemMessages = ref([]);
+const dataManagerLogs = ref([]);
 let refreshInterval = null;
+const selectedDataManagerLog = ref(null);
+const isUploadPopoverOpen = ref(false);
+const popoverEvent = ref(null);
 
 onIonViewDidEnter(async () => {
   resetDefaults();
+  await store.dispatch('util/fetchDataManagerStatusDesc');
+  await fetchDataManagerLogs();
 });
 
 onBeforeUnmount(() => {
@@ -105,68 +138,7 @@ let fieldMapping = ref({});
 let fileColumns = ref([]);
 
 // We are mapping fields that are needed to create an order
-const fields = {
-  externalOrderId: {
-    label: "External Order ID",
-    description: "The unique identifier for the order in the external system",
-    required: true
-  },
-  originFacilityId: {
-    label: "Origin Facility ID",
-    description: "The facility ID from which items will be transferred",
-    required: true
-  },
-  destinationFacilityId: {
-    label: "Destination Facility ID",
-    description: "The facility ID where items will be received",
-    required: true
-  },
-  sku: {
-    label: "SKU",
-    description: "The product SKU",
-    required: true
-  },
-  quantity: {
-    label: "Quantity",
-    description: "The quantity to transfer",
-    required: true
-  },
-  orderName: {
-    label: "Order Name",
-    description: "Name of the transfer order",
-    required: false
-  },
-  productStoreId: {
-    label: "Product Store ID",
-    description: "The product store ID (defaults to current store if empty)",
-    required: false
-  },
-  carrierPartyId: {
-    label: "Carrier Party ID",
-    description: "The carrier party ID",
-    required: false
-  },
-  shipmentMethodTypeId: {
-    label: "Shipment Method Type ID",
-    description: "The shipment method type ID",
-    required: false
-  },
-  statusFlowId: {
-    label: "Status Flow ID",
-    description: "The order lifecycle status flow",
-    required: false
-  },
-  shipDate: {
-    label: "Ship Date",
-    description: "The estimated ship date (YYYY-MM-DD)",
-    required: false
-  },
-  deliveryDate: {
-    label: "Delivery Date",
-    description: "The estimated delivery date (YYYY-MM-DD)",
-    required: false
-  }
-};
+const fields = process.env.VUE_APP_MAPPING_FIELDS ? JSON.parse(process.env.VUE_APP_MAPPING_FIELDS) : {};
 
 const templateRows = [
   {
@@ -199,14 +171,17 @@ const templateRows = [
   }
 ];
 
+const getDataManagerStatusDesc = computed(() => store.getters["util/getDataManagerStatusDesc"]);
+
 /* ---------- Bulk Upload Logic ---------- */
 function getFilteredFields(fields, required = true) {
   return Object.keys(fields).reduce((row, key) => { if (fields[key].required === required) row[key] = fields[key]; return row; }, {});
 }
-function extractFilename(path) {
-  if (!path) return;
-  const fn = path.substring(path.lastIndexOf("/") + 1);
-  return fn.replace(/_\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2}-\d{3}\.csv$/, ".csv");
+function extractFilename(log, fileType) {
+  const fn = fileType === "error"
+    ? log.errorFileName
+    : log.fileName;
+  return fn ? fn.replace(/_\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2}-\d{3}\.csv$/, ".csv") : "";
 }
 function resetFieldMapping() { fieldMapping.value = Object.keys(fields).reduce((mapping, key) => (mapping[key] = "", mapping), {}); }
 function resetDefaults() {
@@ -267,17 +242,85 @@ async function save() {
     name: fileName.value
   });
   const fd = new FormData();
-  fd.append("uploadedFile", data, fileName.value);
+  fd.append("contentFile", data, fileName.value);
   fd.append("fileName", fileName.value.replace(".csv", ""));
+  fd.append("configId", "IMP_TRANS_ORD");
   try {
     const resp = await OrderService.uploadTransferOrders({ data: fd, headers: { "Content-Type": "multipart/form-data;" } });
     if (!hasError(resp)) {
       resetDefaults();
+      await fetchDataManagerLogs();
       showToast(translate("The transfer orders file uploaded successfully."));
     } else throw resp.data;
   } catch (err) {
     logger.error(err);
     showToast(translate("Failed to upload the file, please try again"));
+  }
+}
+
+function openUploadActionPopover(event, dataManagerLog) {
+  isUploadPopoverOpen.value = true;
+  popoverEvent.value = event;
+  selectedDataManagerLog.value = dataManagerLog;
+}
+
+function getFileProcessingStatus(dataManagerLog) {
+  if (dataManagerLog.failedRecordCount > 0) return 'Error';
+  return getDataManagerStatusDesc.value(dataManagerLog.statusId);
+}
+
+async function downloadDataManagerFile(fileType) {
+  let logContentId = "";
+  if (fileType === "error") {
+    logContentId = selectedDataManagerLog.value?.errorLogContentId;
+  } else {
+    logContentId = selectedDataManagerLog.value?.logContentId;
+  }
+  const resp = await UtilService.downloadLogDataManagerFile({
+    logContentId,
+    configId: "IMP_TRANS_ORD"
+  });
+  if (resp?.status === 200 && resp.data) {
+    downloadCsv(resp.data, extractFilename(selectedDataManagerLog.value, fileType));
+    showToast(translate("File downloaded successfully"));
+  } else throw resp.data;
+}
+
+const downloadCsv = (csv, fileName) => {
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  saveAs(blob, fileName ? fileName : "TransferOrders.csv");
+
+  return blob;
+};
+
+
+async function cancelUpload() {
+  try {
+    const resp = await UtilService.cancelDataManagerFileProcessing({ logId: selectedDataManagerLog.value?.logId, statusId: "DmlsCancelled" });
+    if (!hasError(resp)) {
+      showToast(translate("Transfer Order cancelled successfully."));
+      await fetchDataManagerLogs();
+    }
+  } catch (err) {
+    showToast(translate("Failed to cancel uploaded transfer order."));
+    logger.error(err);
+  }
+  closeUploadPopover();
+}
+
+function closeUploadPopover() {
+  isUploadPopoverOpen.value = false;
+}
+
+async function fetchDataManagerLogs() {
+  const twentyFourHoursEarlier = DateTime.now().minus({ hours: 24 });
+  const resp = await UtilService.getDataManagerLogs({
+    configId: "IMP_TRANS_ORD",
+    fromDate: twentyFourHoursEarlier.toMillis(),
+    pageSize: 100
+  });
+  if(resp.data?.dataManagerLogs?.length) {
+    dataManagerLogs.value = resp.data.dataManagerLogs;
   }
 }
 

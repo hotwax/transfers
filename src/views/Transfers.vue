@@ -24,7 +24,7 @@
         </section>
 
         <aside class="filters">
-          <TransferFiltersContent />
+          <TransferFiltersContent :groupByConfig="selectedGroupBy" />
         </aside>
 
         <main class="ion-content-scroll-host">

@@ -16,7 +16,7 @@ import { computed } from "vue";
 import store from "@/store";
 import { OrderService } from "@/services/OrderService";
 import logger from "@/logger";
-import { hasError } from "@/adapter";
+import { api, hasError } from "@/adapter";
 import { showToast } from "@/utils";
 import { useAuthStore } from "@hotwax/dxp-components";
 import { OrderActionValidator, OrderItemActionId } from "@/utils/OrderActionValidator";
@@ -44,7 +44,7 @@ function handleItemAction(actionId: OrderItemActionId) {
       closeFulfillment();
       break;
     case 'REMOVE':
-      // Handler not implemented yet
+      removeOrderItem();
       break;
     case 'APPROVE':
       updateItemStatus('ITEM_APPROVED', 'Approve Item');
@@ -53,6 +53,42 @@ function handleItemAction(actionId: OrderItemActionId) {
       updateItemStatus('ITEM_CANCELLED', 'Cancel Item');
       break;
   }
+}
+
+async function removeOrderItem() {
+  const alert = await alertController.create({
+    header: translate("Remove item"),
+    message: translate("Are you sure you want to remove this item?"),
+    buttons: [{
+      text: translate("Cancel"),
+      role: "cancel"
+    }, {
+      text: translate("Confirm"),
+      handler: async () => {
+        try {
+          await OrderService.cancelOrderItem({
+            orderId: currentOrder.value.orderId,
+            orderItemSeqId: props.item.orderItemSeqId
+          })
+
+          const order = JSON.parse(JSON.stringify(currentOrder.value));
+          order.items.find((item: any) => {
+            if(item.orderItemSeqId === props.item.orderItemSeqId) {
+              item.statusId = "ITEM_CANCELLED"
+              return true;
+            }
+          })
+          store.dispatch("order/updateCurrent", order)
+          popoverController.dismiss({ isItemUpdated: true });
+          showToast(translate("Item removed successfully."));
+        } catch (error) {
+          logger.error(error);
+          showToast(translate("Failed to remove item."));
+        }
+      }
+    }]
+  });
+  await alert.present();
 }
 
 async function updateItemStatus(statusId: string, header: string) {

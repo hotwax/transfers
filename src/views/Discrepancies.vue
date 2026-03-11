@@ -42,7 +42,7 @@
                 <h1>{{ translate("Location") }}</h1>
               </ion-label>
             </ion-item>
-            <ion-item lines="none">
+            <ion-item lines="none" :disabled="selectedTab === 'TransferOrderMisshipped'">
               <ion-select data-testid="discrepancies-origin-select" :label="translate('Origin')" interface="popover" v-model="originFacilityId">
                 <ion-select-option value="">{{ translate("All") }}</ion-select-option>
                 <ion-select-option v-for="facility in facilities" :key="facility.facilityId" :value="facility.facilityId">
@@ -50,7 +50,7 @@
                 </ion-select-option>
               </ion-select>
             </ion-item>
-            <ion-item lines="none">
+            <ion-item lines="none" :disabled="selectedTab === 'TransferOrderMisshipped'">
               <ion-select data-testid="discrepancies-destination-select" :label="translate('Destination')" interface="popover" v-model="destinationFacilityId">
                 <ion-select-option value="">{{ translate("All") }}</ion-select-option>
                 <ion-select-option v-for="facility in facilities" :key="facility.facilityId" :value="facility.facilityId">
@@ -105,6 +105,9 @@
               </ion-label>
             </div>
           </div>
+          <ion-infinite-scroll data-testid="discrepancies-infinite-scroll" @ionInfinite="loadMoreDiscrepancies($event)" threshold="100px" v-if="isScrollable">
+            <ion-infinite-scroll-content loading-spinner="crescent" :loading-text="translate('Loading')" />
+          </ion-infinite-scroll>
         </main>
       </div>
     </ion-content>
@@ -112,7 +115,7 @@
 </template>
 
 <script setup lang="ts">
-import { IonBadge, IonButtons, IonChip, IonContent, IonHeader, IonIcon, IonItem, IonLabel, IonList, IonMenuButton, IonPage, IonSelect, IonSelectOption, IonSpinner, IonThumbnail, IonTitle, IonToolbar, onIonViewWillEnter } from '@ionic/vue';
+import { IonBadge, IonButtons, IonChip, IonContent, IonHeader, IonIcon, IonItem, IonLabel, IonList, IonMenuButton, IonPage, IonSelect, IonSelectOption, IonSpinner, IonThumbnail, IonTitle, IonToolbar, onIonViewWillEnter, IonInfiniteScroll, IonInfiniteScrollContent } from '@ionic/vue';
 import { checkmarkCircleOutline, downloadOutline, filterOutline, sendOutline } from 'ionicons/icons';
 import { getProductIdentificationValue, translate, useProductIdentificationStore } from '@hotwax/dxp-components';
 import { computed, ref, watch } from 'vue';
@@ -123,12 +126,14 @@ import { formatUtcDate } from '@/utils';
 import { useStore } from 'vuex';
 import Image from "@/components/Image.vue";
 import DiscrepancyFilters from "@/components/DiscrepancyFilters.vue";
+import { OrderService } from '@/services/OrderService';
 
 const selectedTab = ref('TransferOrderOverReceived');
 const originFacilityId = ref('');
 const destinationFacilityId = ref('');
 const discrepancies = ref<any[]>([]);
 const isLoading = ref(false);
+const isScrollable = ref(true);
 const store = useStore();
 const router = useRouter();
 const productIdentificationStore = useProductIdentificationStore();
@@ -136,58 +141,52 @@ const productIdentificationStore = useProductIdentificationStore();
 const getProduct = computed(() => store.getters["product/getProduct"]);
 const facilities = computed(() => store.getters["util/getFacilitiesByProductStore"]);
 
-const fetchDiscrepancies = async () => {
-  isLoading.value = true;
-  discrepancies.value = [];
+const fetchDiscrepancies = async (vSize?: any, vIndex?: any) => {
+  const viewSize = vSize ? vSize : process.env.VUE_APP_VIEW_SIZE;
+  const viewIndex = vIndex ? vIndex : 0;
+  const parsedViewSize = parseInt(viewSize as string) || 20;
+
+  if (viewIndex === 0) {
+    isLoading.value = true;
+    discrepancies.value = [];
+    isScrollable.value = false;
+  }
   try {
-    // Dummy Data for demonstration with real IDs
-    const mockData: any = {
-      'TransferOrderOverReceived': [
-        { orderId: 'M111589', orderName: 'Transfer to Store 101', orderDate: 1739817600000, productId: '10001', originFacilityId: 'WH_MAIN', originFacilityName: 'Main Warehouse', destinationFacilityId: 'STORE_101', destinationFacilityName: 'Fashion Store 101', varianceQuantity: 2 },
-        { orderId: 'M111630', orderName: 'Transfer to Store 102', orderDate: 1739821200000, productId: '10005', originFacilityId: 'WH_MAIN', originFacilityName: 'Main Warehouse', destinationFacilityId: 'STORE_102', destinationFacilityName: 'Fashion Store 102', varianceQuantity: 1 }
-      ],
-      'TransferOrderUnderReceived': [
-        { orderId: 'M111610', orderName: 'Warehouse Replenishment', orderDate: 1739904000000, productId: '10002', originFacilityId: 'STORE_101', originFacilityName: 'Fashion Store 101', destinationFacilityId: 'WH_MAIN', destinationFacilityName: 'Main Warehouse', varianceQuantity: -5 },
-        { orderId: 'M111612', orderName: 'Store 105 Restock', orderDate: 1739910000000, productId: '10009', originFacilityId: 'WH_MAIN', originFacilityName: 'Main Warehouse', destinationFacilityId: 'STORE_105', destinationFacilityName: 'Fashion Store 105', varianceQuantity: -12 }
-      ],
-      'TransferOrderMisshipped': [
-        { orderId: 'M111591', orderName: 'Ad-hoc Transfer', orderDate: 1740000000000, productId: '10100', originFacilityId: 'STORE_101', originFacilityName: 'Fashion Store 101', destinationFacilityId: 'STORE_202', destinationFacilityName: 'Outlet 202', facilityId: 'STORE_202', quantityAccepted: 1, datetimeReceived: 1740086400000 }
-      ]
-    };
+    const payload = {} as any;
 
-    // Filter by Discrepancy Type
-    let data = mockData[selectedTab.value] || [];
+    payload.viewSize = viewSize;
+    payload.viewIndex = viewIndex;
+    if (selectedTab.value !== 'TransferOrderMisshipped') {
+      payload.varianceQuantity_op = selectedTab.value === 'TransferOrderOverReceived' ? 'greater' : 'less';
+    }
 
-    // Filter by Origin Facility
     if (originFacilityId.value) {
-      data = data.filter((item: any) => item.originFacilityId === originFacilityId.value);
+      payload.originFacilityId = originFacilityId.value;
     }
 
-    // Filter by Destination Facility
     if (destinationFacilityId.value) {
-      data = data.filter((item: any) => (item.destinationFacilityId || item.facilityId) === destinationFacilityId.value);
+      payload.destinationFacilityId = destinationFacilityId.value;
     }
 
-    discrepancies.value = data;
-    
-    /* 
-    // Real API call (commented out for dummy mode)
-    const payload = {
-      "dataDocumentId": selectedTab.value,
-      "pageIndex": 0,
-      "pageSize": 100
-    };
-    
-    const resp = await api({
-      url: "oms/dataDocumentView",
-      method: "post",
-      data: payload
-    });
+    const resp = selectedTab.value === 'TransferOrderMisshipped' ? await OrderService.fetchMisShippedItems(payload) : await OrderService.fetchDiscrepancies(payload);
 
-    if (resp && !hasError(resp)) {
-      discrepancies.value = resp.data.entityValueList || [];
+    if (resp && resp.data) {
+      const respData = selectedTab.value === 'TransferOrderMisshipped' ? resp.data.misShippedItems : resp.data.discrepancies;
+      if (respData && respData.length > 0) {
+        if (viewIndex === 0) {
+          discrepancies.value = respData;
+        } else {
+          discrepancies.value = discrepancies.value.concat(respData);
+        }
+        isScrollable.value = respData.length >= parsedViewSize;
+      } else {
+        if (viewIndex === 0) discrepancies.value = [];
+        isScrollable.value = false;
+      }
+    } else {
+      if (viewIndex === 0) discrepancies.value = [];
+      isScrollable.value = false;
     }
-    */
 
     if (discrepancies.value.length) {
       const productIds = discrepancies.value.map((item: any) => item.productId).filter((id: any, index: number, self: any) => id && self.indexOf(id) === index);
@@ -202,9 +201,28 @@ const fetchDiscrepancies = async () => {
   }
 };
 
-onIonViewWillEnter(fetchDiscrepancies);
+const loadMoreDiscrepancies = async (event: any) => {
+  const viewSize = parseInt(process.env.VUE_APP_VIEW_SIZE as string) || 20;
+  const viewIndex = Math.ceil(discrepancies.value.length / viewSize);
+  await fetchDiscrepancies(viewSize, viewIndex).then(() => {
+    event.target.complete();
+  });
+};
 
-watch([selectedTab, originFacilityId, destinationFacilityId], fetchDiscrepancies);
+// TODO: Need to re-visit. On calling this, on resetting the filters to empty the fetchDiscrepancies was called multiple times when directly called in the watch.
+const updateFiltersAndFetch = () => {
+  if (selectedTab.value === 'TransferOrderMisshipped' && (originFacilityId.value || destinationFacilityId.value)) {
+    originFacilityId.value = '';
+    destinationFacilityId.value = '';
+    return;
+  }
+  fetchDiscrepancies();
+};
+
+onIonViewWillEnter(() => updateFiltersAndFetch());
+
+// TODO: Need to re-visit.
+watch([selectedTab, originFacilityId, destinationFacilityId], () => updateFiltersAndFetch());
 
 const formatDate = (date: any) => {
   if (!date) return '-';

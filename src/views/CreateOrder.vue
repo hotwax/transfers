@@ -468,6 +468,11 @@ async function createOrder() {
 		orderDate: DateTime.now().toFormat("yyyy-MM-dd HH:mm:ss.SSS"),
 		entryDate: DateTime.now().toFormat("yyyy-MM-dd HH:mm:ss.SSS"),
 		originFacilityId: currentOrder.value.originFacilityId,
+    'org.apache.ofbiz.order.order.OrderStatus': {
+      statusId: 'ORDER_CREATED',
+      statusDatetime: DateTime.now().toMillis(),
+      statusUserLogin: store.getters['user/getUserProfile'].username,
+    },
 		shipGroups: [
 			{
 				shipGroupSeqId: "00001",
