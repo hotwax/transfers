@@ -212,11 +212,11 @@ const updateOrderItem = async (payload: any): Promise<any> => {
   });
 }
 
-const cancelOrderItem = async (payload: any): Promise<any> => {
+const cancelOrderItem = async (orderId: string, orderItemSeqId: string, cancelOrder: boolean): Promise<any> => {
   return api({
-    url: `oms/transferOrders/${payload.orderId}/items/${payload.orderItemSeqId}/status`,
+    url: `oms/transferOrders/${orderId}/items/${orderItemSeqId}/status`,
     method: "put",
-    data: { statusId: "ITEM_CANCELLED" }
+    data: { statusId: "ITEM_CANCELLED", checkCancelCompleteOrder: cancelOrder }
   })
 }
 

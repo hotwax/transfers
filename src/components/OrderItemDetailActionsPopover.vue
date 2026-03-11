@@ -66,18 +66,11 @@ async function removeOrderItem() {
       text: translate("Confirm"),
       handler: async () => {
         try {
-          await OrderService.cancelOrderItem({
-            orderId: currentOrder.value.orderId,
-            orderItemSeqId: props.item.orderItemSeqId
-          })
+          await OrderService.cancelOrderItem(currentOrder.value.orderId, props.item.orderItemSeqId, false)
 
           const order = JSON.parse(JSON.stringify(currentOrder.value));
-          order.items.find((item: any) => {
-            if(item.orderItemSeqId === props.item.orderItemSeqId) {
-              item.statusId = "ITEM_CANCELLED"
-              return true;
-            }
-          })
+          const item = order.items.find((item: any) => item.orderItemSeqId === props.item.orderItemSeqId);
+          if (item) item.statusId = "ITEM_CANCELLED";
           store.dispatch("order/updateCurrent", order)
           popoverController.dismiss({ isItemUpdated: true });
           showToast(translate("Item removed successfully."));
