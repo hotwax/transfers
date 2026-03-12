@@ -534,6 +534,7 @@ const orderParentProductInfoById = computed(() => {
     let totalOrdered = 0, totalReceived = 0, totalShipped = 0;
     let parentProductName = '';
     items.forEach((item: any) => {
+      if (item.statusId === 'ITEM_CANCELLED') return;
       if (item.quantity) totalOrdered += item.quantity;
       if (item.shippedQty) totalShipped += item.shippedQty;
       if (item.receivedQty) totalReceived += item.receivedQty;
