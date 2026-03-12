@@ -131,6 +131,39 @@ const fetchProductStoreDetails = async (payload: any): Promise<any> => {
   });
 }
 
+const getDataManagerLogs = async (payload: any): Promise<any> => {
+
+  return api({
+    url: `/admin/dataManager/details`,
+    method: "GET",
+    params: payload
+  });
+}
+
+const downloadLogDataManagerFile = async (payload: any): Promise<any> => {
+  let baseURL = store.getters['user/getInstanceUrl'];
+  baseURL = baseURL.startsWith("http") ? `${baseURL}/` : `https://${baseURL}.hotwax.io/`;
+  const token = store.getters['user/getUserToken'];
+  return client({
+    url: `apps/Oms/DataManager/DataManagerConfig/DataManagerConfigView/downloadContent`,
+    method: "GET",
+    baseURL: baseURL,
+    headers: {
+      Authorization: 'Bearer ' + token,
+      "Content-Type": "application/json"
+    },
+    params: payload
+  });
+}
+
+const cancelDataManagerFileProcessing = async (payload: any): Promise<any> => {
+  return api({
+    url: `/admin/dataManager/logs/${payload.logId}`,
+    method: "PUT",
+    data: payload
+  });
+}
+
 
 export const UtilService = {
   fetchCarriers,
@@ -142,5 +175,8 @@ export const UtilService = {
   fetchShipmentMethodTypeDesc,
   fetchStatusDesc,
   fetchStoreCarrierAndMethods,
-  getInventoryAvailableByFacility
+  getInventoryAvailableByFacility,
+  getDataManagerLogs,
+  downloadLogDataManagerFile,
+  cancelDataManagerFileProcessing
 }

@@ -151,7 +151,7 @@
         </section>
 
         <section class="ion-margin-top">
-          <ion-item data-testid="order-items-select-row" lines="none" button @click="toggleSelectAll()" :detail="false">
+          <ion-item v-if="flattenedScrollerItems.length" data-testid="order-items-select-row" lines="none" button @click="toggleSelectAll()" :detail="false">
             <ion-checkbox data-testid="order-items-select-all" slot="start" :indeterminate="isIndeterminate" :checked="isAllSelected" class="no-pointer-events"></ion-checkbox>
             <ion-icon slot="start" :icon="shirtOutline" />
             <ion-label>
@@ -160,7 +160,7 @@
           </ion-item>
 
           <hr />
-
+          <p class="empty-state" v-if="!flattenedScrollerItems.length">{{ translate("No items found for selected status") }}</p>
           <DynamicScroller
             data-testid="order-items-scroller"
             :items="flattenedScrollerItems"
@@ -268,7 +268,7 @@
           {{ selectedItemSeqIds.size }} {{ translate("items selected") }}
         </ion-label>
         <ion-buttons slot="end">
-          <ion-button v-for="action in footerActions" :key="action.id" :data-testid="`order-footer-${action.id.replace(/_/g,'-').toLowerCase()}`" fill="outline" :color="action.color || 'primary'" :disabled="!action.validation.allowed" @click="handleFooterAction(action)">
+          <ion-button v-for="action in OrderActionValidator.getFooterActions(currentOrder, selectedItemSeqIds)" :key="action.id" :data-testid="`order-footer-${action.id.replace(/_/g,'-').toLowerCase()}`" fill="outline" :color="action.color || 'primary'" :disabled="!action.validation.allowed" @click="handleFooterAction(action)">
             <ion-icon :icon="getIcon(action.icon)" slot="start" v-if="action.icon" />
             {{ getFooterActionLabel(action) }}
           </ion-button>
@@ -317,7 +317,7 @@ import { DynamicScroller, DynamicScrollerItem } from 'vue-virtual-scroller';
 const store = useStore();
 
 async function openMobileActions() {
-  const actions = footerActions.value;
+  const actions = OrderActionValidator.getFooterActions(currentOrder.value, selectedItemSeqIds.value);
   
   const buttons = actions.map((action: any) => ({
     text: getFooterActionLabel(action),
@@ -561,6 +561,7 @@ const orderParentProductInfoById = computed(() => {
     let totalOrdered = 0, totalReceived = 0, totalShipped = 0;
     let parentProductName = '';
     items.forEach((item: any) => {
+      if (item.statusId === 'ITEM_CANCELLED') return;
       if (item.quantity) totalOrdered += item.quantity;
       if (item.shippedQty) totalShipped += item.shippedQty;
       if (item.receivedQty) totalReceived += item.receivedQty;
@@ -607,7 +608,7 @@ const isUpdatingOrderStatus = ref(false);
 
 async function closeSelectedItems() {
   const alert = await alertController.create({
-    header: translate("Close items"),
+    header: translate("Cancel items"),
     message: translate("This will cancel the unfulfilled quantity and release reservations for the selected items. This action cannot be reverted. Are you sure you want to proceed?"),
     buttons: [{
       text: translate("Dismiss"),
@@ -622,7 +623,7 @@ async function closeSelectedItems() {
           })
 
           if (!hasError(resp)) {
-            showToast(translate("Items closed successfully."));
+            showToast(translate("Items cancelled successfully."));
             selectedItemSeqIds.value = new Set();
             await Promise.all([
               store.dispatch("order/fetchOrderDetails", props.orderId),
@@ -633,7 +634,7 @@ async function closeSelectedItems() {
           }
         } catch (error) {
           logger.error(error);
-          showToast(translate("Failed to close items."));
+          showToast(translate("Failed to cancel items."));
         }
       }
     }]
@@ -725,14 +726,9 @@ function handleDiscrepancyFilterChange(value: string) {
 }
 
 onIonViewWillEnter(async () => {
-  await Promise.allSettled([
-    store.dispatch("order/fetchOrderDetails", props.orderId),
-    store.dispatch('util/fetchStatusDesc'),
-    store.dispatch("util/fetchCarriersDetail"),
-    fetchOrderTimeline(),
-    store.dispatch("util/fetchShipmentMethodTypeDesc")
-  ]);
-  carrierMethods.value = shipmentMethodsByCarrier.value[currentOrder.value?.carrierPartyId] || [];
+  store.dispatch("order/fetchOrderDetails", props.orderId)
+  await Promise.allSettled([store.dispatch('util/fetchStatusDesc'), store.dispatch("util/fetchCarriersDetail"), fetchOrderTimeline(), store.dispatch("util/fetchShipmentMethodTypeDesc")])
+  carrierMethods.value = shipmentMethodsByCarrier.value[currentOrder.value.carrierPartyId]
 })
 
 onIonViewWillLeave(() => {

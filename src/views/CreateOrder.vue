@@ -4,7 +4,7 @@
       <ion-toolbar>
         <ion-back-button data-testid="create-order-back-btn" slot="start" :default-href="`/tabs/transfers`" />
         <ion-title>{{ translate("Create transfer order") }}</ion-title>
-        <ion-buttons slot="end">
+        <ion-buttons slot="end" v-if="hasPermission('APP_BULK_UPLOAD')">
           <ion-button data-testid="create-order-bulk-upload-btn" @click="router.push('/bulk-upload')">{{ translate("Bulk upload") }}</ion-button>
         </ion-buttons>
       </ion-toolbar>
@@ -214,6 +214,7 @@ import router from '@/router';
 import { DateTime } from 'luxon';
 import { hasError } from "@/adapter";
 import emitter from '@/event-bus';
+import { hasPermission } from '@/authorization';
 
 const store = useStore();
 const productIdentificationStore = useProductIdentificationStore();
@@ -410,7 +411,7 @@ async function updateBulkOrderItemQuantity(action: any) {
       }],
       inputs: [{
         name: "quantity",
-        placeholder: translate("ordered quantity"),
+        placeholder: translate("Order quantity"),
         min: 0,
         type: "number"
       }]
@@ -468,6 +469,11 @@ async function createOrder() {
 		orderDate: DateTime.now().toFormat("yyyy-MM-dd HH:mm:ss.SSS"),
 		entryDate: DateTime.now().toFormat("yyyy-MM-dd HH:mm:ss.SSS"),
 		originFacilityId: currentOrder.value.originFacilityId,
+    'org.apache.ofbiz.order.order.OrderStatus': {
+      statusId: 'ORDER_CREATED',
+      statusDatetime: DateTime.now().toMillis(),
+      statusUserLogin: store.getters['user/getUserProfile'].username,
+    },
 		shipGroups: [
 			{
 				shipGroupSeqId: "00001",

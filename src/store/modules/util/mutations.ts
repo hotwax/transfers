@@ -31,6 +31,10 @@ const mutations: MutationTree <UtilState> = {
     state.carrierDesc = {}
     state.facilityAddresses = {}
     state.sampleProducts = []
+    state.dataManagerStatusDesc = {}
+  },
+  [types.UTIL_DATA_MANAGER_STATUS_UPDATED] (state, payload) {
+    state.dataManagerStatusDesc = payload
   },
 }
 export default mutations;
