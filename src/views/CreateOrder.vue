@@ -411,7 +411,7 @@ async function updateBulkOrderItemQuantity(action: any) {
       }],
       inputs: [{
         name: "quantity",
-        placeholder: translate("ordered quantity"),
+        placeholder: translate("Order quantity"),
         min: 0,
         type: "number"
       }]

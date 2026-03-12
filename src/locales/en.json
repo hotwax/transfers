@@ -136,7 +136,7 @@
   "Order items must have a valid ordered quantity.": "Order items must have a valid ordered quantity.",
   "Order status updated successfully.": "Order status updated successfully.",
   "ordered": "ordered",
-  "ordered quantity": "ordered quantity",
+  "Order quantity": "Order quantity",
   "Origin": "Origin",
   "Origin and destination facility can't be same.": "Origin and destination facility can't be same.",
   "Origin and product": "Origin and product",
@@ -182,7 +182,7 @@
   "Search result": "Search result",
   "Search SKU or product name": "Search SKU or product name",
   "Search time zones": "Search time zones",
-  "Search transfer orders": "Search by transfer order name",
+  "Search transfer orders": "Search by order name",
   "Searching on SKU": "Searching on SKU",
   "Secondary": "Secondary",
   "Select": "Select",
@@ -246,5 +246,6 @@
   "View file": "View file",
   "Warning: Do not close or refresh the page while the process is running.": "Warning: Do not close or refresh the page while the process is running.",
   "You are about to bulk fulfill": "You are about to bulk fulfill",
-  "You are about to bulk receive": "You are about to bulk receive"
+  "You are about to bulk receive": "You are about to bulk receive",
+  "You do not have permission to view this page": "You do not have permission to view this page"
 }
