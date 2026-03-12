@@ -2,11 +2,13 @@ import { createRouter, createWebHistory } from "@ionic/vue-router";
 import { RouteRecordRaw } from "vue-router";
 import store from "@/store"
 import Tabs from "@/views/Tabs.vue"
-import { DxpLogin, useAuthStore } from "@hotwax/dxp-components";
+import { DxpLogin, translate, useAuthStore } from "@hotwax/dxp-components";
 import { loader } from '@/user-utils';
 import OrderDetail from "@/views/OrderDetail.vue";
 import CreateOrder from "@/views/CreateOrder.vue";
 import BulkUpload from "@/views/BulkUpload.vue";
+import { hasPermission } from "@/authorization";
+import { showToast } from "@/utils";
 
 const authGuard = async (to: any, from: any, next: any) => {
   const authStore = useAuthStore()
@@ -27,6 +29,14 @@ const loginGuard = (to: any, from: any, next: any) => {
   }
   next();
 };
+
+const checkPermission = (to: any, from: any, next: any) => {
+  if (hasPermission(to.meta.permissionId)) {
+    next()
+  } else {
+    showToast(translate("You do not have permission to view this page"))
+  }
+}
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -49,7 +59,11 @@ const routes: Array<RouteRecordRaw> = [
       {
         path: "discrepancies",
         name: "Discrepancies",
-        component: () => import("@/views/Discrepancies.vue")
+        component: () => import("@/views/Discrepancies.vue"),
+        meta: {
+          permissionId: "APP_DISCREPANCY_REPORT"
+        },
+        beforeEnter: checkPermission
       },
       {
         path: "settings",
@@ -69,7 +83,10 @@ const routes: Array<RouteRecordRaw> = [
     path: "/bulk-upload",
     name: "BulkUpload",
     component: BulkUpload,
-    beforeEnter: authGuard
+    beforeEnter: [authGuard, checkPermission],
+    meta: {
+      permissionId: "APP_BULK_UPLOAD"
+    }
   },
   {
     path: "/order-detail/:orderId",
