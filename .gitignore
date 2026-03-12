@@ -37,3 +37,13 @@ npm-debug.log*
 
 # Playwright HTML report
 playwright/playwright-report/
+
+# Playwright local auth/session and run artifacts
+playwright/.auth/
+playwright/test-results/
+playwright/playwright/
+test-results/
+playwright/login-fail.png
+
+# Local scratch files
+tmp.png

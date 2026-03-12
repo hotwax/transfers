@@ -160,7 +160,7 @@
           </ion-item>
 
           <hr />
-          <p class="empty-state" v-if="!flattenedScrollerItems.length">{{ translate("No items found for selected status") }}</p>
+          <p class="empty-state" v-if="!flattenedScrollerItems.length" data-testid="order-items-empty-state">{{ translate("No items found for selected status") }}</p>
           <DynamicScroller
             data-testid="order-items-scroller"
             :items="flattenedScrollerItems"
