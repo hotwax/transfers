@@ -260,7 +260,7 @@ export const OrderActionValidator = {
     if (order.statusId === 'ORDER_APPROVED') {
       actions.push({ id: 'FULFILL', label: 'Fulfill', validation: this.validateItemAction(order, item, 'FULFILL') });
       actions.push({ id: 'RECEIVE', label: 'Receive', validation: this.validateItemAction(order, item, 'RECEIVE') });
-      actions.push({ id: 'CLOSE_FULFILLMENT', label: 'Close fulfillment', color: 'danger', validation: this.validateItemAction(order, item, 'CLOSE_FULFILLMENT') });
+      actions.push({ id: 'CLOSE_FULFILLMENT', label: item.totalIssuedQuantity > 0 ? 'Close fulfillment' : 'Cancel', color: 'danger', validation: this.validateItemAction(order, item, 'CLOSE_FULFILLMENT') });
       actions.push({ id: 'APPROVE', label: 'Approve', validation: this.validateItemAction(order, item, 'APPROVE') });
       actions.push({ id: 'CANCEL', label: 'Cancel', color: 'danger', validation: this.validateItemAction(order, item, 'CANCEL') });
     }
