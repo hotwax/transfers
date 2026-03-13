@@ -136,6 +136,9 @@ export const OrderActionValidator = {
         if (order.statusId !== 'ORDER_APPROVED') {
           return { allowed: false, reason: 'Order must be Approved to receive items.' };
         }
+        if (order.statusFlowId === 'TO_Fulfill_Only') {
+          return { allowed: false, reason: 'Receive is not applicable for Fulfill Only orders.' };
+        }
         if (!['ITEM_PENDING_FULFILL', 'ITEM_PENDING_RECEIPT'].includes(item.statusId)) {
           return { allowed: false, reason: 'Item status does not allow receiving.' };
         }
