@@ -136,6 +136,9 @@ export const OrderActionValidator = {
         if (order.statusId !== 'ORDER_APPROVED') {
           return { allowed: false, reason: 'Order must be Approved to receive items.' };
         }
+        if (order.statusFlowId === 'TO_Fulfill_Only') {
+          return { allowed: false, reason: 'Receive is not applicable for Fulfill Only orders.' };
+        }
         if (!['ITEM_PENDING_FULFILL', 'ITEM_PENDING_RECEIPT'].includes(item.statusId)) {
           return { allowed: false, reason: 'Item status does not allow receiving.' };
         }
@@ -257,7 +260,7 @@ export const OrderActionValidator = {
     if (order.statusId === 'ORDER_APPROVED') {
       actions.push({ id: 'FULFILL', label: 'Fulfill', validation: this.validateItemAction(order, item, 'FULFILL') });
       actions.push({ id: 'RECEIVE', label: 'Receive', validation: this.validateItemAction(order, item, 'RECEIVE') });
-      actions.push({ id: 'CLOSE_FULFILLMENT', label: 'Close fulfillment', color: 'danger', validation: this.validateItemAction(order, item, 'CLOSE_FULFILLMENT') });
+      actions.push({ id: 'CLOSE_FULFILLMENT', label: item.totalIssuedQuantity > 0 ? 'Close fulfillment' : 'Cancel', color: 'danger', validation: this.validateItemAction(order, item, 'CLOSE_FULFILLMENT') });
       actions.push({ id: 'APPROVE', label: 'Approve', validation: this.validateItemAction(order, item, 'APPROVE') });
       actions.push({ id: 'CANCEL', label: 'Cancel', color: 'danger', validation: this.validateItemAction(order, item, 'CANCEL') });
     }

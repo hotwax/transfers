@@ -38,7 +38,14 @@
           </ion-radio-group>
         </template>
 
-        <ion-item data-testid="bulk-modal-pending-fulfillment-warning" v-if="pendingFulfillmentItemsCount > 0" lines="none" color="warning">
+        <ion-item data-testid="bulk-modal-item-to-process-warning" v-if="itemsToProcess.length === 0" lines="none" color="warning">
+          <ion-icon :icon="informationCircleOutline" slot="start" />
+          <ion-label class="ion-text-wrap">
+            <p>{{ translate("No items are available for this bulk action.") }}</p>
+          </ion-label>
+        </ion-item>
+
+        <ion-item data-testid="bulk-modal-pending-fulfillment-warning" v-if="itemsToProcess.length > 0 && pendingFulfillmentItemsCount > 0" lines="none" color="warning">
           <ion-icon :icon="informationCircleOutline" slot="start" />
           <ion-label class="ion-text-wrap">
             <p>{{ pendingFulfillmentItemsCount }} {{ translate("items are pending fulfillment and will be skipped in this bulk action.") }}</p>
@@ -47,7 +54,7 @@
       </ion-list>
       
       <div class="ion-padding">
-        <ion-button data-testid="bulk-modal-confirm-btn" expand="block" @click="processBatches">
+        <ion-button :disabled="itemsToProcess.length === 0" data-testid="bulk-modal-confirm-btn" expand="block" @click="processBatches">
           {{ translate("Proceed") }}
         </ion-button>
       </div>

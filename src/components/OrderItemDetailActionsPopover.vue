@@ -185,8 +185,8 @@ async function editOrderedQuantity() {
 
 async function closeFulfillment() {
   const alert = await alertController.create({
-    header: translate("Close fulfillment"),
-    message: translate("This will cancel the remaining unfulfilled quantity and release reservations. This action cannot be reverted. Are you sure you want to proceed?"),
+    header: translate(props.item.totalIssuedQuantity > 0 ? "Close Fulfillment" : "Cancel Item"),
+    message: translate(props.item.totalIssuedQuantity > 0 ? "This will cancel the remaining unfulfilled quantity and release reservations. This action cannot be reverted. Are you sure you want to proceed?" : "Are you sure you want to remove this item?"),
     buttons: [{
       text: translate("Cancel"),
       role: "cancel"
