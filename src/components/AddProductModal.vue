@@ -22,8 +22,8 @@
             <h2>{{ getProductIdentificationValue(productIdentificationStore.getProductIdentificationPref.primaryId, product) || getProduct(product.productId).productName }}</h2>
             <p>{{ getProductIdentificationValue(productIdentificationStore.getProductIdentificationPref.secondaryId, product) }}</p>
           </ion-label>
-          <ion-icon v-if="isProductInOrder(product.productId)" color="success" :icon="checkmarkCircle" data-testid="add-product-in-order-${product.productId}" />
-          <ion-button v-else data-testid="add-product-btn-${product.productId}" fill="outline" @click="addItemToOrder(product)" :disabled="pendingProductIds.has(product.productId)">
+          <ion-icon v-if="isProductInOrder(product.productId)" color="success" :icon="checkmarkCircle" :data-testid="`add-product-in-order-${product.productId}`" />
+          <ion-button v-else :data-testid="`add-product-btn-${product.productId}`" fill="outline" @click="addItemToOrder(product)" :disabled="pendingProductIds.has(product.productId)">
             {{ pendingProductIds.has(product.productId) ? translate("Adding...") : translate("Add to order") }}
           </ion-button>
         </ion-item>
@@ -62,7 +62,7 @@ import {
   IonToolbar,
   modalController,
 } from "@ionic/vue";
-import { computed, onUnmounted, ref, defineProps } from "vue";
+import { computed, onUnmounted, ref } from "vue";
 import { closeOutline, checkmarkCircle } from "ionicons/icons";
 import store from "@/store";
 import { getProductIdentificationValue, translate, useProductIdentificationStore } from "@hotwax/dxp-components";

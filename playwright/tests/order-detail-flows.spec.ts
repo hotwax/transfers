@@ -122,9 +122,15 @@ test.describe('Order Detail Flows', () => {
     await expect(addButtons.first()).toBeVisible({ timeout: 10_000 });
     await addButtons.first().click();
 
+    const inOrderIcons = page.locator('[data-testid^="add-product-in-order-"]');
+    await expect(inOrderIcons.first()).toBeVisible({ timeout: 15_000 });
+
     await page.getByTestId('add-product-close-btn').click();
     await expect(page.getByTestId('add-product-searchbar')).toHaveCount(0);
-    await expect(page.getByText(/WT09/i).first()).toBeVisible({ timeout: 15_000 });
+    
+    // Check that a new item row was added (should be 2 items now)
+    const itemRows = page.locator('div.list-item');
+    await expect(itemRows).toHaveCount(2, { timeout: 15_000 });
   });
 
   test('Close order end-to-end from order detail', async ({ page }) => {
