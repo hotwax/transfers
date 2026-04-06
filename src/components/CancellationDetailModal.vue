@@ -41,14 +41,14 @@ import { closeOutline } from "ionicons/icons";
 import { getProductIdentificationValue, translate, useProductIdentificationStore } from '@hotwax/dxp-components';
 import { DateTime } from "luxon";
 import Image from "@/components/Image.vue";
-import { useStore } from "vuex";
 import { computed } from "vue";
+import { useProductStore } from "@/store/product";
 
 defineProps(["event"]);
 
-const store = useStore();
+const productStore = useProductStore();
 const productIdentificationStore = useProductIdentificationStore();
-const getProduct = computed(() => store.getters["product/getProduct"]);
+const getProduct = computed(() => productStore.getProduct);
 
 function closeModal() {
   modalController.dismiss();

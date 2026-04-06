@@ -121,11 +121,12 @@ import { closeOutline, saveOutline } from "ionicons/icons";
 import { computed, onBeforeMount, ref, defineProps, defineEmits } from "vue";
 import { getCurrentTime } from '../utils'
 import { translate, useUserStore } from "@hotwax/dxp-components"
-import store from '@/store';
+import { useUserStore as useAppUserStore } from "@/store/user";
 
 const userStore = useUserStore();
+const appUserStore = useAppUserStore();
 
-const userProfile = computed(() => store.getters["user/getUserProfile"])
+const userProfile = computed(() => appUserStore.getUserProfile)
 const timeZones = computed(() => userStore.getTimeZones)
 const currentTimeZoneId = computed(() => userProfile.value.timeZone)
 

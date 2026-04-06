@@ -64,19 +64,21 @@ import {
 } from "@ionic/vue";
 import { computed, onUnmounted, ref, defineProps } from "vue";
 import { closeOutline, checkmarkCircle } from "ionicons/icons";
-import store from "@/store";
 import { getProductIdentificationValue, translate, useProductIdentificationStore } from "@hotwax/dxp-components";
 import Image from "@/components/Image.vue"
 import logger from "@/logger";
-import { ProductService } from "@/services/ProductService";
 import { hasError } from "@/adapter";
+import { useOrderStore } from "@/store/order";
+import { useProductStore } from "@/store/product";
 
 const props = defineProps(["addProductToQueue", "pendingProductIds", "isProductInOrder", "onProductAdded"])
 
 const productIdentificationStore = useProductIdentificationStore();
+const orderStore = useOrderStore();
+const productStore = useProductStore();
 
-const getProduct = computed(() => (id: any) => store.getters["product/getProduct"](id))
-const currentOrder = computed(() => store.getters["order/getCurrent"])
+const getProduct = computed(() => productStore.getProduct)
+const currentOrder = computed(() => orderStore.getCurrent)
 
 let queryString = ref('')
 const isSearching = ref(false);
@@ -102,7 +104,7 @@ async function getProducts( vSize?: any, vIndex?: any) {
   const viewIndex = vIndex ? vIndex : 0;
 
   try {
-    const resp = await ProductService.fetchProducts({
+    const resp = await productStore.searchProducts({
       "filters": ['isVirtual: false', 'isVariant: true'],
       keyword: queryString.value.trim(),
       viewSize,
@@ -117,7 +119,7 @@ async function getProducts( vSize?: any, vIndex?: any) {
         products.value = productsList;
         total.value = resp.data.response.numFound;
       }
-      store.dispatch("product/addProductToCachedMultiple", { products: productsList })
+      productStore.addProductToCachedMultiple({ products: productsList })
     } else {
       products.value = viewIndex ? products.value : [];
     }

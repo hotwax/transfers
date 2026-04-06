@@ -19,12 +19,13 @@
 import { IonContent, IonItem, IonList, IonListHeader, popoverController } from "@ionic/vue"
 import { getProductIdentificationValue, translate, useProductIdentificationStore } from '@hotwax/dxp-components';
 import { computed , defineProps } from "vue";
-import store from "@/store";
+import { useProductStore } from "@/store/product";
 
 const productIdentificationStore = useProductIdentificationStore();
 defineProps(["item"]);
+const productStore = useProductStore();
 
-const getProduct = computed(() => store.getters["product/getProduct"])
+const getProduct = computed(() => productStore.getProduct)
 
 function handleItemAction(action: string) {
   popoverController.dismiss({ action })

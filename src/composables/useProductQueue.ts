@@ -1,11 +1,10 @@
 import { ref, computed } from 'vue';
-import { useStore } from 'vuex';
-import { OrderService } from '@/services/OrderService';
-import { UtilService } from '@/services/UtilService';
 import { showToast } from '@/utils';
 import { hasError } from "@/adapter";
 import { translate } from "@hotwax/dxp-components";
 import logger from '@/logger';
+import { useOrderStore } from "@/store/order";
+import { useUtilStore } from "@/store/util";
 
 /**
  * Sequential product addition queue for order items to prevent API deadlocks.
@@ -23,14 +22,15 @@ import logger from '@/logger';
  */
 
 export function useOrderQueue() {
-  const store = useStore();
+  const orderStore = useOrderStore();
+  const utilStore = useUtilStore();
   
   const addQueue = ref([]) as any;
   const isProcessing = ref(false);
   const pendingProductIds = ref(new Set());
   let pendingItemsToast: any = null;      
   
-  const currentOrder = computed(() => store.getters['order/getCurrent']);
+  const currentOrder = computed(() => orderStore.getCurrent);
 
   // Helper function to check if product is in order
   const isProductInOrder = (productId: string) => {
@@ -110,7 +110,7 @@ export function useOrderQueue() {
     
     try {
       // Fetch product average cost
-      const productAverageCostDetail = await UtilService.fetchProductsAverageCost([product.productId], facilityId);
+      const productAverageCostDetail = await utilStore.fetchProductsAverageCost([product.productId], facilityId);
       
       const newProduct = {
         orderId: orderId,
@@ -123,7 +123,7 @@ export function useOrderQueue() {
         unitListPrice: 0
       };
 
-      const resp = await OrderService.addOrderItem(newProduct);
+      const resp = await orderStore.addOrderItem(newProduct);
 
       if (!hasError(resp)) {
         // Create the complete item without mutating newProduct
@@ -138,7 +138,7 @@ export function useOrderQueue() {
           items: [...currentOrder.value.items, newItem]
         }
 
-        await store.dispatch("order/updateCurrent", updatedOrder);
+        orderStore.updateCurrent(updatedOrder);
         // Emit event after successful addition
         onSuccess?.();
       } else {

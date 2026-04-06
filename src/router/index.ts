@@ -1,6 +1,5 @@
 import { createRouter, createWebHistory } from "@ionic/vue-router";
 import { RouteRecordRaw } from "vue-router";
-import store from "@/store"
 import Tabs from "@/views/Tabs.vue"
 import { DxpLogin, translate, useAuthStore } from "@hotwax/dxp-components";
 import { loader } from '@/user-utils';
@@ -9,6 +8,7 @@ import CreateOrder from "@/views/CreateOrder.vue";
 import BulkUpload from "@/views/BulkUpload.vue";
 import { hasPermission } from "@/authorization";
 import { showToast } from "@/utils";
+import { useUserStore } from "@/store/user";
 declare module 'vue-router' {
   interface RouteMeta {
     permissionId?: string;
@@ -17,7 +17,7 @@ declare module 'vue-router' {
 
 const authGuard = async (to: any, from: any, next: any) => {
   const authStore = useAuthStore()
-  if (!authStore.isAuthenticated || !store.getters['user/isAuthenticated']) {
+  if (!authStore.isAuthenticated || !useUserStore().isAuthenticated) {
     await loader.present('Authenticating')
     // TODO use authenticate() when support is there
     const redirectUrl = window.location.origin + '/login'

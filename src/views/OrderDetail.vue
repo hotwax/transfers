@@ -298,9 +298,7 @@ import AddProductModal from "@/components/AddProductModal.vue"
 import { useOrderQueue } from '@/composables/useProductQueue';
 import { useOrderTimeline } from '@/composables/useOrderTimeline';
 import { computed, ref, watch } from "vue";
-import { useStore } from "vuex";
 import logger from "@/logger";
-import { OrderService } from "@/services/OrderService";
 import BulkReceiveModal from "@/components/BulkReceiveModal.vue";
 import { hasError, STATUSCOLOR } from "@/adapter";
 import { DateTime } from "luxon";
@@ -310,8 +308,13 @@ import { formatCurrency } from "@/utils";
 import { OrderActionValidator, OrderFooterAction } from "@/utils/OrderActionValidator";
 import ProgressBar from "@/components/ProgressBar.vue";
 import { DynamicScroller, DynamicScrollerItem } from 'vue-virtual-scroller';
+import { useOrderStore } from "@/store/order";
+import { useProductStore } from "@/store/product";
+import { useUtilStore } from "@/store/util";
 
-const store = useStore();
+const orderStore = useOrderStore();
+const productStore = useProductStore();
+const utilStore = useUtilStore();
 
 async function openMobileActions() {
   const actions = OrderActionValidator.getFooterActions(currentOrder.value, selectedItemSeqIds.value, flattenedScrollerItems.value.length > 0);
@@ -346,8 +349,8 @@ const productIdentificationStore = useProductIdentificationStore();
 const orderQueue = useOrderQueue();
 const props = defineProps(["orderId"]);
 
-const currentOrder = computed(() => store.getters["order/getCurrent"])
-const getStatusDesc = computed(() => store.getters["util/getStatusDesc"])
+const currentOrder = computed(() => orderStore.getCurrent)
+const getStatusDesc = computed(() => utilStore.getStatusDesc)
 const selectedItemSeqIds = ref(new Set<string>())
 
 const isAllSelected = computed(() => {
@@ -456,7 +459,7 @@ async function openBulkReceiveModal(actionType: string) {
   bulkReceiveModal.onDidDismiss().then((result) => {
     if (result.data?.isCompleted) {
       selectedItemSeqIds.value = new Set();
-      store.dispatch("order/fetchOrderDetails", props.orderId);
+      orderStore.fetchOrderDetails(props.orderId);
     }
   });
 
@@ -475,7 +478,7 @@ async function openCloseFulfillmentModal() {
   modal.onDidDismiss().then(async (result) => {
     if (result.data?.isCompleted) {
       await Promise.all([
-        store.dispatch("order/fetchOrderDetails", props.orderId),
+        orderStore.fetchOrderDetails(props.orderId),
         fetchOrderTimeline()
       ]);
     }
@@ -483,11 +486,11 @@ async function openCloseFulfillmentModal() {
 
   return modal.present();
 }
-const shipmentMethodsByCarrier = computed(() => store.getters["util/getShipmentMethodsByCarrier"])
-const getProduct = computed(() => store.getters["product/getProduct"])
-const getCarrierDesc = computed(() => store.getters["util/getCarrierDesc"])
-const getShipmentMethodDesc = computed(() => store.getters["util/getShipmentMethodDesc"])
-const facilities = computed(() => store.getters["util/getFacilitiesByProductStore"])
+const shipmentMethodsByCarrier = computed(() => utilStore.getShipmentMethodsByCarrier)
+const getProduct = computed(() => productStore.getProduct)
+const getCarrierDesc = computed(() => utilStore.getCarrierDesc)
+const getShipmentMethodDesc = computed(() => utilStore.getShipmentMethodDesc)
+const facilities = computed(() => utilStore.getFacilitiesByProductStore)
 // disable order status updates during product processing
 const isOrderStatusUpdateDisabled = computed(() => {
   return isUpdatingOrderStatus.value || orderQueue.pendingProductIds.value.size > 0;
@@ -590,7 +593,7 @@ async function closeSelectedItems() {
       text: translate("Confirm"),
       handler: async () => {
         try {
-          const resp = await OrderService.closeFulfillment({
+          const resp = await orderStore.closeFulfillment({
             orderId: currentOrder.value.orderId,
             items: Array.from(selectedItemSeqIds.value).map(id => ({ orderItemSeqId: id }))
           })
@@ -599,7 +602,7 @@ async function closeSelectedItems() {
             showToast(translate("Items cancelled successfully."));
             selectedItemSeqIds.value = new Set();
             await Promise.all([
-              store.dispatch("order/fetchOrderDetails", props.orderId),
+              orderStore.fetchOrderDetails(props.orderId),
               fetchOrderTimeline()
             ]);
           } else {
@@ -699,8 +702,8 @@ function handleDiscrepancyFilterChange(value: string) {
 }
 
 onIonViewWillEnter(async () => {
-  await store.dispatch("order/fetchOrderDetails", props.orderId)
-  await Promise.allSettled([store.dispatch('util/fetchStatusDesc'), store.dispatch("util/fetchCarriersDetail"), fetchOrderTimeline(), store.dispatch("util/fetchShipmentMethodTypeDesc")])
+  await orderStore.fetchOrderDetails(props.orderId)
+  await Promise.allSettled([utilStore.fetchStatusDesc(), utilStore.fetchCarriersDetail(), fetchOrderTimeline(), utilStore.fetchShipmentMethodTypeDesc()])
   carrierMethods.value = shipmentMethodsByCarrier.value[currentOrder.value.carrierPartyId]
 })
 
@@ -741,19 +744,19 @@ async function updateOrderStatus(updatedStatusId: string) {
   try {
     if (updatedStatusId === "ORDER_APPROVED") {
       if (currentOrder.value.statusFlowId === "TO_Receive_Only") {
-        resp = await OrderService.approveWarehouseFulfillOrder({ orderId: currentOrder.value.orderId })
+        resp = await orderStore.approveWarehouseFulfillOrder({ orderId: currentOrder.value.orderId })
       } else {
-        resp = await OrderService.approveOrder({ orderId: currentOrder.value.orderId })
+        resp = await orderStore.approveOrder({ orderId: currentOrder.value.orderId })
       }
     }
     if (updatedStatusId === "ORDER_CANCELLED") {
-      resp = await OrderService.cancelOrder({ orderId: currentOrder.value.orderId })
+      resp = await orderStore.cancelOrder({ orderId: currentOrder.value.orderId })
     }
 
     if (!hasError(resp)) {
       showToast(translate("Order status updated successfully."))
       await Promise.all([
-        store.dispatch("order/fetchOrderDetails", props.orderId),
+        orderStore.fetchOrderDetails(props.orderId),
         fetchOrderTimeline()
       ]);
     } else {
@@ -799,7 +802,7 @@ async function updateCarrierAndShipmentMethod(event: any, carrierPartyId: any, s
   const isShipmentMethodUpdated = shipmentMethodTypeId ? true : false
   shipmentMethodTypeId = shipmentMethodTypeId ? shipmentMethodTypeId : carrierMethods.value?.[0]?.shipmentMethodTypeId
   try {
-    const resp = await OrderService.updateOrderItemShipGroup({
+    const resp = await orderStore.updateOrderItemShipGroup({
       orderId: currentOrder.value.orderId,
       shipGroupSeqId: currentOrder.value.shipGroupSeqId,
       shipmentMethodTypeId : shipmentMethodTypeId ? shipmentMethodTypeId : "",
@@ -810,7 +813,7 @@ async function updateCarrierAndShipmentMethod(event: any, carrierPartyId: any, s
       const order = JSON.parse(JSON.stringify(currentOrder.value));
       order.carrierPartyId = carrierPartyId
       order.shipmentMethodTypeId = shipmentMethodTypeId;
-      store.dispatch("order/updateCurrent", order)
+      orderStore.updateCurrent(order)
     } else {
       throw resp.data;
     }
@@ -866,7 +869,7 @@ async function openOrderItemDetailActionsPopover(event: any, item: any){
   popover.onDidDismiss().then(async (result) => {
     if(result.data?.isItemUpdated) {
       await Promise.all([
-        store.dispatch("order/fetchOrderDetails", props.orderId),
+        orderStore.fetchOrderDetails(props.orderId),
         fetchOrderTimeline()
       ]);
     }

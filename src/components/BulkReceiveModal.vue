@@ -122,9 +122,9 @@ import {
 import { ref, computed } from "vue";
 import { checkmarkCircleOutline, closeOutline, informationCircleOutline } from "ionicons/icons";
 import { translate } from "@hotwax/dxp-components";
-import { OrderService } from "@/services/OrderService";
 import { OrderActionValidator } from "@/utils/OrderActionValidator";
 import logger from "@/logger";
+import { useOrderStore } from "@/store/order";
 
 const props = defineProps({
   items: {
@@ -169,6 +169,7 @@ const pendingFulfillmentItemsCount = computed(() => {
   }
   return 0;
 });
+const orderStore = useOrderStore();
 
 const itemsToProcess = computed(() => {
   if (props.actionType === 'RECEIVE') {
@@ -229,9 +230,9 @@ const processBatches = async () => {
           }))
         };
         
-        const resp = await OrderService.createTransferOrderShipment(payload);
+        const resp = await orderStore.createTransferOrderShipment(payload);
         if (resp.status === 200 && resp.data.shipmentId) {
-          await OrderService.shipTransferOrderShipment({ 
+          await orderStore.shipTransferOrderShipment({ 
             shipmentId: resp.data.shipmentId,
             orderId: props.orderId
           });
@@ -252,7 +253,7 @@ const processBatches = async () => {
           }))
         };
         
-        const resp = await OrderService.receiveTransferOrder(payload);
+        const resp = await orderStore.receiveTransferOrder(payload);
         if (resp.status === 200) {
           successCount.value += batch.length;
         } else {

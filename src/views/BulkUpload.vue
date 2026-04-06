@@ -107,13 +107,14 @@ import { onBeforeUnmount, computed, ref } from "vue";
 import logger from "@/logger";
 import { showToast, jsonToCsv, parseCsv } from "@/utils"
 import { hasError } from '@/adapter';
-import { OrderService } from '@/services/OrderService';
-import { UtilService } from '@/services/UtilService';
 import { DateTime } from 'luxon';
 import { saveAs } from 'file-saver';
-import store from '@/store';
+import { useUtilStore } from "@/store/util";
+import { useOrderStore } from "@/store/order";
 
 const dataManagerLogs = ref([]);
+const utilStore = useUtilStore();
+const orderStore = useOrderStore();
 let refreshInterval = null;
 const selectedDataManagerLog = ref(null);
 const isUploadPopoverOpen = ref(false);
@@ -121,7 +122,7 @@ const popoverEvent = ref(null);
 
 onIonViewDidEnter(async () => {
   resetDefaults();
-  await store.dispatch('util/fetchDataManagerStatusDesc');
+  await utilStore.fetchDataManagerStatusDesc();
   await fetchDataManagerLogs();
 });
 
@@ -171,7 +172,7 @@ const templateRows = [
   }
 ];
 
-const getDataManagerStatusDesc = computed(() => store.getters["util/getDataManagerStatusDesc"]);
+const getDataManagerStatusDesc = computed(() => utilStore.getDataManagerStatusDesc);
 
 /* ---------- Bulk Upload Logic ---------- */
 function getFilteredFields(fields, required = true) {
@@ -246,7 +247,7 @@ async function save() {
   fd.append("fileName", fileName.value.replace(".csv", ""));
   fd.append("configId", "IMP_TRANS_ORD");
   try {
-    const resp = await OrderService.uploadTransferOrders({ data: fd, headers: { "Content-Type": "multipart/form-data;" } });
+    const resp = await orderStore.uploadTransferOrders({ data: fd, headers: { "Content-Type": "multipart/form-data;" } });
     if (!hasError(resp)) {
       resetDefaults();
       await fetchDataManagerLogs();
@@ -276,7 +277,7 @@ async function downloadDataManagerFile(fileType) {
   } else {
     logContentId = selectedDataManagerLog.value?.logContentId;
   }
-  const resp = await UtilService.downloadLogDataManagerFile({
+  const resp = await utilStore.downloadLogDataManagerFile({
     logContentId,
     configId: "IMP_TRANS_ORD"
   });
@@ -296,7 +297,7 @@ const downloadCsv = (csv, fileName) => {
 
 async function cancelUpload() {
   try {
-    const resp = await UtilService.cancelDataManagerFileProcessing({ logId: selectedDataManagerLog.value?.logId, statusId: "DmlsCancelled" });
+    const resp = await utilStore.cancelDataManagerFileProcessing({ logId: selectedDataManagerLog.value?.logId, statusId: "DmlsCancelled" });
     if (!hasError(resp)) {
       showToast(translate("Transfer Order cancelled successfully."));
       await fetchDataManagerLogs();
@@ -314,7 +315,7 @@ function closeUploadPopover() {
 
 async function fetchDataManagerLogs() {
   const twentyFourHoursEarlier = DateTime.now().minus({ hours: 24 });
-  const resp = await UtilService.getDataManagerLogs({
+  const resp = await utilStore.getDataManagerLogs({
     configId: "IMP_TRANS_ORD",
     fromDate: twentyFourHoursEarlier.toMillis(),
     pageSize: 100

@@ -203,21 +203,24 @@ import { getProductIdentificationValue, translate, useProductIdentificationStore
 import { computed, ref, watch } from "vue";
 import { getDateWithOrdinalSuffix, showToast } from '@/utils';
 import logger from '@/logger';
-import { useStore } from 'vuex';
 import Image from '@/components/Image.vue';
 import OrderItemActionsPopover from '@/components/OrderItemActionsPopover.vue';
 import SelectFacilityModal from '@/components/SelectFacilityModal.vue';
-import { ProductService } from '@/services/ProductService';
-import { UtilService } from '@/services/UtilService';
-import { OrderService } from '@/services/OrderService';
 import router from '@/router';
 import { DateTime } from 'luxon';
 import { hasError } from "@/adapter";
 import emitter from '@/event-bus';
 import { hasPermission } from '@/authorization';
+import { useOrderStore } from "@/store/order";
+import { useProductStore } from "@/store/product";
+import { useUserStore as useAppUserStore } from "@/store/user";
+import { useUtilStore } from "@/store/util";
 
-const store = useStore();
 const productIdentificationStore = useProductIdentificationStore();
+const orderStore = useOrderStore();
+const productStore = useProductStore();
+const userStore = useAppUserStore();
+const utilStore = useUtilStore();
 
 let timeoutId = ref();
 const isSearchingProduct = ref(false);
@@ -268,10 +271,10 @@ const statusFlows = [
   }
 ]
 
-const getProduct = computed(() => store.getters["product/getProduct"])
-const shipmentMethodsByCarrier = computed(() => store.getters["util/getShipmentMethodsByCarrier"])
-const getCarrierDesc = computed(() => store.getters["util/getCarrierDesc"])
-const facilities = computed(() => store.getters["util/getFacilitiesByProductStore"])
+const getProduct = computed(() => productStore.getProduct)
+const shipmentMethodsByCarrier = computed(() => utilStore.getShipmentMethodsByCarrier)
+const getCarrierDesc = computed(() => utilStore.getCarrierDesc)
+const facilities = computed(() => utilStore.getFacilitiesByProductStore)
 
 // Implemented watcher to display the search spinner correctly. Mainly the watcher is needed to not make the findProduct call always and to create the debounce effect.
 // Previously we were using the `debounce` property of ion-input but it was updating the searchedString and making other related effects after the debounce effect thus the spinner is also displayed after the debounce
@@ -302,7 +305,7 @@ onIonViewDidEnter(async () => {
   stores.value = useUserStore().eComStores
   const currentProductStoreId = (useUserStore().getCurrentEComStore as any)?.productStoreId || "";
   currentOrder.value.productStoreId = currentProductStoreId
-  await Promise.allSettled([store.dispatch("util/fetchStoreCarrierAndMethods", currentProductStoreId), store.dispatch("util/fetchCarriersDetail")])
+  await Promise.allSettled([utilStore.fetchStoreCarrierAndMethods(currentProductStoreId), utilStore.fetchCarriersDetail()])
   await fetchProductStoreDetails(currentProductStoreId);
   if(Object.keys(shipmentMethodsByCarrier.value)?.length) {
     currentOrder.value.carrierPartyId = Object.keys(shipmentMethodsByCarrier.value)[0]
@@ -313,7 +316,7 @@ onIonViewDidEnter(async () => {
 
 async function fetchProductStoreDetails(productStoreId: string) {
   try {
-    const resp = await UtilService.fetchProductStoreDetails({ productStoreId: productStoreId });
+    const resp = await utilStore.fetchProductStoreDetails({ productStoreId: productStoreId });
     if(!hasError(resp)) {
       currencyUom.value = resp.data.defaultCurrencyUomId;
     } else {
@@ -355,7 +358,7 @@ async function productStoreUpdated() {
     currentOrder.value.destinationFacilityId = "";
     if(currentOrder.value.items.length) refetchAllItemsStock()
   }
-  await store.dispatch("util/fetchStoreCarrierAndMethods", currentOrder.value.productStoreId);
+  await utilStore.fetchStoreCarrierAndMethods(currentOrder.value.productStoreId);
   if(Object.keys(shipmentMethodsByCarrier.value)?.length) {
     currentOrder.value.carrierPartyId = Object.keys(shipmentMethodsByCarrier.value)[0]
     selectUpdatedMethod()
@@ -456,7 +459,7 @@ async function createOrder() {
   emitter.emit("presentLoader", { message: translate("Creating transfer order..."), backdropDismiss: false });
 
   const productIds = currentOrder.value.items?.map((item: any) => item.productId);
-  const productAverageCostDetail = await UtilService.fetchProductsAverageCost(productIds, currentOrder.value.originFacilityId)
+  const productAverageCostDetail = await utilStore.fetchProductsAverageCost(productIds, currentOrder.value.originFacilityId)
   
 	const order = {
 		orderName: currentOrder.value.name.trim(),
@@ -472,7 +475,7 @@ async function createOrder() {
     'org.apache.ofbiz.order.order.OrderStatus': {
       statusId: 'ORDER_CREATED',
       statusDatetime: DateTime.now().toMillis(),
-      statusUserLogin: store.getters['user/getUserProfile'].username,
+      statusUserLogin: userStore.getUserProfile.username,
     },
 		shipGroups: [
 			{
@@ -503,7 +506,7 @@ async function createOrder() {
 
   order["grandTotal"] = grandTotal
 
-  const addresses = await store.dispatch("util/fetchFacilityAddresses", [currentOrder.value.originFacilityId, currentOrder.value.destinationFacilityId])
+  const addresses = await utilStore.fetchFacilityAddresses([currentOrder.value.originFacilityId, currentOrder.value.destinationFacilityId])
   addresses.map((address: any) => {
     if(address.facilityId === currentOrder.value.originFacilityId) {
       order.shipGroups[0].shipFrom = {
@@ -522,7 +525,7 @@ async function createOrder() {
   })
 
   try {
-    const resp = await OrderService.createOrder({ payload: order })
+    const resp = await orderStore.createOrder({ payload: order })
     if(!hasError(resp)) {
       router.replace(`/order-detail/${resp.data.orderId}`)
       emitter.emit("dismissLoader")
@@ -615,13 +618,13 @@ async function findProduct() {
 
   isSearchingProduct.value = true;
   try {
-    const resp = await ProductService.fetchProducts({
+    const resp = await productStore.searchProducts({
       "filters": ['isVirtual: false', `sku: *${queryString.value}*`],
       "viewSize": 1
     })
     if (!hasError(resp) && resp.data.response?.docs?.length) {
       searchedProduct.value = resp.data.response.docs[0];
-      store.dispatch("product/addProductToCached", searchedProduct.value)      
+      productStore.addProductToCached(searchedProduct.value)      
     } else {
       throw resp.data
     }
@@ -634,7 +637,7 @@ async function findProduct() {
 
 async function fetchStock(productId: string) {
   try {
-    const resp: any = await UtilService.getInventoryAvailableByFacility({
+    const resp: any = await utilStore.getInventoryAvailableByFacility({
       productId,
       facilityId: currentOrder.value.originFacilityId
     });

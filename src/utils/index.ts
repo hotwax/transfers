@@ -1,9 +1,9 @@
 import { toastController } from "@ionic/vue";
 import { DateTime } from "luxon";
-import store from "@/store";
 import Papa from 'papaparse'
 import { saveAs } from 'file-saver';
 import { translate } from "@hotwax/dxp-components";
+import { useUserStore } from "@/store/user";
 
 const dateOrdinalSuffix = {
   1: 'st',
@@ -43,7 +43,8 @@ const showToast = async (message: string, options?: any) => {
 
 const formatUtcDate = (value: any, outFormat: string) => {
   if (!value || isNaN(Number(value))) return '-';
-  return DateTime.fromMillis(value, { zone: 'utc' }).setZone(store.state.user.current.userTimeZone).toFormat(outFormat ? outFormat : 'MM-dd-yyyy')
+  const userTimeZone = useUserStore().current?.userTimeZone;
+  return DateTime.fromMillis(value, { zone: 'utc' }).setZone(userTimeZone).toFormat(outFormat ? outFormat : 'MM-dd-yyyy')
 }
 
 function getDateWithOrdinalSuffix(time: any) {

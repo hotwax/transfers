@@ -123,10 +123,11 @@ import { useRouter } from 'vue-router';
 import { api, hasError } from '@/adapter';
 import logger from '@/logger';
 import { formatUtcDate } from '@/utils';
-import { useStore } from 'vuex';
 import Image from "@/components/Image.vue";
 import DiscrepancyFilters from "@/components/DiscrepancyFilters.vue";
-import { OrderService } from '@/services/OrderService';
+import { useProductStore } from "@/store/product";
+import { useUtilStore } from "@/store/util";
+import { useOrderStore } from "@/store/order";
 
 const selectedTab = ref('TransferOrderOverReceived');
 const originFacilityId = ref('');
@@ -134,12 +135,14 @@ const destinationFacilityId = ref('');
 const discrepancies = ref<any[]>([]);
 const isLoading = ref(false);
 const isScrollable = ref(true);
-const store = useStore();
 const router = useRouter();
 const productIdentificationStore = useProductIdentificationStore();
+const productStore = useProductStore();
+const utilStore = useUtilStore();
+const orderStore = useOrderStore();
 
-const getProduct = computed(() => store.getters["product/getProduct"]);
-const facilities = computed(() => store.getters["util/getFacilitiesByProductStore"]);
+const getProduct = computed(() => productStore.getProduct);
+const facilities = computed(() => utilStore.getFacilitiesByProductStore);
 
 const fetchDiscrepancies = async (vSize?: any, vIndex?: any) => {
   const viewSize = vSize ? vSize : process.env.VUE_APP_VIEW_SIZE;
@@ -168,7 +171,7 @@ const fetchDiscrepancies = async (vSize?: any, vIndex?: any) => {
       payload.destinationFacilityId = destinationFacilityId.value;
     }
 
-    const resp = selectedTab.value === 'TransferOrderMisshipped' ? await OrderService.fetchMisShippedItems(payload) : await OrderService.fetchDiscrepancies(payload);
+    const resp = selectedTab.value === 'TransferOrderMisshipped' ? await orderStore.fetchMisShippedItems(payload) : await orderStore.fetchDiscrepancies(payload);
 
     if (resp && resp.data) {
       const respData = selectedTab.value === 'TransferOrderMisshipped' ? resp.data.misShippedItems : resp.data.discrepancies;
@@ -191,7 +194,7 @@ const fetchDiscrepancies = async (vSize?: any, vIndex?: any) => {
     if (discrepancies.value.length) {
       const productIds = discrepancies.value.map((item: any) => item.productId).filter((id: any, index: number, self: any) => id && self.indexOf(id) === index);
       if (productIds.length) {
-        await store.dispatch('product/fetchProducts', { productIds });
+        await productStore.fetchProducts({ productIds });
       }
     }
   } catch (error) {

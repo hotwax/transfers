@@ -9,14 +9,17 @@ import { computed, onBeforeMount, onMounted, onUnmounted, ref } from "vue";
 import { IonApp, IonRouterOutlet, loadingController } from "@ionic/vue";
 import emitter from "@/event-bus"
 import { Settings } from 'luxon'
-import store from "./store";
 import { initialise, resetConfig } from '@/adapter'
 import { translate, useProductIdentificationStore, useUserStore } from "@hotwax/dxp-components";
 import logger from '@/logger';
+import { useUserStore as useAppUserStore } from "@/store/user";
+import { useUtilStore } from "@/store/util";
 
-const userProfile = computed(() => store.getters["user/getUserProfile"])
-const userToken = computed(() => store.getters["user/getUserToken"])
-const instanceUrl = computed(() => store.getters["user/getInstanceUrl"])
+const userStore = useAppUserStore();
+const utilStore = useUtilStore();
+const userProfile = computed(() => userStore.current)
+const userToken = computed(() => userStore.token)
+const instanceUrl = computed(() => userStore.instanceUrl)
 
 const loader = ref(null) as any
 const maxAge = process.env.VUE_APP_CACHE_MAX_AGE ? parseInt(process.env.VUE_APP_CACHE_MAX_AGE) : 0
@@ -39,7 +42,7 @@ initialise({
 
 async function unauthorised() {
   // Mark the user as unauthorised, this will help in not making the logout api call in actions
-  store.dispatch("user/logout", { isUserUnauthorised: true });
+  userStore.logout({ isUserUnauthorised: true });
   const redirectUrl = window.location.origin + '/login';
   window.location.href = `${process.env.VUE_APP_LOGIN_URL}?redirectUrl=${redirectUrl}`;
 }
@@ -80,7 +83,7 @@ onMounted(async () => {
     const currentProductStore : any = useUserStore().getCurrentEComStore;
     await Promise.all([
       useProductIdentificationStore().getIdentificationPref(currentProductStore.productStoreId).catch((error) => logger.error(error)),
-      store.dispatch("util/fetchFacilitiesByCurrentStore", currentProductStore.productStoreId).catch((error) => logger.error(error))
+      utilStore.fetchFacilitiesByCurrentStore(currentProductStore.productStoreId).catch((error) => logger.error(error))
     ])
   }
 })

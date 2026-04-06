@@ -1,22 +1,24 @@
 import { ref, watch, computed, Ref } from 'vue';
-import { useStore } from 'vuex';
 import { translate } from '@hotwax/dxp-components';
 import { DateTime } from 'luxon';
-import { OrderService } from '@/services/OrderService';
 import { hasError } from '@/adapter';
 import logger from '@/logger';
+import { useOrderStore } from "@/store/order";
+import { useProductStore } from "@/store/product";
+import { useUtilStore } from "@/store/util";
 
 export function useOrderTimeline(orderId: Ref<string>) {
-  const store = useStore();
+  const orderStore = useOrderStore();
+  const productStore = useProductStore();
+  const utilStore = useUtilStore();
   const rawTimeline = ref<any[]>([]);
   const isFetchingTimeline = ref(false);
 
-  // Getter accessors from Vuex
-  const currentOrder = computed(() => store.getters['order/getCurrent']);
-  const getCarrierDesc = computed(() => store.getters['util/getCarrierDesc']);
-  const getShipmentMethodDesc = computed(() => store.getters['util/getShipmentMethodDesc']);
-  const getProduct = computed(() => store.getters['product/getProduct']);
-  const getStatusDesc = computed(() => store.getters['util/getStatusDesc']);
+  const currentOrder = computed(() => orderStore.getCurrent);
+  const getCarrierDesc = computed(() => utilStore.getCarrierDesc);
+  const getShipmentMethodDesc = computed(() => utilStore.getShipmentMethodDesc);
+  const getProduct = computed(() => productStore.getProduct);
+  const getStatusDesc = computed(() => utilStore.getStatusDesc);
 
   const orderTimeline = computed(() => {
     const timeline = JSON.parse(JSON.stringify(rawTimeline.value));
@@ -171,7 +173,7 @@ export function useOrderTimeline(orderId: Ref<string>) {
     isFetchingTimeline.value = true;
     let timeline = [] as any[];
     try {
-      const resp = await OrderService.fetchOrderStatusHistory({
+      const resp = await orderStore.fetchOrderStatusHistory({
         inputFields: {
           orderId: orderId.value,
         },

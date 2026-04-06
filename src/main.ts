@@ -25,7 +25,9 @@ import "@ionic/vue/css/display.css";
 import "./theme/variables.css";
 import "@hotwax/apps-theme";
 
-import store from "./store"
+import { createPinia } from "pinia";
+import piniaPluginPersistedstate from "pinia-plugin-persistedstate";
+import { useUserStore } from "@/store/user";
 import { DateTime } from "luxon";
 import logger from './logger';
 import permissionPlugin, { Actions, hasPermission } from '@/authorization';
@@ -38,6 +40,10 @@ import localeMessages from '@/locales';
 import VueVirtualScroller from 'vue-virtual-scroller';
 import 'vue-virtual-scroller/dist/vue-virtual-scroller.css';
 
+const pinia = createPinia();
+pinia.use(piniaPluginPersistedstate);
+const userStore = useUserStore(pinia);
+
 const app = createApp(App)
   .use(IonicVue, {
     mode: "md",
@@ -46,8 +52,8 @@ const app = createApp(App)
   .use(logger, {
     level: process.env.VUE_APP_DEFAULT_LOG_LEVEL
   })
+  .use(pinia)
   .use(router)
-  .use(store)
   .use(VueVirtualScroller)
   .use(permissionPlugin, {
     rules: permissionRules,
@@ -86,7 +92,7 @@ app.config.globalProperties.$filters = {
   },
   formatUtcDate(value: any, inFormat?: any, outFormat?: string) {
     // TODO Make default format configurable and from environment variables
-    const userProfile = store.getters["user/getUserProfile"];
+    const userProfile = userStore.current;
     // TODO Fix this setDefault should set the default timezone instead of getting it everytiem and setting the tz
     return DateTime.utc(value, inFormat).setZone(userProfile.userTimeZone).toFormat(outFormat ? outFormat : "MM-DD-YYYY")
   },

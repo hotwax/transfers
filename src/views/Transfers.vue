@@ -279,14 +279,18 @@ import Image from '@/components/Image.vue';
 import Filters from "@/components/Filters.vue";
 import TransferFiltersContent from "@/components/TransferFiltersContent.vue";
 import logger from '@/logger';
-import { useStore } from 'vuex';
 import { computed, ref } from "vue";
 import { STATUSCOLOR } from "@/adapter";
 import { formatUtcDate } from "@/utils"
+import { useOrderStore } from "@/store/order";
+import { useProductStore } from "@/store/product";
+import { useUtilStore } from "@/store/util";
 
 const productIdentificationStore = useProductIdentificationStore();
-const store = useStore();
 const userStore = useUserStore()
+const orderStore = useOrderStore();
+const productStore = useProductStore();
+const utilStore = useUtilStore();
 
 const groupByOptions = [
   {
@@ -330,12 +334,12 @@ const selectedGroupBy = ref(groupByOptions[0])
 
 const orderName = ref("");
 const isFetchingOrders = ref(false);
-const query = computed(() => store.getters["order/getQuery"])
-const getProduct = computed(() => store.getters["product/getProduct"])
-const ordersList = computed(() => store.getters["order/getOrders"])
-const orderItemsList = computed(() => store.getters["order/getItemsByGroupId"])
-const getStatusDesc = computed(() => store.getters["util/getStatusDesc"])
-const isScrollable = computed(() => store.getters["order/isScrollable"])
+const query = computed(() => orderStore.getQuery)
+const getProduct = computed(() => productStore.getProduct)
+const ordersList = computed(() => orderStore.getOrders)
+const orderItemsList = computed(() => orderStore.getItemsByGroupId)
+const getStatusDesc = computed(() => utilStore.getStatusDesc)
+const isScrollable = computed(() => orderStore.isScrollable)
 
 const isAnyFilterApplied = computed(() => {
   const { orderName, productStoreId, facilityId, orderFacilityId, orderStatusId, carrierPartyId, shipmentMethodTypeId, statusFlowId } = query.value;
@@ -343,9 +347,9 @@ const isAnyFilterApplied = computed(() => {
 })
 
 onIonViewWillEnter(async () => {
-  await store.dispatch("order/updateOrdersList", { orders: [], ordersCount: 0 })
+  orderStore.updateOrdersList({ orders: [], ordersCount: 0 })
   isFetchingOrders.value = true;
-  await Promise.allSettled([store.dispatch('order/findTransferOrders', { pageSize: process.env.VUE_APP_VIEW_SIZE, pageIndex: 0, groupByConfig: selectedGroupBy.value }), store.dispatch('util/fetchStatusDesc'), store.dispatch("util/fetchCarriersDetail"), store.dispatch("util/fetchShipmentMethodTypeDesc")])
+  await Promise.allSettled([orderStore.findTransferOrders({ pageSize: process.env.VUE_APP_VIEW_SIZE, pageIndex: 0, groupByConfig: selectedGroupBy.value }), utilStore.fetchStatusDesc(), utilStore.fetchCarriersDetail(), utilStore.fetchShipmentMethodTypeDesc()])
   isFetchingOrders.value = false;
 })
 
@@ -360,13 +364,13 @@ function updateGroupByFilter(groupById: string) {
 async function updateAppliedFilters(value: string | boolean, filterName: string, groupByConfig = selectedGroupBy.value ) {
   isFetchingOrders.value = true
   if(filterName === "sort") value = query.value.sort === 'orderDate desc' ? 'orderDate asc' : 'orderDate desc'
-  await store.dispatch('order/updateOrdersList', { orders: [], ordersCount: 0 })
-  await store.dispatch('order/updateAppliedFilters', { value, filterName, groupByConfig })
+  orderStore.updateOrdersList({ orders: [], ordersCount: 0 })
+  await orderStore.updateAppliedFilters({ value, filterName, groupByConfig })
   isFetchingOrders.value = false
 }
 
 async function loadMoreOrders(event: any) {
-  await store.dispatch('order/findTransferOrders', {
+  await orderStore.findTransferOrders({
     pageSize: 20,
     pageIndex: Math.ceil(ordersList.value.length / 20).toString(),
     groupByConfig: selectedGroupBy.value
@@ -380,15 +384,15 @@ async function showOrderItems($event: any) {
   // Only fetch items when an accordion is opened, not closed
   if(!groupValues) return
 
-  const newlySelectedGroupValue = groupValues.filter((value: string) => value && !store.state.order.orderItemsList[value])
+  const newlySelectedGroupValue = groupValues.filter((value: string) => value && !orderStore.orderItemsList[value])
   if(!newlySelectedGroupValue.length) return
 
   const groupValue = newlySelectedGroupValue[0];
-  await store.dispatch('order/findTransferOrderItems', { groupValue, groupByConfig: selectedGroupBy.value })  
+  await orderStore.findTransferOrderItems({ groupValue, groupByConfig: selectedGroupBy.value })  
 }
 
 function getFacilityName(facilityId: string) {
-  const facility = store.getters["util/getFacilitiesByProductStore"]?.find((facility: any) => facility.facilityId === facilityId)
+  const facility = utilStore.getFacilitiesByProductStore?.find((facility: any) => facility.facilityId === facilityId)
   return facility ? facility.facilityName || facility.facilityId : facilityId
 }
 </script>

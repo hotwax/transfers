@@ -52,7 +52,7 @@
             <ion-icon slot="end" :icon="openOutline" />
           </ion-button>
         </ion-card>
-        <DxpProductStoreSelector data-testid="settings-productstore-selector" @updateEComStore="updateProductStore" />
+        <DxpProductStoreSelector @updateProductStore="refreshProductStoreData($event)" />
       </section>
 
       <hr />
@@ -70,22 +70,27 @@
 <script setup lang="ts">
 import { IonAvatar, IonButton, IonCard, IonCardHeader, IonCardSubtitle, IonCardTitle, IonContent, IonHeader, IonIcon, IonItem, IonPage, IonTitle, IonToolbar } from "@ionic/vue";
 import { computed } from "vue";
-import { useStore } from "vuex";
 import Image from "@/components/Image.vue";
 import { openOutline } from "ionicons/icons";
-import { goToOms, translate, useProductIdentificationStore } from "@hotwax/dxp-components";
+import { useProductStore } from "@/store/productStore";
 import { Actions, hasPermission } from '@/authorization'
 import logger from "@/logger";
 import TimeZoneSwitcher from "@/components/TimeZoneSwitcher.vue"
+import { useUserStore } from "@/store/user";
+import { useUtilStore } from "@/store/util";
+import DxpProductStoreSelector from "@/components/DxpProductStoreSelector.vue";
+import DxpAppVersionInfo from "@/components/DxpAppVersionInfo.vue";
+import DxpProductIdentifier from "@/components/DxpProductIdentifier.vue";
 
-const store = useStore()
 
-const userProfile = computed(() => store.getters["user/getUserProfile"])
-const oms = computed(() => store.getters["user/getInstanceUrl"])
-const omsRedirectionInfo = computed(() => store.getters["user/getOmsRedirectionInfo"])
+const userStore = useUserStore()
+const utilStore = useUtilStore()
+const userProfile = computed(() => userStore.getUserProfile)
+const oms = computed(() => userStore.getInstanceUrl)
+const omsRedirectionInfo = computed(() => userStore.getOmsRedirectionInfo)
 
 function logout() {
-  store.dispatch('user/logout', { isUserUnauthorised: false }).then((redirectionUrl: string) => {
+  userStore.logout({ isUserUnauthorised: false }).then((redirectionUrl: string) => {
     // if not having redirection url then redirect the user to launchpad
     if(!redirectionUrl) {
       const redirectUrl = window.location.origin + '/login'
@@ -95,15 +100,13 @@ function logout() {
 }
 
 async function timeZoneUpdated(tzId: string) {
-  await store.dispatch("user/setUserTimeZone", tzId)
+  await userStore.setUserTimeZone(tzId)
 }
 
-async function updateProductStore(selectedProductStore: any) {
-  await Promise.all([
-    useProductIdentificationStore().getIdentificationPref(selectedProductStore.productStoreId).catch((error) => logger.error(error)),
-    store.dispatch("util/fetchFacilitiesByCurrentStore", selectedProductStore.productStoreId).catch((error) => logger.error(error))
-  ])
-}
+const refreshProductStoreData = async (selectedProductStore: any) => {
+  await useProductStore().fetchEComStoreDependencies(selectedProductStore?.productStoreId);
+  await utilStore.fetchFacilitiesByCurrentStore(selectedProductStore.productStoreId).catch((error) => logger.error(error))
+};
 
 function goToLaunchpad() {
   window.location.href = `${process.env.VUE_APP_LOGIN_URL}`

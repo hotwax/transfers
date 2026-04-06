@@ -13,21 +13,25 @@
 import { IonContent, IonItem, IonList, IonListHeader, alertController, popoverController } from "@ionic/vue"
 import { getProductIdentificationValue, translate, useProductIdentificationStore } from '@hotwax/dxp-components';
 import { computed } from "vue";
-import store from "@/store";
-import { OrderService } from "@/services/OrderService";
 import logger from "@/logger";
-import { api, hasError } from "@/adapter";
+import { hasError } from "@/adapter";
 import { showToast } from "@/utils";
 import { useAuthStore } from "@hotwax/dxp-components";
 import { OrderActionValidator, OrderItemActionId } from "@/utils/OrderActionValidator";
+import { useOrderStore } from "@/store/order";
+import { useProductStore } from "@/store/product";
+import { useUserStore } from "@/store/user";
 
 const authStore = useAuthStore()
 const productIdentificationStore = useProductIdentificationStore();
 const props = defineProps(["item"]);
+const orderStore = useOrderStore();
+const productStore = useProductStore();
+const userStore = useUserStore();
 
-const getProduct = computed(() => store.getters["product/getProduct"])
-const currentOrder = computed(() => store.getters["order/getCurrent"])
-const getOmsBaseUrl = computed(() => store.getters["user/getOmsBaseUrl"])
+const getProduct = computed(() => productStore.getProduct)
+const currentOrder = computed(() => orderStore.getCurrent)
+const getOmsBaseUrl = computed(() => userStore.getOmsBaseUrl)
 
 function handleItemAction(actionId: OrderItemActionId) {
   switch (actionId) {
@@ -66,12 +70,12 @@ async function removeOrderItem() {
       text: translate("Confirm"),
       handler: async () => {
         try {
-          await OrderService.cancelOrderItem(currentOrder.value.orderId, props.item.orderItemSeqId, false)
+          await orderStore.cancelOrderItem(currentOrder.value.orderId, props.item.orderItemSeqId, false)
 
           const order = JSON.parse(JSON.stringify(currentOrder.value));
           const item = order.items.find((item: any) => item.orderItemSeqId === props.item.orderItemSeqId);
           if (item) item.statusId = "ITEM_CANCELLED";
-          store.dispatch("order/updateCurrent", order)
+          orderStore.updateCurrent(order)
           popoverController.dismiss({ isItemUpdated: true });
           showToast(translate("Item removed successfully."));
         } catch (error) {
@@ -95,7 +99,7 @@ async function updateItemStatus(statusId: string, header: string) {
       text: translate("Confirm"),
       handler: async () => {
         try {
-          const resp = await OrderService.updateOrderItem({
+          const resp = await orderStore.updateOrderItem({
             orderId: currentOrder.value.orderId,
             orderItemSeqId: props.item.orderItemSeqId,
             statusId
@@ -139,7 +143,7 @@ async function editOrderedQuantity() {
         }
         if(quantity !== props.item.quantity) {
           try {
-            const resp = await OrderService.updateOrderItem({
+            const resp = await orderStore.updateOrderItem({
               orderId: currentOrder.value.orderId,
               orderItemSeqId: props.item.orderItemSeqId,
               unitPrice: props.item.unitPrice || 0,
@@ -154,7 +158,7 @@ async function editOrderedQuantity() {
                   return true;
                 }
               })
-              store.dispatch("order/updateCurrent", order)
+              orderStore.updateCurrent(order)
               popoverController.dismiss({ isItemUpdated: true });
               showToast(translate("Item ordered quantity updated successfully."));
             } else {
@@ -194,7 +198,7 @@ async function closeFulfillment() {
       text: translate("Confirm"),
       handler: async () => {
         try {
-          const resp = await OrderService.closeFulfillment({
+          const resp = await orderStore.closeFulfillment({
             orderId: currentOrder.value.orderId,
             items: [{
               orderItemSeqId: props.item.orderItemSeqId

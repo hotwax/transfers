@@ -59,16 +59,17 @@
 <script setup lang="ts">
 import { IonItem, IonLabel, IonList, IonSelect, IonSelectOption } from '@ionic/vue';
 import { translate, useUserStore } from '@hotwax/dxp-components'
-import { useStore } from 'vuex';
 import { computed, onMounted, ref } from "vue";
 import { hasError } from "@/adapter";
-import { UtilService } from '@/services/UtilService';
 import logger from '@/logger';
+import { useOrderStore } from "@/store/order";
+import { useUtilStore } from "@/store/util";
 
 const props = defineProps(['groupByConfig']);
 
-const store = useStore();
 const userStore = useUserStore();
+const orderStore = useOrderStore();
+const utilStore = useUtilStore();
 
 const productStores = ref({}) as any;
 const facilities = ref([]) as any;
@@ -88,10 +89,10 @@ const statusFlows = [
   }
 ]
 
-const query = computed(() => store.getters["order/getQuery"])
-const getStatusDesc = computed(() => store.getters["util/getStatusDesc"])
-const shipmentMethods = computed(() => store.getters["util/getShipmentMethods"])
-const carriersList = computed(() => store.getters["util/getCarriers"])
+const query = computed(() => orderStore.getQuery)
+const getStatusDesc = computed(() => utilStore.getStatusDesc)
+const shipmentMethods = computed(() => utilStore.getShipmentMethods)
+const carriersList = computed(() => utilStore.getCarriers)
 
 onMounted(async () => {
   await fetchFacilities();
@@ -102,7 +103,7 @@ async function fetchFacilities() {
   let pageIndex = 0, resp
   try {
     do {
-      resp = await UtilService.fetchFacilities({
+      resp = await utilStore.fetchFacilities({
         facilityTypeId: "VIRTUAL_FACILITY",
         facilityTypeId_not: "Y",
         parentTypeId: "VIRTUAL_FACILITY",
@@ -126,7 +127,7 @@ async function fetchFacilities() {
 }
 
 async function updateAppliedFilters(value: string | boolean, filterName: string) {
-  await store.dispatch('order/updateOrdersList', { orders: [], ordersCount: 0 })
-  await store.dispatch('order/updateAppliedFilters', { value, filterName, groupByConfig: props.groupByConfig })
+  orderStore.updateOrdersList({ orders: [], ordersCount: 0 })
+  await orderStore.updateAppliedFilters({ value, filterName, groupByConfig: props.groupByConfig })
 }
 </script>

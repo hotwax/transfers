@@ -109,22 +109,23 @@ import {
 } from '@ionic/vue';
 import { arrowBackOutline, checkmarkCircleOutline } from 'ionicons/icons';
 import { computed, ref } from 'vue';
-import { useStore } from 'vuex';
 import { getProductIdentificationValue, translate, useProductIdentificationStore } from '@hotwax/dxp-components';
-import { OrderService } from '@/services/OrderService';
 import { showToast } from '@/utils';
 import { hasError } from '@/adapter';
 import Image from '@/components/Image.vue';
 import { OrderActionValidator } from '@/utils/OrderActionValidator';
 import logger from '@/logger';
+import { useOrderStore } from "@/store/order";
+import { useProductStore } from "@/store/product";
 
 const props = defineProps<{ order: any; selectedItemSeqIds?: Set<string> }>();
 
 const PREVIEW_LIMIT = 10;
 
-const store = useStore();
+const orderStore = useOrderStore();
+const productStore = useProductStore();
 const productIdentificationStore = useProductIdentificationStore();
-const getProduct = computed(() => store.getters['product/getProduct']);
+const getProduct = computed(() => productStore.getProduct);
 const isProcessing = ref(false);
 const isCompleted = ref(false);
 const completedItemsCount = ref(0);
@@ -181,7 +182,7 @@ async function runCloseFulfillment() {
   for (let i = 0; i < allItems.length; i += PAGE_SIZE) {
     const chunk = allItems.slice(i, i + PAGE_SIZE);
     try {
-      const resp = await OrderService.closeFulfillment({
+      const resp = await orderStore.closeFulfillment({
         orderId: props.order.orderId,
         items: chunk
       });
