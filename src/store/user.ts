@@ -1,266 +1,206 @@
-import { defineStore } from "pinia";
-import { api, client, hasError } from "@/adapter";
-import { showToast } from "@/utils";
-import logger from "@/logger";
-import emitter from "@/event-bus";
-import { Settings } from "luxon";
-import { translate, useAuthStore, useUserStore as useDxpUserStore, useProductIdentificationStore } from "@hotwax/dxp-components";
-import { logout, resetConfig, updateInstanceUrl, updateToken } from "@/adapter";
-import { getServerPermissionsFromRules, prepareAppPermissions, resetPermissions, setPermissions } from "@/authorization";
-import { useOrderStore } from "@/store/order";
-import { useProductStore } from "@/store/product";
-import { useUtilStore } from "@/store/util";
-
-interface UserPwaState {
-  updateExists: boolean;
-  registration: any;
-}
-
-interface UserOmsRedirectionInfo {
-  url: string;
-  token: string;
-}
+import { api, commonUtil, cookieHelper, i18n, logger, translate } from "@common";
+import { defineStore } from "pinia"
+import { DateTime, Settings } from "luxon"
+import { useAuth } from "@/composables/useAuth";
 
 interface UserState {
-  token: string;
-  current: any;
-  instanceUrl: string;
-  permissions: any[];
-  pwaState: UserPwaState;
-  omsRedirectionInfo: UserOmsRedirectionInfo;
+  permissions: any[]
+  current: any
+  pwaState: {
+    updateExists: boolean
+    registration: any
+  }
+  timeZones: any[],
+  currentTimeZoneId: string
 }
 
 export const useUserStore = defineStore("user", {
   state: (): UserState => ({
-    token: "",
-    current: null,
-    instanceUrl: "",
     permissions: [],
+    current: {},
     pwaState: {
       updateExists: false,
       registration: null
     },
-    omsRedirectionInfo: {
-      url: "",
-      token: ""
-    }
+    timeZones: [],
+    currentTimeZoneId: ''
   }),
   getters: {
-    isAuthenticated: (state) => !!state.token,
-    isUserAuthenticated: (state) => !!(state.token && state.current),
-    getUserToken: (state) => state.token,
-    getUserProfile: (state) => state.current,
-    getInstanceUrl: (state) => state.instanceUrl,
-    getBaseUrl: (state) => {
-      const baseURL = state.instanceUrl;
-      return baseURL.startsWith("http") ? `${baseURL}/rest/s1/` : `https://${baseURL}.hotwax.io/rest/s1/`;
+    getTimeZones: (state) => state.timeZones,
+    getCurrentTimeZone: (state) => state.currentTimeZoneId,
+    getUserPermissions(state: UserState) {
+      return state.permissions
     },
-    getUserPermissions: (state) => state.permissions,
-    getPwaState: (state) => state.pwaState,
-    getOmsBaseUrl: (state) => {
-      const url = state.omsRedirectionInfo.url;
-      return url.startsWith("http") ? url.includes("/api") ? url : `${url}/api/` : `https://${url}.hotwax.io/api/`;
+    getUserProfile(state: UserState) {
+      return state.current
     },
-    getOmsRedirectionInfo: (state) => state.omsRedirectionInfo
+    getPwaState(state: UserState) {
+      return state.pwaState
+    },
+    hasPermission: (state: UserState) => (permissionId: string): boolean => {
+      const permissions = state.permissions;
+
+      if (!permissionId) {
+        return true;
+      }
+
+      // Handle OR/AND logic in permission string
+      if (permissionId.includes(' OR ')) {
+        const parts = permissionId.split(' OR ');
+        return parts.some(part => useUserStore().hasPermission(part.trim()));
+      }
+
+      if (permissionId.includes(' AND ')) {
+        const parts = permissionId.split(' AND ');
+        return parts.every(part => useUserStore().hasPermission(part.trim()));
+      }
+
+      return permissions.includes(permissionId);
+    }
   },
   actions: {
-    async login(payload: any) {
+    updateUserInfo(payload: any) {
+      this.current = { ...this.current, ...payload }
+    },
+    setPermissionsState(payload: any) {
+      this.permissions = payload
+    },
+    setPwaState(payload: any) {
+      this.pwaState.registration = payload.registration
+      this.pwaState.updateExists = payload.updateExists
+    },
+    updatePwaState(payload: any) {
+      this.pwaState.registration = payload.registration;
+      this.pwaState.updateExists = payload.updateExists;
+    },
+    async samlLogin(token: string, expirationTime: string) {
       try {
-        const { token, oms, omsRedirectionUrl } = payload;
-        this.setUserInstanceUrl(oms);
+        cookieHelper().set("token", token)
+        cookieHelper().set("expirationTime", expirationTime)
 
-        const permissionId = process.env.VUE_APP_PERMISSION_ID;
-        const serverPermissionsFromRules = getServerPermissionsFromRules();
-        if (permissionId) serverPermissionsFromRules.push(permissionId);
+        try {
+          const userProfileResp = await api({
+            url: "admin/user/profile",
+            method: "get",
+            baseURL: commonUtil.getMaargURL()
+          }) as any;
+          this.current = userProfileResp.data
+        } catch (error: any) {
+          useAuth().clearAuth();
+          commonUtil.showToast(translate("Failed to fetch user profile information"));
+          console.error("error", error);
+          return Promise.reject(new Error(error));
+        }
 
-        const permissionPayload = {
-          permissionIds: [...new Set(serverPermissionsFromRules)]
-        };
-        const permissionsBaseUrl = omsRedirectionUrl.startsWith("http") ? omsRedirectionUrl.includes("/api") ? omsRedirectionUrl : `${omsRedirectionUrl}/api/` : `https://${omsRedirectionUrl}.hotwax.io/api/`;
-        let serverPermissions = [] as any;
-        if (permissionPayload.permissionIds.length > 0) {
-          const viewSize = 200;
-          const resp = await client({
+        await this.fetchPermissions();
+      } catch (error: any) {
+        // If any of the API call in try block has status code other than 2xx it will be handled in common catch block.
+        // TODO Check if handling of specific status codes is required.
+        commonUtil.showToast(translate('Something went wrong while login. Please contact administrator.'));
+        console.error("error: ", error);
+        return Promise.reject(new Error(error))
+      }
+    },
+
+    async fetchUserProfile() {
+      try {
+        const userProfileResp = await api({
+          url: "admin/user/profile",
+          method: "get",
+        }) as any;
+        this.current = userProfileResp.data
+
+        if (this.current.timeZone) {
+          Settings.defaultZone = this.current.timeZone;
+        }
+      } catch (error: any) {
+        commonUtil.showToast(translate("Failed to fetch user profile information"));
+        console.error("error", error);
+        useAuth().clearAuth();
+        return Promise.reject(new Error(error));
+      }
+    },
+    async fetchPermissions() {
+      const permissionId = import.meta.env.VITE_VUE_APP_PERMISSION_ID;
+      const serverPermissions = [] as any;
+
+      // TODO Make it configurable from the environment variables.
+      // Though this might not be an server specific configuration, 
+      // we will be adding it to environment variable for easy configuration at app level
+      const viewSize = 50;
+
+      let viewIndex = 0;
+
+      try {
+        let resp;
+        do {
+          resp = await api({
             url: "getPermissions",
             method: "post",
-            baseURL: permissionsBaseUrl,
-            data: {
-              viewIndex: 0,
-              viewSize,
-              permissionIds: permissionPayload.permissionIds
-            },
-            headers: {
-              Authorization: "Bearer " + token,
-              "Content-Type": "application/json"
-            }
-          });
+            baseURL: commonUtil.getOmsURL(),
+            data: { viewIndex, viewSize }
+          }) as any
 
-          if (resp.status === 200 && resp.data.docs?.length && !hasError(resp)) {
-            serverPermissions = resp.data.docs.map((permission: any) => permission.permissionId);
-            const total = resp.data.count;
-            const remainingPermissions = total - serverPermissions.length;
-            if (remainingPermissions > 0) {
-              const apiCallsNeeded = Math.floor(remainingPermissions / viewSize) + (remainingPermissions % viewSize !== 0 ? 1 : 0);
-              const responses = await Promise.all([...Array(apiCallsNeeded).keys()].map(async (index: any) => client({
-                url: "getPermissions",
-                method: "post",
-                baseURL: permissionsBaseUrl,
-                data: {
-                  viewIndex: index + 1,
-                  viewSize,
-                  permissionIds: permissionPayload.permissionIds
-                },
-                headers: {
-                  Authorization: "Bearer " + token,
-                  "Content-Type": "application/json"
-                }
-              })));
-              serverPermissions = responses.reduce((permissions: any, response: any) => {
-                if (response.status === 200 && !hasError(response) && response.data?.docs) {
-                  permissions.push(...response.data.docs.map((permission: any) => permission.permissionId));
-                }
-                return permissions;
-              }, serverPermissions);
-            }
+          if (resp.status === 200 && resp.data.docs?.length && !commonUtil.hasError(resp)) {
+            serverPermissions.push(...resp.data.docs.map((permission: any) => permission.permissionId));
+            viewIndex++;
+          } else {
+            resp = null;
           }
-        }
-        const appPermissions = prepareAppPermissions(serverPermissions);
+        } while (resp);
 
+        // Checking if the user has permission to access the app
+        // If there is no configuration, the permission check is not enabled
         if (permissionId) {
-          const hasPermission = appPermissions.some((appPermission: any) => appPermission.action === permissionId);
-          if (!hasPermission) {
+          const hasAppPermission = serverPermissions.includes(permissionId);
+          if (!hasAppPermission) {
             const permissionError = "You do not have permission to access the app.";
-            showToast(translate(permissionError));
+            commonUtil.showToast(translate(permissionError));
             logger.error("error", permissionError);
             return Promise.reject(new Error(permissionError));
           }
         }
 
-        const userProfileResp = await client({
-          url: "admin/user/profile",
-          method: "get",
-          baseURL: this.getBaseUrl,
-          headers: {
-            Authorization: "Bearer " + token,
-            "Content-Type": "application/json"
-          }
-        });
-        if (hasError(userProfileResp)) {
-          return Promise.reject("Error getting user profile: " + JSON.stringify(userProfileResp.data));
-        }
-        const userProfile = userProfileResp.data;
-
-        if (userProfile.timeZone) {
-          Settings.defaultZone = userProfile.timeZone;
-        }
-
-        const dxpUserStore = useDxpUserStore();
-        const productStores = await dxpUserStore.getEComStores();
-        dxpUserStore.eComStores = productStores;
-        await dxpUserStore.getEComStorePreference("SELECTED_BRAND", userProfile.userId);
-        const preferredStore: any = dxpUserStore.getCurrentEComStore;
-
-        if (omsRedirectionUrl && token) {
-          this.setOmsRedirectionInfo({ url: omsRedirectionUrl, token });
-        }
-
-        updateToken(token);
-        const utilStore = useUtilStore();
-        await Promise.all([
-          useProductIdentificationStore().getIdentificationPref(preferredStore.productStoreId).catch((error) => logger.error(error)),
-          utilStore.fetchFacilitiesByCurrentStore(preferredStore.productStoreId).catch((error) => logger.error(error))
-        ]);
-
-        setPermissions(appPermissions);
-        this.token = token;
-        this.current = userProfile;
-        this.permissions = appPermissions;
-        emitter.emit("dismissLoader");
+        // Update the state with the fetched permissions
+        this.permissions = serverPermissions;
       } catch (error: any) {
-        emitter.emit("dismissLoader");
-        showToast(translate(error));
-        logger.error("error", error);
-        return Promise.reject(new Error(error));
+        return Promise.reject(error);
       }
     },
-    async logout(payload: any) {
-      let redirectionUrl = "";
 
-      if (!payload?.isUserUnauthorised) {
-        emitter.emit("presentLoader", { message: "Logging out" });
-        let resp;
-
-        try {
-          resp = await logout();
-          resp = JSON.parse(resp.startsWith("//") ? resp.replace("//", "") : resp);
-        } catch (error) {
-          logger.error("Error parsing data", error);
-        }
-
-        if (resp?.logoutAuthType === "SAML2SSO") {
-          redirectionUrl = resp.logoutUrl;
-        }
-      }
-
-      const authStore = useAuthStore();
-      const dxpUserStore = useDxpUserStore();
-
-      this.$patch({
-        token: "",
-        current: null,
-        permissions: [],
-        omsRedirectionInfo: {
-          url: "",
-          token: ""
-        }
-      });
-
-      await useOrderStore().clearOrderState();
-      await useProductStore().clearProductState();
-      await useUtilStore().clearUtilState();
-      resetConfig();
-      resetPermissions();
-
-      authStore.$reset();
-      dxpUserStore.$reset();
-
-      if (redirectionUrl) {
-        window.location.href = redirectionUrl;
-      }
-
-      emitter.emit("dismissLoader");
-      return redirectionUrl;
-    },
-    setOmsRedirectionInfo(payload: { url: string; token: string }) {
-      this.omsRedirectionInfo = payload;
-    },
-    async setUserTimeZone(timeZoneId: string) {
-      const current = this.current ? { ...this.current } : null;
-      if (!current) return;
-
+    async setUserTimeZone(tzId: string) {
       try {
         await api({
           url: "admin/user/profile",
           method: "POST",
-          data: { userId: current.userId, timeZone: timeZoneId }
+          data: { userId: this.current.userId, userTimeZone: tzId },
         });
-        current.timeZone = timeZoneId;
-        this.current = current;
-        Settings.defaultZone = current.timeZone;
-        showToast(translate("Time zone updated successfully"));
-      } catch (error) {
-        logger.error(error);
-        showToast(translate("Failed to update time zone"));
+        this.updateUserInfo({ userTimeZone: tzId })
+        this.currentTimeZoneId = tzId
+      } catch (error: any) {
+        console.error("Failed to set user time zone", error);
+        commonUtil.showToast(translate("Failed to set user time zone"));
       }
     },
-    setUserInstanceUrl(payload: string) {
-      this.instanceUrl = payload;
-      updateInstanceUrl(payload);
-    },
-    updatePwaState(payload: any) {
-      this.pwaState.registration = payload.registration;
-      this.pwaState.updateExists = payload.updateExists;
+    async getAvailableTimeZones() {
+      // Do not fetch timeZones information, if already available
+      if (this.timeZones.length) {
+        return;
+      }
+
+      try {
+        const resp = await api({
+          url: "admin/user/getAvailableTimeZones",
+          method: "get",
+          cache: true
+        }) as any;
+        if (resp.status === 200 && !commonUtil.hasError(resp)) {
+          this.timeZones = resp.data.timeZones.filter((timeZone: any) => DateTime.local().setZone(timeZone.id).isValid);
+        }
+      } catch (err) {
+        console.error('Error', err)
+      }
     }
   },
   persist: true
-});
+})

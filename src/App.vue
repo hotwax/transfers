@@ -7,22 +7,25 @@
 <script setup lang="ts">
 import { computed, onBeforeMount, onMounted, onUnmounted, ref } from "vue";
 import { IonApp, IonRouterOutlet, loadingController } from "@ionic/vue";
-import emitter from "@/event-bus"
+import { cookieHelper, emitter, logger } from "@common"
 import { Settings } from 'luxon'
-import { initialise, resetConfig } from '@/adapter'
-import { translate, useProductIdentificationStore, useUserStore } from "@hotwax/dxp-components";
-import logger from '@/logger';
-import { useUserStore as useAppUserStore } from "@/store/user";
+import { initialise, resetConfig, translate } from '@common'
+// Merged cookieHelper into common import above
+// Removed local logger import, now using @common logger
+import { useAuth } from "@/composables/useAuth";
+import { useUserStore } from "@/store/user";
 import { useUtilStore } from "@/store/util";
+import { useProductStore } from "@/store/productStore";
 
-const userStore = useAppUserStore();
 const utilStore = useUtilStore();
-const userProfile = computed(() => userStore.current)
-const userToken = computed(() => userStore.token)
-const instanceUrl = computed(() => userStore.instanceUrl)
+const productStore = useProductStore();
+const { logout: authLogout } = useAuth();
+const userProfile = computed(() => useUserStore().getUserProfile)
+const userToken = computed(() => cookieHelper().get("token"))
+const instanceUrl = computed(() => cookieHelper().get("oms"))
 
 const loader = ref(null) as any
-const maxAge = process.env.VUE_APP_CACHE_MAX_AGE ? parseInt(process.env.VUE_APP_CACHE_MAX_AGE) : 0
+const maxAge = import.meta.env.VITE_CACHE_MAX_AGE ? parseInt(import.meta.env.VITE_CACHE_MAX_AGE) : 0
 
 initialise({
   token: userToken.value,
@@ -42,21 +45,24 @@ initialise({
 
 async function unauthorised() {
   // Mark the user as unauthorised, this will help in not making the logout api call in actions
-  userStore.logout({ isUserUnauthorised: true });
+  await authLogout({ isUserUnauthorised: true });
   const redirectUrl = window.location.origin + '/login';
-  window.location.href = `${process.env.VUE_APP_LOGIN_URL}?redirectUrl=${redirectUrl}`;
+  window.location.href = `${import.meta.env.VITE_LOGIN_URL}?redirectUrl=${redirectUrl}`;
 }
 
-async function presentLoader(options = { message: "Click the backdrop to dismiss.", backdropDismiss: false }) {
+async function presentLoader(options: any) {
+  const message = options?.message || "Click the backdrop to dismiss.";
+  const backdropDismiss = options?.backdropDismiss || false;
+
   // When having a custom message remove already existing loader, if not removed it takes into account the already existing loader
-  if(options.message && loader.value) dismissLoader();
+  if(options?.message && loader.value) dismissLoader();
 
   if (!loader.value) {
     loader.value = await loadingController
       .create({
-        message: options.message ? translate(options.message) : (options.backdropDismiss ? translate("Click the backdrop to dismiss.") : translate("Loading...")),
+        message: options?.message ? translate(options.message) : (backdropDismiss ? translate("Click the backdrop to dismiss.") : translate("Loading...")),
         translucent: true,
-        backdropDismiss: options.backdropDismiss || false
+        backdropDismiss: backdropDismiss
       });
   }
   loader.value.present();
@@ -80,10 +86,10 @@ onMounted(async () => {
     userProfile.value.timeZone && (Settings.defaultZone = userProfile.value.timeZone);
   }
   if(userToken.value) {
-    const currentProductStore : any = useUserStore().getCurrentEComStore;
+    const currentProductStore : any = productStore.getCurrentEComStore;
     await Promise.all([
-      useProductIdentificationStore().getIdentificationPref(currentProductStore.productStoreId).catch((error) => logger.error(error)),
-      utilStore.fetchFacilitiesByCurrentStore(currentProductStore.productStoreId).catch((error) => logger.error(error))
+      productStore.fetchProductStoreSettings(currentProductStore.productStoreId).catch((error) => logger.error(error)),
+      productStore.fetchProductStoreFacilities(currentProductStore.productStoreId).catch((error) => logger.error(error))
     ])
   }
 })

@@ -5,25 +5,10 @@ const defaultProductStoreSettings = JSON.parse(import.meta.env.VITE_DEFAULT_PROD
 
 export const useProductStore = defineStore('productStore', {
   state: () => ({
-    currentFacility: {
-      facilityId: "",
-      facilityName: "",
-      productStores: []
+    currentEComStore: {
+      facilities: [] as any[]
     } as any,
-    currentEComStore: {} as any,
-    productStoreShipmentMethCount: 0,
     settings: {
-      forceScan: "",
-      partialOrderRejection: "",
-      collateralRejection: "",
-      autoShippingLabel: "",
-      downloadPicklist: "",
-      excludeOrderBrokerDays: undefined,
-      affectQoh: "",
-      disableShipNow: "",
-      disableUnpack: "",
-      useReservationFacility: "",
-
       productIdentifier: {
         productIdentificationPref: {
           primaryId: '',
@@ -34,252 +19,30 @@ export const useProductStore = defineStore('productStore', {
         currentSampleProduct: null
       },
       barcodeIdentifier: {
-        barcodeIdentifierPref: "",
         barcodeIdentifierOptions: [] as any[],
-      },
+      }
     } as any,
-    userFacilities: {} as any,
     facilities: [] as any[],
     productStores: [] as any[],
+    facilityAddresses: {} as any,
   }),
 
   getters: {
-    getCurrentFacility: (state) => state.currentFacility,
     getCurrentEComStore: (state) => state.currentEComStore,
-    getProductStoreShipmentMethCount: (state) => state.productStoreShipmentMethCount,
-    getProductStores: (state) => state.currentFacility.productStores || [],
-    getFacilities: (state) => state.userFacilities || [],
     getAllFacilities: (state) => state.facilities,
+    getProductStoreFacilities: (state) => state.currentEComStore.facilities || [],
     getAllProductStores: (state) => state.productStores,
     getSettings: (state) => state.settings,
     getProductIdentificationPref: (state) => state.settings.productIdentifier.productIdentificationPref,
     getBarcodeIdentifierPref: (state) => state.settings.barcodeIdentifier.barcodeIdentifierPref,
     getProductIdentificationOptions: (state) => state.settings.productIdentifier.productIdentificationOptions,
-    getBarcodeIdentifierOptions: (state) => state.settings.barcodeIdentifier.barcodeIdentifierOptions,
     getCurrentSampleProduct: (state) => state.settings.productIdentifier.currentSampleProduct,
-    isProductStoreSettingEnabled: (state) => (settingTypeEnumId: string) => {
-      const stateKey = defaultProductStoreSettings[settingTypeEnumId]?.stateKey || settingTypeEnumId
-      return state.settings[stateKey] === "Y"
-    },
-    isExcludeOrderBrokerDaysEnabled(): boolean {
-      return this.isProductStoreSettingEnabled('EXCLUDE_ODR_BKR_DAYS')
-    },
-    isRerouteSettingEnabled: (state) => (settingName: string) => state.settings.rerouteFulfillment[settingName] === "Y",
-    getRerouteShipmentMethod: (state) => state.settings.rerouteFulfillment.shippingMethod,
-    getFacilityName: (state) => (facilityId: string) => state.userFacilities[facilityId] ? state.userFacilities[facilityId] : facilityId,
   },
 
   actions: {
-    setCurrentFacility(facility: any) {
-      this.currentFacility = facility
-    },
     async setCurrentEComStore(store: any) {
       this.currentEComStore = store
       await this.fetchEComStoreDependencies(store.productStoreId)
-    },
-    async fetchUserFacilities() {
-      const userStore = useUserStore();
-      let facilityIds: Array<string> = [];
-      let filters: any = {};
-      let resp = {} as any
-
-      const partyId = userStore.getUserProfile?.partyId;
-      const isAdminUser = userStore.hasPermission("STOREFULFILLMENT_ADMIN");
-      const facilityGroupId = "OMS_FULFILLMENT";
-
-      try {
-        this.currentFacility = {
-          ...this.currentFacility,
-          productStores: []
-        }
-
-        // Fetch the facilities associated with party
-        if (partyId && !isAdminUser) {
-          try {
-            resp = await api({
-              url: `admin/user/${partyId}/facilities`,
-              method: "GET",
-              params: {
-                pageSize: 500
-              }
-            } as any);
-
-            // Filtering facilities on which thruDate is set, as we are unable to pass thruDate check in the api payload
-            // Considering that the facilities will always have a thruDate of the past.
-            const facilities = resp.data.filter((facility: any) => !facility.thruDate)
-
-            facilityIds = facilities.map((facility: any) => facility.facilityId);
-            if (!facilityIds.length) {
-              return Promise.reject({
-                code: 'error',
-                message: 'Failed to fetch user facilities',
-                serverResponse: resp.data
-              })
-            }
-          } catch (error) {
-            return Promise.reject({
-              code: 'error',
-              message: 'Failed to fetch user associated facilities',
-              serverResponse: error
-            })
-          }
-        }
-
-        if (facilityIds.length) {
-          filters = {
-            facilityId: facilityIds.join(","),
-            facilityId_op: "in",
-            pageSize: facilityIds.length
-          }
-        }
-
-        // Fetch the facilities associated with group
-        if (facilityGroupId) {
-          try {
-            resp = await api({
-              url: "oms/groupFacilities",
-              method: "GET",
-              params: {
-                facilityGroupId,
-                pageSize: 500,
-                ...filters
-              }
-            } as any);
-
-            // Filtering facilities on which thruDate is set, as we are unable to pass thruDate check in the api payload
-            // Considering that the facilities will always have a thruDate of the past.
-            const facilities = resp.data.filter((facility: any) => !facility.thruDate)
-
-            facilityIds = facilities.map((facility: any) => facility.facilityId);
-            if (!facilityIds.length) {
-              return Promise.reject({
-                code: 'error',
-                message: 'Failed to fetch user facilities',
-                serverResponse: resp.data
-              })
-            }
-          } catch (error) {
-            return Promise.reject({
-              code: 'error',
-              message: 'Failed to fetch facilities for group',
-              serverResponse: error
-            })
-          }
-        }
-
-        if (facilityIds.length) {
-          filters = {
-            facilityId: facilityIds.join(","),
-            facilityId_op: "in",
-            pageSize: facilityIds.length
-          }
-        }
-
-        const params = {
-          url: "oms/facilities",
-          method: "GET",
-          params: {
-            pageSize: 500,
-            ...filters
-          }
-        }
-
-        resp = await api(params);
-        this.userFacilities = resp.data
-        this.setCurrentFacility(resp.data[0])
-      } catch (error: any) {
-        logger.error("error", error);
-        return Promise.reject(new Error(error));
-      }
-    },
-    async setFacilityPreference(payload: any) {
-      const userStore = useUserStore();
-      try {
-        await api({
-          url: "admin/user/preferences",
-          method: "PUT",
-          data: {
-            userId: userStore.getUserProfile.userId,
-            preferenceKey: 'SELECTED_FACILITY',
-            preferenceValue: payload.facilityId,
-          }
-        });
-      } catch (error) {
-        console.error('error', error)
-      }
-      this.currentFacility = payload;
-    },
-    async fetchFacilityPreference() {
-      const userStore = useUserStore();
-      try {
-        const preferredFacilityResp = await api({
-          url: "admin/user/preferences",
-          method: "GET",
-          params: {
-            pageSize: 1,
-            userId: userStore.current.userId,
-            preferenceKey: "SELECTED_FACILITY"
-          },
-        }) as any;
-        const preferredFacilityId = preferredFacilityResp.data?.[0]?.preferenceValue;
-        if (preferredFacilityId) {
-          const currentFacility = this.userFacilities.find((facility: any) => facility.facilityId === preferredFacilityId);
-          currentFacility && this.setCurrentFacility(currentFacility)
-        }
-      } catch (err) {
-        logger.error('Favourite facility not found', err)
-      }
-    },
-    async fetchProductStores(currentFacilityId?: string) {
-      try {
-        const facilityId = currentFacilityId ?? this.currentFacility.facilityId;
-        const pageSize = 200;
-
-        const resp = await api({
-          url: `oms/facilities/${facilityId}/productStores`,
-          method: "GET",
-          params: {
-            pageSize,
-            facilityId
-          }
-        }) as any;
-
-        const stores = resp.data.filter((store: any) => !store.thruDate)
-
-        if (stores.length) {
-          // Fetching all stores for the store name
-          try {
-            const productStoresResp = await api({
-              url: "oms/productStores",
-              method: "GET",
-              params: {
-                pageSize: 200
-              }
-            }) as any;
-            const productStores = productStoresResp.data;
-            const productStoresMap = {} as any;
-            productStores.map((store: any) => productStoresMap[store.productStoreId] = store.storeName)
-            stores.map((store: any) => store.storeName = productStoresMap[store.productStoreId])
-          } catch (error) {
-            console.error(error);
-          }
-        }
-
-        const productStores = [...stores]
-        productStores.push({
-          productStoreId: "",
-          storeName: "None",
-        });
-
-        this.currentFacility = {
-          ...this.currentFacility,
-          productStores
-        }
-        this.setCurrentEComStore(productStores[0])
-      } catch (error: any) {
-        logger.error("error", error);
-        return Promise.reject(new Error(error));
-      }
     },
     async fetchAllFacilities() {
       let facilities = []
@@ -317,135 +80,88 @@ export const useProductStore = defineStore('productStore', {
         params: payload
       });
     },
-    async getFacilityOrderCount(payload: any): Promise<any> {
-      return api({
-        url: `/oms/facilities/facilityOrderCounts`,
-        method: "GET",
-        params: payload
-      });
-    },
-    async updateFacility(payload: any): Promise<any> {
-      return api({
-        url: `/oms/facilities/${payload.facilityId}`,
-        method: "PUT",
-        data: payload
-      });
-    },
-    async updateFacilityToGroup(payload: any): Promise<any> {
-      return api({
-        url: `/oms/facilities/${payload.facilityId}/groups`,
-        method: "POST",
-        data: payload
-      });
-    },
-    async addFacilityToGroup(payload: any): Promise<any> {
-      return api({
-        url: `/oms/facilities/${payload.facilityId}/groups`,
-        method: "POST",
-        data: payload
-      });
-    },
-    async getFacilityGroupDetails(payload: any): Promise<any> {
-      return api({
-        url: `/oms/facilityGroups`,
-        method: "get",
-        params: payload
-      });
-    },
-    async fetchFacilitiesList(payload: any): Promise<any> {
-      return api({
-        url: "/oms/facilities",
-        method: "GET",
-        params: payload
-      });
-    },
-    async fetchProductStoreFacilities(): Promise<any> {
+
+    async fetchProductStoreFacilities(productStoreId: string) {
+      let facilities = [] as any[];
+
       try {
-        const productStoreId = this.getCurrentEComStore?.productStoreId;
-
-        if (!productStoreId) {
-          logger.error('Product store ID not found');
-          return [];
-        }
-
-        const params = {
-          facilityTypeId: 'VIRTUAL_FACILITY',
-          facilityTypeId_op: 'equals',
-          facilityTypeId_not: 'Y',
-          parentFacilityTypeId: 'VIRTUAL_FACILITY',
-          parentFacilityTypeId_op: 'equals',
-          parentFacilityTypeId_not: 'Y',
-          pageSize: 250,
-        };
-
         const resp = await api({
           url: `/oms/productStores/${productStoreId}/facilities`,
-          method: "GET",
-          params
+          method: "get",
+          params: {
+            productStoreId,
+            facilityTypeId: "VIRTUAL_FACILITY",
+            facilityTypeId_op: "equals",
+            facilityTypeId_not: "Y",
+            parentFacilityTypeId: "VIRTUAL_FACILITY",
+            parentFacilityTypeId_op: "equals",
+            parentFacilityTypeId_not: "Y",
+            fieldsToSelect: ["facilityId", "facilityName"],
+            pageSize: 200
+          }
         });
 
         if (!commonUtil.hasError(resp)) {
-          return resp.data;
-        } else {
-          logger.error('Failed to fetch product store facilities:', resp.data);
-          return [];
-        }
-      } catch (err) {
-        logger.error('Failed to fetch product store facilities:', err);
-        return [];
-      }
-    },
-    async fetchFacilityAddresses(payload: any): Promise<any> {
-      return api({
-        url: `/oms/facilityContactMechs`,
-        method: "GET",
-        params: payload,
-      });
-    },
-    async fetchFacilityZPLGroupInfo(): Promise<any> {
-      let isFacilityZPLConfigured = false;
-      const payload = {
-        customParametersMap: {
-          facilityGroupId: "ZPL_SHIPPING_LABEL",
-          facilityGroupTypeId: "SHIPPING_LABEL",
-          pageIndex: 0,
-          pageSize: 1
-        },
-        dataDocumentId: "FacilityGroupAndMember",
-        filterByDate: true,
-      }
-
-      try {
-        const resp = await api({
-          url: `/oms/dataDocumentView`,
-          method: "POST",
-          data: payload
-        });
-
-        if (!commonUtil.hasError(resp) && resp.data?.entityValueList?.length > 0) {
-          isFacilityZPLConfigured = true
+          facilities = resp.data;
         } else {
           throw resp.data;
         }
-      } catch (err) {
-        logger.error(err)
+      } catch (error) {
+        logger.error(error);
       }
-      return isFacilityZPLConfigured;
+
+      this.currentEComStore.facilities = facilities;
     },
-    async getFacilityGroupAndMemberDetails(payload: any): Promise<any> {
+    async fetchProductStoreDetails(payload: any): Promise<any> {
       return api({
-        url: `/oms/dataDocumentView`,
-        method: "post",
-        data: payload
+        url: `/oms/productStores/${payload.productStoreId}`,
+        method: "GET"
       });
     },
-    async fetchFacilityTypeInformation(query: any): Promise<any> {
-      return api({
-        url: `/oms/facilities`,
-        method: "GET",
-        params: query,
+    async fetchFacilityAddresses(facilityIds: string[]) {
+      const facilityAddresses = this.facilityAddresses ? JSON.parse(JSON.stringify(this.facilityAddresses)) : {};
+      const addresses = [] as any[];
+      const remainingFacilityIds = [] as string[];
+
+      facilityIds.forEach((facilityId) => {
+        facilityAddresses[facilityId] ? addresses.push(facilityAddresses[facilityId]) : remainingFacilityIds.push(facilityId);
       });
+
+      if (!remainingFacilityIds.length) return addresses;
+
+      try {
+        const responses = await Promise.allSettled(
+          remainingFacilityIds.map((facilityId) => api({
+            url: "/oms/facilityContactMechs",
+            method: "get",
+            params: {
+              contactMechPurposeTypeId: "PRIMARY_LOCATION",
+              contactMechTypeId: "POSTAL_ADDRESS",
+              facilityId
+            }
+          }))
+        );
+
+        if (responses.some((response: any) => response.status === "rejected")) {
+          throw responses;
+        }
+
+        responses.forEach((response: any) => {
+          if ((response.value as any).data?.facilityContactMechs?.length) {
+            (response.value as any).data.facilityContactMechs.forEach((facilityAddress: any) => {
+              facilityAddresses[facilityAddress.facilityId] = facilityAddress;
+              addresses.push(facilityAddress);
+            });
+          }
+        });
+      } catch (error) {
+        logger.error(error);
+      }
+
+      this.facilityAddresses = facilityAddresses;
+      return addresses;
     },
+
     async fetchAllProductStores() {
       let stores = []
       try {
@@ -484,7 +200,7 @@ export const useProductStore = defineStore('productStore', {
         }) as any;
         const preferredStoreId = preferredStoreResp.data?.[0]?.preferenceValue
         if (preferredStoreId) {
-          const store = this.currentFacility.productStores?.find((store: any) => store.productStoreId === preferredStoreId);
+          const store = this.productStores?.find((store: any) => store.productStoreId === preferredStoreId);
           store && this.setCurrentEComStore(store)
         }
       } catch (err) {
@@ -495,36 +211,7 @@ export const useProductStore = defineStore('productStore', {
       await useProductStore().fetchProductStoreSettings(productStoreId)
         .catch((error) => logger.error(error))
     },
-    async findProductStoreShipmentMethCount() {
-      let productStoreShipmentMethCount = 0
-      const params = {
-        partyId: "_NA_",
-        partyId_op: "equals",
-        partyId_not: "Y",
-        roleTypeId: "CARRIER",
-        productStoreId: this.getCurrentEComStore?.productStoreId,
-        fieldsToSelect: ["roleTypeId", "partyId"],
-        pageSize: 1
-      }
 
-      try {
-        const resp = await api({
-          url: `/oms/productStores/shipmentMethods/counts`,
-          method: "GET",
-          params
-        });
-
-        if (!commonUtil.hasError(resp)) {
-          productStoreShipmentMethCount = resp.data[0]?.shipmentMethodCount
-        } else {
-          throw resp?.data
-        }
-      } catch (err) {
-        logger.error("Failed to find shipment method count for product store", err)
-      }
-
-      this.setProductStoreShipmentMethCount(productStoreShipmentMethCount)
-    },
     async setEComStorePreference(payload: any) {
       const userStore = useUserStore();
       try {
@@ -598,31 +285,6 @@ export const useProductStore = defineStore('productStore', {
           }
         }
       })
-    },
-    async fetchAutoShippingLabelConfig() {
-      let resp: any
-
-      try {
-        resp = await api({
-          url: `/oms/dataDocumentView`,
-          method: "post",
-          data: {
-            customParametersMap: {
-              facilityId: this.getCurrentFacility?.facilityId,
-              facilityGroupId: "AUTO_SHIPPING_LABEL",
-              pageIndex: 0,
-              pageSize: 1
-            },
-            dataDocumentId: "FacilityGroupAndMember",
-            filterByDate: true
-          }
-        })
-
-        this.settings.autoShippingLabel = !commonUtil.hasError(resp) && resp.data?.entityValueList?.length > 0 ? "Y" : "N"
-      } catch (error) {
-        logger.error("Failed to check auto shipping label group", error)
-        this.settings.autoShippingLabel = "N"
-      }
     },
 
     async setProductStoreSetting(productStoreId: string, settingTypeEnumId: string, settingValue: any) {
@@ -723,52 +385,10 @@ export const useProductStore = defineStore('productStore', {
         this.settings.productIdentifier.currentSampleProduct = null
       }
     },
-    async fetchFacilities(facilityIds: any) {
-      const cachedFacilityIds = Object.keys(this.userFacilities);
-      const facilityIdFilter = [...new Set(facilityIds.filter((facilityId: any) => !cachedFacilityIds.includes(facilityId)))]
-
-      if (!facilityIdFilter.length) return;
-
-      const payload = {
-        inputFields: {
-          facilityId: facilityIdFilter,
-          facilityId_op: "in"
-        },
-        viewSize: facilityIdFilter.length,
-        entityName: "Facility",
-        noConditionFind: 'Y',
-        distinct: "Y",
-        fieldList: ["facilityId", "facilityName"]
-      }
-
-      try {
-        const resp = await api({
-          url: "/admin/facilities",
-          method: "GET",
-          data: payload
-        });
-        if (!commonUtil.hasError(resp) && resp.data.length > 0) {
-          resp.data.map((facility: any) => {
-            this.userFacilities[facility.facilityId] = facility["facilityName"]
-          })
-        } else {
-          throw resp.data;
-        }
-      } catch (err) {
-        console.error("Failed to fetch facility information", err)
-      }
-    },
-    clearFacilities() {
-      this.userFacilities = {};
-    },
-
-    async updateRerouteFulfillmentConfig(payload: any): Promise<any> {
-      return api({
-        url: `admin/productStores/${payload.productStoreId}/settings`,
-        method: "post",
-        data: payload
-      });
-    }
   },
-  persist: true
+  persist: {
+    paths: [
+      "facilityAddresses"
+    ]
+  }
 })

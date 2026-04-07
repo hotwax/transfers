@@ -1,8 +1,5 @@
 import { ref, computed } from 'vue';
-import { showToast } from '@/utils';
-import { hasError } from "@/adapter";
-import { translate } from "@hotwax/dxp-components";
-import logger from '@/logger';
+import { commonUtil, logger, translate } from "@common";
 import { useOrderStore } from "@/store/order";
 import { useUtilStore } from "@/store/util";
 
@@ -45,7 +42,7 @@ export function useOrderQueue() {
   // Show pending items toast when bulk scanning
   const showPendingItemsToast = async () => {
     if (!pendingItemsToast) {
-      pendingItemsToast = await showToast(translate('Adding items to the order'), { manualDismiss: true });
+      pendingItemsToast = await commonUtil.showToast(translate('Adding items to the order'), { manualDismiss: true, position: 'top' });
       await pendingItemsToast.present();
     }
   };
@@ -125,7 +122,7 @@ export function useOrderQueue() {
 
       const resp = await orderStore.addOrderItem(newProduct);
 
-      if (!hasError(resp)) {
+      if (!commonUtil.hasError(resp)) {
         // Create the complete item without mutating newProduct
         const newItem = {
           ...newProduct,
@@ -146,7 +143,7 @@ export function useOrderQueue() {
       }
     } catch (err) {
       onError?.(product, err);
-      showToast(translate("Failed to add product to order"));
+      commonUtil.showToast(translate("Failed to add product to order"), { position: 'top' });
       logger.error('Failed to add product to order:', err);
     } finally {
       pendingProductIds.value.delete(product.productId);

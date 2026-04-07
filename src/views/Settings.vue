@@ -22,7 +22,7 @@
             </ion-card-header>
           </ion-item>
           <ion-button data-testid="settings-logout-btn" color="danger" @click="logout()">{{ translate("Logout") }}</ion-button>
-          <ion-button data-testid="settings-go-launchpad-btn" :standalone-hidden="!hasPermission(Actions.APP_PWA_STANDALONE_ACCESS)" fill="outline" @click="goToLaunchpad()">
+          <ion-button data-testid="settings-go-launchpad-btn" :standalone-hidden="!userStore.hasPermission('COMMON_ADMIN')" fill="outline" @click="goToLaunchpad()">
             {{ translate("Go to Launchpad") }}
             <ion-icon slot="end" :icon="openOutline" />
           </ion-button>
@@ -35,23 +35,7 @@
       </div>
 
       <section>
-        <ion-card>
-          <ion-card-header>
-            <ion-card-subtitle>
-              {{ translate('OMS instance') }}
-            </ion-card-subtitle>
-            <ion-card-title>
-              {{ oms }}
-            </ion-card-title>
-          </ion-card-header>
-          <ion-card-content>
-            {{ translate('This is the name of the OMS you are connected to right now. Make sure that you are connected to the right instance before proceeding.') }}
-          </ion-card-content>
-          <ion-button :disabled="!omsRedirectionInfo.token || !omsRedirectionInfo.url" @click="goToOms(omsRedirectionInfo.token, omsRedirectionInfo.url)" fill="clear">
-            {{ translate('Go to OMS') }}
-            <ion-icon slot="end" :icon="openOutline" />
-          </ion-button>
-        </ion-card>
+        <DxpOmsInstanceNavigator />
         <DxpProductStoreSelector @updateProductStore="refreshProductStoreData($event)" />
       </section>
 
@@ -68,35 +52,42 @@
 </template>
 
 <script setup lang="ts">
-import { IonAvatar, IonButton, IonCard, IonCardHeader, IonCardSubtitle, IonCardTitle, IonContent, IonHeader, IonIcon, IonItem, IonPage, IonTitle, IonToolbar } from "@ionic/vue";
+import { IonAvatar, IonButton, IonCard, IonCardContent, IonCardHeader, IonCardSubtitle, IonCardTitle, IonContent, IonHeader, IonIcon, IonItem, IonPage, IonTitle, IonToolbar } from "@ionic/vue";
 import { computed } from "vue";
 import Image from "@/components/Image.vue";
 import { openOutline } from "ionicons/icons";
 import { useProductStore } from "@/store/productStore";
-import { Actions, hasPermission } from '@/authorization'
-import logger from "@/logger";
+import { logger } from "@common";
 import TimeZoneSwitcher from "@/components/TimeZoneSwitcher.vue"
 import { useUserStore } from "@/store/user";
-import { useUtilStore } from "@/store/util";
 import DxpProductStoreSelector from "@/components/DxpProductStoreSelector.vue";
 import DxpAppVersionInfo from "@/components/DxpAppVersionInfo.vue";
 import DxpProductIdentifier from "@/components/DxpProductIdentifier.vue";
+import DxpOmsInstanceNavigator from "@/components/DxpOmsInstanceNavigator.vue";
+import { commonUtil, cookieHelper, translate } from "@common";
+import { useAuth } from "@/composables/useAuth";
 
 
 const userStore = useUserStore()
-const utilStore = useUtilStore()
-const userProfile = computed(() => userStore.getUserProfile)
-const oms = computed(() => userStore.getInstanceUrl)
-const omsRedirectionInfo = computed(() => userStore.getOmsRedirectionInfo)
+const productStore = useProductStore()
+const { logout: authLogout } = useAuth()
 
-function logout() {
-  userStore.logout({ isUserUnauthorised: false }).then((redirectionUrl: string) => {
-    // if not having redirection url then redirect the user to launchpad
-    if(!redirectionUrl) {
-      const redirectUrl = window.location.origin + '/login'
-      window.location.href = `${process.env.VUE_APP_LOGIN_URL}?isLoggedOut=true&redirectUrl=${redirectUrl}`
-    }
-  })
+const userProfile = computed(() => userStore.getUserProfile)
+const oms = computed(() => commonUtil.getOmsURL())
+const omsRedirectionInfo = computed(() => ({
+  url: commonUtil.getOmsURL(),
+  token: cookieHelper().get("token") || ""
+}))
+
+async function logout() {
+  const redirectionUrl = await authLogout({ isUserUnauthorised: false })
+  // if not having redirection url then redirect the user to login
+  if(!redirectionUrl) {
+    const redirectUrl = window.location.origin + '/login'
+    window.location.href = `${import.meta.env.VITE_LOGIN_URL}?isLoggedOut=true&redirectUrl=${redirectUrl}`
+  } else {
+    window.location.href = redirectionUrl
+  }
 }
 
 async function timeZoneUpdated(tzId: string) {
@@ -104,12 +95,16 @@ async function timeZoneUpdated(tzId: string) {
 }
 
 const refreshProductStoreData = async (selectedProductStore: any) => {
-  await useProductStore().fetchEComStoreDependencies(selectedProductStore?.productStoreId);
-  await utilStore.fetchFacilitiesByCurrentStore(selectedProductStore.productStoreId).catch((error) => logger.error(error))
+  await productStore.fetchEComStoreDependencies(selectedProductStore?.productStoreId);
+  await productStore.fetchProductStoreFacilities(selectedProductStore.productStoreId).catch((error: any) => logger.error(error))
 };
 
 function goToLaunchpad() {
-  window.location.href = `${process.env.VUE_APP_LOGIN_URL}`
+  window.location.href = `${import.meta.env.VITE_LOGIN_URL}`
+}
+
+function goToOms(token: string, url: string) {
+  window.open(`${url}/control/main?token=${token}`, '_blank');
 }
 </script>
 

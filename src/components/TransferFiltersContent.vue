@@ -58,21 +58,21 @@
 
 <script setup lang="ts">
 import { IonItem, IonLabel, IonList, IonSelect, IonSelectOption } from '@ionic/vue';
-import { translate, useUserStore } from '@hotwax/dxp-components'
+import { translate } from '@common'
 import { computed, onMounted, ref } from "vue";
-import { hasError } from "@/adapter";
-import logger from '@/logger';
 import { useOrderStore } from "@/store/order";
 import { useUtilStore } from "@/store/util";
+import { useProductStore } from "@/store/productStore";
+import { useUserStore } from "@/store/user";
 
 const props = defineProps(['groupByConfig']);
 
 const userStore = useUserStore();
 const orderStore = useOrderStore();
 const utilStore = useUtilStore();
+const productStore = useProductStore();
 
 const productStores = ref({}) as any;
-const facilities = ref([]) as any;
 const orderStatusIds = ["ORDER_APPROVED", "ORDER_CANCELLED", "ORDER_COMPLETED", "ORDER_CREATED"];
 const statusFlows = [
   {
@@ -93,38 +93,12 @@ const query = computed(() => orderStore.getQuery)
 const getStatusDesc = computed(() => utilStore.getStatusDesc)
 const shipmentMethods = computed(() => utilStore.getShipmentMethods)
 const carriersList = computed(() => utilStore.getCarriers)
+const facilities = computed(() => productStore.getAllFacilities)
 
 onMounted(async () => {
-  await fetchFacilities();
-  productStores.value = await userStore.getEComStores();
+  await productStore.fetchAllFacilities();
+  productStores.value = await useProductStore().fetchAllProductStores();
 })
-
-async function fetchFacilities() {
-  let pageIndex = 0, resp
-  try {
-    do {
-      resp = await utilStore.fetchFacilities({
-        facilityTypeId: "VIRTUAL_FACILITY",
-        facilityTypeId_not: "Y",
-        parentTypeId: "VIRTUAL_FACILITY",
-        parentTypeId_not: "Y",
-        pageSize: 100,
-        pageIndex
-      });
-
-      if (!hasError(resp)) {
-        if (resp.data.length) {
-          facilities.value = facilities.value.concat(resp.data);
-        }
-      } else {
-        throw resp.data;
-      }
-      pageIndex++;
-    } while (resp.data.length >= 100);
-  } catch (error) {
-    logger.error(error);
-  }
-}
 
 async function updateAppliedFilters(value: string | boolean, filterName: string) {
   orderStore.updateOrdersList({ orders: [], ordersCount: 0 })

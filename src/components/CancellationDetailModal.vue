@@ -26,8 +26,8 @@
         </ion-thumbnail>
         <ion-label class="ion-text-wrap">
           <p class="overline">{{ item.orderItemSeqId }}</p>
-          {{ getProductIdentificationValue(productIdentificationStore.getProductIdentificationPref.primaryId, getProduct(item.productId)) || getProduct(item.productId).productName }}
-          <p>{{ getProductIdentificationValue(productIdentificationStore.getProductIdentificationPref.secondaryId, getProduct(item.productId)) }}</p>
+          {{ commonUtil.getProductIdentificationValue(useProductStore().getProductIdentificationPref.primaryId, getProduct(item.productId)) || getProduct(item.productId).productName }}
+          <p>{{ commonUtil.getProductIdentificationValue(useProductStore().getProductIdentificationPref.secondaryId, getProduct(item.productId)) }}</p>
           <p v-if="item.statusUserLogin">{{ translate("Cancelled by") }}: {{ item.statusUserLogin }}</p>
         </ion-label>
       </ion-item>
@@ -38,17 +38,16 @@
 <script setup lang="ts">
 import { IonButton, IonButtons, IonContent, IonHeader, IonIcon, IonItem, IonListHeader, IonLabel, IonList, IonThumbnail, IonTitle, IonToolbar, modalController } from "@ionic/vue";
 import { closeOutline } from "ionicons/icons";
-import { getProductIdentificationValue, translate, useProductIdentificationStore } from '@hotwax/dxp-components';
+import { commonUtil, translate } from "@common"
 import { DateTime } from "luxon";
 import Image from "@/components/Image.vue";
 import { computed } from "vue";
-import { useProductStore } from "@/store/product";
+import { useProductStore as useProduct } from "@/store/product";
+import { useProductStore } from "@/store/productStore";
 
 defineProps(["event"]);
 
-const productStore = useProductStore();
-const productIdentificationStore = useProductIdentificationStore();
-const getProduct = computed(() => productStore.getProduct);
+const getProduct = computed(() => useProduct().getProduct);
 
 function closeModal() {
   modalController.dismiss();

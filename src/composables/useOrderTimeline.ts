@@ -1,8 +1,6 @@
 import { ref, watch, computed, Ref } from 'vue';
-import { translate } from '@hotwax/dxp-components';
 import { DateTime } from 'luxon';
-import { hasError } from '@/adapter';
-import logger from '@/logger';
+import { commonUtil, logger, translate } from "@common";
 import { useOrderStore } from "@/store/order";
 import { useProductStore } from "@/store/product";
 import { useUtilStore } from "@/store/util";
@@ -182,7 +180,7 @@ export function useOrderTimeline(orderId: Ref<string>) {
         sortBy: 'statusDatetime ASC',
         fieldList: ['statusId', 'statusDatetime', 'orderItemSeqId', 'statusUserLogin'],
       });
-      if (!hasError(resp)) {
+      if (!commonUtil.hasError(resp)) {
         timeline = resp.data.docs || [];
         
         // Filter: include all order-level statuses (no orderItemSeqId) 

@@ -121,9 +121,8 @@ import {
 } from "@ionic/vue";
 import { ref, computed } from "vue";
 import { checkmarkCircleOutline, closeOutline, informationCircleOutline } from "ionicons/icons";
-import { translate } from "@hotwax/dxp-components";
 import { OrderActionValidator } from "@/utils/OrderActionValidator";
-import logger from "@/logger";
+import { logger, translate } from "@common";
 import { useOrderStore } from "@/store/order";
 
 const props = defineProps({

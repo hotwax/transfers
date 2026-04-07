@@ -81,8 +81,8 @@
                 </ion-chip>
               </div>
               <div class="metadata">
-                <ion-note>{{ translate("Created on") }} {{ formatUtcDate(order.orderDate, "dd LLL yyyy") }}</ion-note>
-                <ion-badge :color="(STATUSCOLOR as any)[order.orderStatusId] || 'medium'">
+                <ion-note>{{ translate("Created on") }} {{ commonUtil.formatUtcDate(order.orderDate, userStore.getUserProfile.userTimeZone, "dd LLL yyyy") }}</ion-note>
+                <ion-badge :color="commonUtil.getStatusColor(order.orderStatusId)">
                   {{ order.orderStatusDesc }}
                 </ion-badge>
               </div>
@@ -162,8 +162,8 @@
                         </ion-label>
                       </div>
                       <div class="metadata ion-padding-end">
-                        <ion-note>{{ translate("Created on") }} {{ formatUtcDate(item.orderDate, "dd LLL yyyy") }}</ion-note>
-                        <ion-badge slot="end" :color="(STATUSCOLOR as any)[item.itemStatusId] || 'medium'">{{ getStatusDesc(item.itemStatusId) }}</ion-badge>
+                        <ion-note>{{ translate("Created on") }} {{ commonUtil.formatUtcDate(item.orderDate, userStore.getUserProfile.userTimeZone, "dd LLL yyyy") }}</ion-note>
+                        <ion-badge slot="end" :color="commonUtil.getStatusColor(item.itemStatusId)">{{ getStatusDesc(item.itemStatusId) }}</ion-badge>
                       </div>
                     </div>
                   </div>
@@ -178,8 +178,8 @@
                         <Image :src="getProduct(order.productId)?.mainImageUrl" />
                       </ion-thumbnail>
                       <ion-label>
-                        {{ getProductIdentificationValue(productIdentificationStore.getProductIdentificationPref.primaryId, getProduct(order.productId)) || getProduct(order.productId).productName }}
-                        <p>{{ getProductIdentificationValue(productIdentificationStore.getProductIdentificationPref.secondaryId, getProduct(order.productId)) }}</p>
+                        {{ commonUtil.getProductIdentificationValue(useProductStore().getProductIdentificationPref.primaryId, getProduct(order.productId)) || getProduct(order.productId).productName }}
+                        <p>{{ commonUtil.getProductIdentificationValue(useProductStore().getProductIdentificationPref.secondaryId, getProduct(order.productId)) }}</p>
                       </ion-label>
                     </ion-item>
                     <ion-chip outline>
@@ -245,8 +245,8 @@
                         </ion-label>
                       </div>
                       <div class="metadata ion-padding-end">
-                        <ion-note>{{ translate("Created on") }} {{ formatUtcDate(item.orderDate, "dd LLL yyyy") }}</ion-note>
-                        <ion-badge slot="end" :color="(STATUSCOLOR as any)[item.itemStatusId] || 'medium'">{{ getStatusDesc(item.itemStatusId) }}</ion-badge>
+                        <ion-note>{{ translate("Created on") }} {{ commonUtil.formatUtcDate(item.orderDate, userStore.getUserProfile.userTimeZone, "dd LLL yyyy") }}</ion-note>
+                        <ion-badge slot="end" :color="commonUtil.getStatusColor(item.itemStatusId)">{{ getStatusDesc(item.itemStatusId) }}</ion-badge>
                       </div>
                     </div>
                   </div>
@@ -273,24 +273,22 @@
 <script setup lang="ts">
 import { IonAccordion, IonAccordionGroup, IonBadge, IonButton, IonButtons, IonChip, IonContent, IonFab, IonFabButton, IonHeader, IonIcon, IonInfiniteScroll, IonInfiniteScrollContent, IonItem, IonLabel, IonMenuButton, IonNote, IonPage, IonSearchbar, IonSelect, IonSelectOption, IonSpinner, IonThumbnail, IonTitle, IonToolbar, onIonViewWillEnter } from '@ionic/vue';
 import { addOutline, arrowUpOutline, chevronDownOutline, documentTextOutline, downloadOutline, filterOutline, sendOutline, swapVerticalOutline } from 'ionicons/icons';
-import { getProductIdentificationValue, translate, useProductIdentificationStore, useUserStore } from '@hotwax/dxp-components'
 import router from '@/router';
 import Image from '@/components/Image.vue';
 import Filters from "@/components/Filters.vue";
 import TransferFiltersContent from "@/components/TransferFiltersContent.vue";
-import logger from '@/logger';
+import { commonUtil, translate } from "@common";
 import { computed, ref } from "vue";
-import { STATUSCOLOR } from "@/adapter";
-import { formatUtcDate } from "@/utils"
+import { useUserStore } from "@/store/user";
 import { useOrderStore } from "@/store/order";
-import { useProductStore } from "@/store/product";
+import { useProductStore as useProduct } from "@/store/product";
+import { useProductStore } from "@/store/productStore";
 import { useUtilStore } from "@/store/util";
 
-const productIdentificationStore = useProductIdentificationStore();
-const userStore = useUserStore()
 const orderStore = useOrderStore();
 const productStore = useProductStore();
 const utilStore = useUtilStore();
+const userStore = useUserStore();
 
 const groupByOptions = [
   {
@@ -335,7 +333,7 @@ const selectedGroupBy = ref(groupByOptions[0])
 const orderName = ref("");
 const isFetchingOrders = ref(false);
 const query = computed(() => orderStore.getQuery)
-const getProduct = computed(() => productStore.getProduct)
+const getProduct = computed(() => useProduct().getProduct)
 const ordersList = computed(() => orderStore.getOrders)
 const orderItemsList = computed(() => orderStore.getItemsByGroupId)
 const getStatusDesc = computed(() => utilStore.getStatusDesc)
@@ -349,7 +347,7 @@ const isAnyFilterApplied = computed(() => {
 onIonViewWillEnter(async () => {
   orderStore.updateOrdersList({ orders: [], ordersCount: 0 })
   isFetchingOrders.value = true;
-  await Promise.allSettled([orderStore.findTransferOrders({ pageSize: process.env.VUE_APP_VIEW_SIZE, pageIndex: 0, groupByConfig: selectedGroupBy.value }), utilStore.fetchStatusDesc(), utilStore.fetchCarriersDetail(), utilStore.fetchShipmentMethodTypeDesc()])
+  await Promise.allSettled([orderStore.findTransferOrders({ pageSize: import.meta.env.VITE_VIEW_SIZE, pageIndex: 0, groupByConfig: selectedGroupBy.value }), utilStore.fetchStatusDesc(), utilStore.fetchCarriersDetail(), utilStore.fetchShipmentMethodTypeDesc()])
   isFetchingOrders.value = false;
 })
 
@@ -392,7 +390,7 @@ async function showOrderItems($event: any) {
 }
 
 function getFacilityName(facilityId: string) {
-  const facility = utilStore.getFacilitiesByProductStore?.find((facility: any) => facility.facilityId === facilityId)
+  const facility = useProductStore().getProductStoreFacilities?.find((facility: any) => facility.facilityId === facilityId)
   return facility ? facility.facilityName || facility.facilityId : facilityId
 }
 </script>

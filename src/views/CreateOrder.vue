@@ -4,7 +4,7 @@
       <ion-toolbar>
         <ion-back-button data-testid="create-order-back-btn" slot="start" :default-href="`/tabs/transfers`" />
         <ion-title>{{ translate("Create transfer order") }}</ion-title>
-        <ion-buttons slot="end" v-if="hasPermission('APP_BULK_UPLOAD')">
+        <ion-buttons slot="end" v-if="userStore.hasPermission('APP_TFNR_BULK_UPLOAD')">
           <ion-button data-testid="create-order-bulk-upload-btn" @click="router.push('/bulk-upload')">{{ translate("Bulk upload") }}</ion-button>
         </ion-buttons>
       </ion-toolbar>
@@ -160,8 +160,8 @@
                   <Image :src="getProduct(item.productId)?.mainImageUrl" />
                 </ion-thumbnail>
                 <ion-label>
-                  {{ getProductIdentificationValue(productIdentificationStore.getProductIdentificationPref.primaryId, getProduct(item.productId)) || getProduct(item.productId).productName }}
-                  <p>{{ getProductIdentificationValue(productIdentificationStore.getProductIdentificationPref.secondaryId, getProduct(item.productId)) }}</p>
+                  {{ commonUtil.getProductIdentificationValue(useProductStore().getProductIdentificationPref.primaryId, getProduct(item.productId)) || getProduct(item.productId).productName }}
+                  <p>{{ commonUtil.getProductIdentificationValue(useProductStore().getProductIdentificationPref.secondaryId, getProduct(item.productId)) }}</p>
                 </ion-label>
               </ion-item>
               <div class="tablet">
@@ -199,25 +199,22 @@
 <script setup lang="ts">
 import { IonBackButton, IonButton, IonCard, IonCardHeader, IonCardTitle, IonCheckbox, IonChip, IonContent, IonDatetime, IonFab, IonFabButton, IonHeader, IonIcon, IonInput, IonItem, IonLabel, IonModal, IonPage, IonSelect, IonSelectOption, IonSpinner, IonThumbnail, IonTitle, IonToolbar, onIonViewDidEnter, alertController, modalController, popoverController } from '@ionic/vue';
 import { addCircleOutline, checkmarkCircle, checkmarkDoneOutline, ellipsisVerticalOutline, informationCircleOutline, listOutline, sendOutline, storefrontOutline, downloadOutline } from 'ionicons/icons';
-import { getProductIdentificationValue, translate, useProductIdentificationStore, useUserStore } from '@hotwax/dxp-components'
 import { computed, ref, watch } from "vue";
-import { getDateWithOrdinalSuffix, showToast } from '@/utils';
-import logger from '@/logger';
+import { commonUtil, emitter, logger, translate } from '@common';
 import Image from '@/components/Image.vue';
 import OrderItemActionsPopover from '@/components/OrderItemActionsPopover.vue';
 import SelectFacilityModal from '@/components/SelectFacilityModal.vue';
 import router from '@/router';
 import { DateTime } from 'luxon';
-import { hasError } from "@/adapter";
-import emitter from '@/event-bus';
-import { hasPermission } from '@/authorization';
+// Merged emitter into @common import above
 import { useOrderStore } from "@/store/order";
-import { useProductStore } from "@/store/product";
+import { useProductStore as useProduct } from "@/store/product";
+import { useProductStore } from "@/store/productStore";
 import { useUserStore as useAppUserStore } from "@/store/user";
 import { useUtilStore } from "@/store/util";
 
-const productIdentificationStore = useProductIdentificationStore();
 const orderStore = useOrderStore();
+const product = useProduct();
 const productStore = useProductStore();
 const userStore = useAppUserStore();
 const utilStore = useUtilStore();
@@ -271,11 +268,10 @@ const statusFlows = [
   }
 ]
 
-const getProduct = computed(() => productStore.getProduct)
+const getProduct = computed(() => product.getProduct)
 const shipmentMethodsByCarrier = computed(() => utilStore.getShipmentMethodsByCarrier)
 const getCarrierDesc = computed(() => utilStore.getCarrierDesc)
-const facilities = computed(() => utilStore.getFacilitiesByProductStore)
-
+const facilities = computed(() => productStore.getProductStoreFacilities)
 // Implemented watcher to display the search spinner correctly. Mainly the watcher is needed to not make the findProduct call always and to create the debounce effect.
 // Previously we were using the `debounce` property of ion-input but it was updating the searchedString and making other related effects after the debounce effect thus the spinner is also displayed after the debounce
 // effect is completed.
@@ -302,8 +298,8 @@ watch(queryString, (value) => {
 
 onIonViewDidEnter(async () => {
   emitter.emit("presentLoader")
-  stores.value = useUserStore().eComStores
-  const currentProductStoreId = (useUserStore().getCurrentEComStore as any)?.productStoreId || "";
+  stores.value = useProductStore().productStores
+  const currentProductStoreId = (useProductStore().getCurrentEComStore as any)?.productStoreId || "";
   currentOrder.value.productStoreId = currentProductStoreId
   await Promise.allSettled([utilStore.fetchStoreCarrierAndMethods(currentProductStoreId), utilStore.fetchCarriersDetail()])
   await fetchProductStoreDetails(currentProductStoreId);
@@ -316,8 +312,8 @@ onIonViewDidEnter(async () => {
 
 async function fetchProductStoreDetails(productStoreId: string) {
   try {
-    const resp = await utilStore.fetchProductStoreDetails({ productStoreId: productStoreId });
-    if(!hasError(resp)) {
+    const resp = await productStore.fetchProductStoreDetails({ productStoreId: productStoreId });
+    if(!commonUtil.hasError(resp)) {
       currencyUom.value = resp.data.defaultCurrencyUomId;
     } else {
       throw resp.data;
@@ -384,7 +380,7 @@ function getFacilityName(facilityId: any) {
 
 async function updateBulkOrderItemQuantity(action: any) {
   if(!isEligibleForBulkAction()) {
-    showToast(translate("No order item is selected for bulk action."))
+    commonUtil.showToast(translate("No order item is selected for bulk action."), { position: 'top' })
     return;
   }
 
@@ -425,34 +421,34 @@ async function updateBulkOrderItemQuantity(action: any) {
 
 async function createOrder() {
   if(!currentOrder.value.items?.length) {
-    showToast(translate("Please add atleast one item in the order."));
+    commonUtil.showToast(translate("Please add atleast one item in the order."), { position: 'top' });
     return;
   }
 
   if(!currentOrder.value.name.trim()) {
-    showToast(translate("Please give some valid transfer order name."))
+    commonUtil.showToast(translate("Please give some valid transfer order name."), { position: 'top' })
     return;
   }
 
   if(!currentOrder.value.productStoreId || !currentOrder.value.originFacilityId || !currentOrder.value.destinationFacilityId || !currentOrder.value.carrierPartyId || !currentOrder.value.shipmentMethodTypeId) {
-    showToast(translate("Please select all the required properties assigned to the order."))
+    commonUtil.showToast(translate("Please select all the required properties assigned to the order."), { position: 'top' })
     return;
   }
 
   if(currentOrder.value.originFacilityId === currentOrder.value.destinationFacilityId) {
-    showToast(translate("Origin and destination facility can't be same."))
+    commonUtil.showToast(translate("Origin and destination facility can't be same."), { position: 'top' })
     return;
   }
 
 
   const isItemQuantityInvalid = currentOrder.value.items.some((item: any) => !Number(item.quantity) || Number(item.quantity) < 0)
   if(isItemQuantityInvalid) {
-    showToast(translate("Order items must have a valid ordered quantity."))
+    commonUtil.showToast(translate("Order items must have a valid ordered quantity."), { position: 'top' })
     return;
   }
 
   if(!currentOrder.value.statusFlowId) {
-    showToast(translate("Please select transfer order lifecycle."));
+    commonUtil.showToast(translate("Please select transfer order lifecycle."), { position: 'top' });
     return;
   }
 
@@ -506,7 +502,7 @@ async function createOrder() {
 
   order["grandTotal"] = grandTotal
 
-  const addresses = await utilStore.fetchFacilityAddresses([currentOrder.value.originFacilityId, currentOrder.value.destinationFacilityId])
+  const addresses = await productStore.fetchFacilityAddresses([currentOrder.value.originFacilityId, currentOrder.value.destinationFacilityId])
   addresses.map((address: any) => {
     if(address.facilityId === currentOrder.value.originFacilityId) {
       order.shipGroups[0].shipFrom = {
@@ -526,7 +522,7 @@ async function createOrder() {
 
   try {
     const resp = await orderStore.createOrder({ payload: order })
-    if(!hasError(resp)) {
+    if(!commonUtil.hasError(resp)) {
       router.replace(`/order-detail/${resp.data.orderId}`)
       emitter.emit("dismissLoader")
     } else {
@@ -535,7 +531,7 @@ async function createOrder() {
   } catch(error: any) {
     logger.error(error)
     emitter.emit("dismissLoader")
-    showToast(translate("Failed to create order."))
+    commonUtil.showToast(translate("Failed to create order."), { position: 'top' })
   }
 }
 
@@ -612,19 +608,19 @@ function isProductAvailableInOrder() {
 
 async function findProduct() {
   if(!queryString.value.trim()) {
-    showToast(translate("Enter a valid product sku"));
+    commonUtil.showToast(translate("Enter a valid product sku"), { position: 'top' });
     return;
   }
 
   isSearchingProduct.value = true;
   try {
-    const resp = await productStore.searchProducts({
+    const resp = await product.searchProducts({
       "filters": ['isVirtual: false', `sku: *${queryString.value}*`],
       "viewSize": 1
     })
-    if (!hasError(resp) && resp.data.response?.docs?.length) {
+    if (!commonUtil.hasError(resp) && resp.data.response?.docs?.length) {
       searchedProduct.value = resp.data.response.docs[0];
-      productStore.addProductToCached(searchedProduct.value)      
+      product.addProductToCached(searchedProduct.value)      
     } else {
       throw resp.data
     }
@@ -642,7 +638,7 @@ async function fetchStock(productId: string) {
       facilityId: currentOrder.value.originFacilityId
     });
 
-    if(!hasError(resp)) {
+    if(!commonUtil.hasError(resp)) {
       return resp.data;
     } else {
       throw resp.data;
@@ -655,7 +651,7 @@ async function fetchStock(productId: string) {
 
 function formatDateTime(date: any) {
   const dateTime = DateTime.fromISO(date);
-  return getDateWithOrdinalSuffix(dateTime.toMillis());
+  return commonUtil.getDateWithOrdinalSuffix(dateTime.toMillis());
 }
 
 function updateDateTimeFilter(value: any) {

@@ -19,8 +19,8 @@
             <Image :src="product.mainImageUrl" />
           </ion-thumbnail>
           <ion-label>
-            <h2>{{ getProductIdentificationValue(productIdentificationStore.getProductIdentificationPref.primaryId, product) || getProduct(product.productId).productName }}</h2>
-            <p>{{ getProductIdentificationValue(productIdentificationStore.getProductIdentificationPref.secondaryId, product) }}</p>
+            <h2>{{ commonUtil.getProductIdentificationValue(useProductStore().getProductIdentificationPref.primaryId, product) || getProduct(product.productId).productName }}</h2>
+            <p>{{ commonUtil.getProductIdentificationValue(useProductStore().getProductIdentificationPref.secondaryId, product) }}</p>
           </ion-label>
           <ion-icon v-if="isProductInOrder(product.productId)" color="success" :icon="checkmarkCircle" data-testid="add-product-in-order-${product.productId}" />
           <ion-button v-else data-testid="add-product-btn-${product.productId}" fill="outline" @click="addItemToOrder(product)" :disabled="pendingProductIds.has(product.productId)">
@@ -62,23 +62,18 @@ import {
   IonToolbar,
   modalController,
 } from "@ionic/vue";
-import { computed, onUnmounted, ref, defineProps } from "vue";
+import { computed, onUnmounted, ref } from "vue";
 import { closeOutline, checkmarkCircle } from "ionicons/icons";
-import { getProductIdentificationValue, translate, useProductIdentificationStore } from "@hotwax/dxp-components";
 import Image from "@/components/Image.vue"
-import logger from "@/logger";
-import { hasError } from "@/adapter";
+import { commonUtil, logger, translate } from "@common";
 import { useOrderStore } from "@/store/order";
-import { useProductStore } from "@/store/product";
+import { useProductStore } from "@/store/productStore";
+import { useProductStore as useProduct } from "@/store/product";
 
 const props = defineProps(["addProductToQueue", "pendingProductIds", "isProductInOrder", "onProductAdded"])
 
-const productIdentificationStore = useProductIdentificationStore();
-const orderStore = useOrderStore();
-const productStore = useProductStore();
-
-const getProduct = computed(() => productStore.getProduct)
-const currentOrder = computed(() => orderStore.getCurrent)
+const getProduct = computed(() => useProduct().getProduct)
+const currentOrder = computed(() => useOrderStore().getCurrent)
 
 let queryString = ref('')
 const isSearching = ref(false);
@@ -100,18 +95,18 @@ async function handleSearch() {
 }
 
 async function getProducts( vSize?: any, vIndex?: any) {
-  const viewSize = vSize ? vSize : process.env.VUE_APP_VIEW_SIZE;
+  const viewSize = vSize ? vSize : import.meta.env.VITE_VIEW_SIZE;
   const viewIndex = vIndex ? vIndex : 0;
 
   try {
-    const resp = await productStore.searchProducts({
+    const resp = await useProduct().searchProducts({
       "filters": ['isVirtual: false', 'isVariant: true'],
       keyword: queryString.value.trim(),
       viewSize,
       viewIndex
     })
 
-    if(!hasError(resp) && resp.data.response?.docs?.length) {
+    if(!commonUtil.hasError(resp) && resp.data.response?.docs?.length) {
       const productsList = resp.data.response.docs
       if(viewIndex) {
         products.value = products.value.concat(productsList);
@@ -119,7 +114,7 @@ async function getProducts( vSize?: any, vIndex?: any) {
         products.value = productsList;
         total.value = resp.data.response.numFound;
       }
-      productStore.addProductToCachedMultiple({ products: productsList })
+      useProduct().addProductToCachedMultiple({ products: productsList })
     } else {
       products.value = viewIndex ? products.value : [];
     }
@@ -135,7 +130,7 @@ function isScrollable() {
 async function loadMoreProducts(event: any) {
   getProducts(
     undefined,
-    Math.ceil(products.value.length / Number(process.env.VUE_APP_VIEW_SIZE)).toString()
+    Math.ceil(products.value.length / Number(import.meta.env.VITE_VIEW_SIZE)).toString()
   ).then(() => {
     event.target.complete();
   })

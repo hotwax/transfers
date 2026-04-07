@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
-import { apiClient, hasError } from "@/adapter";
-import logger from "@/logger";
+import { api, commonUtil } from "@common";
+import { logger } from "@common";
 import { useUserStore } from "@/store/user";
 
 interface ProductState {
@@ -17,14 +17,9 @@ export const useProductStore = defineStore("product", {
   actions: {
     async searchProducts(query: any): Promise<any> {
       const userStore = useUserStore();
-      return apiClient({
+      return api({
         url: "searchProducts",
         method: "post",
-        baseURL: userStore.getOmsBaseUrl,
-        headers: {
-          Authorization: "Bearer " + userStore.token,
-          "Content-Type": "application/json"
-        },
         data: query,
         cache: true
       });
@@ -51,7 +46,7 @@ export const useProductStore = defineStore("product", {
           viewSize
         });
 
-        if (resp.status === 200 && resp.data?.response && !hasError(resp)) {
+        if (resp.status === 200 && resp.data?.response && !commonUtil.hasError(resp)) {
           this.addProductToCachedMultiple({ products: resp.data.response.docs });
         } else {
           throw resp.data;

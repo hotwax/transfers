@@ -7,7 +7,7 @@
           <ion-icon :icon="businessOutline" />
           <ion-label data-testid="tabs-transfers-btn">{{ translate("Transfers") }}</ion-label>
         </ion-tab-button>
-        <ion-tab-button v-if="hasPermission('APP_DISCREPANCY_REPORT')" tab="discrepancies" href="/tabs/discrepancies">
+        <ion-tab-button v-if="userStore.hasPermission('APP_TFNR_DISCREPANCY_REPORT')" tab="discrepancies" href="/tabs/discrepancies">
           <ion-icon :icon="alertCircleOutline" />
           <ion-label data-testid="tabs-discrepancies-btn">{{ translate("Discrepancies") }}</ion-label>
         </ion-tab-button>
@@ -24,9 +24,10 @@
 import { IonIcon, IonLabel, IonPage, IonRouterOutlet, IonTabBar, IonTabButton, IonTabs } from "@ionic/vue";
 import { alertCircleOutline, businessOutline, settingsOutline } from "ionicons/icons";
 import { useRouter } from "vue-router";
-import { translate } from "@hotwax/dxp-components";
-import { hasPermission } from "@/authorization";
+import { translate } from "@common";
+import { useUserStore } from "@/store/user";
 
+const userStore = useUserStore();
 const router = useRouter();
 
 function showFooter() {

@@ -1,7 +1,7 @@
 <template>
   <ion-content>
     <ion-list>
-      <ion-list-header data-testid="order-item-detail-popover-header">{{ getProductIdentificationValue(productIdentificationStore.getProductIdentificationPref.primaryId, getProduct(item.productId)) || getProduct(item.productId).productName }}</ion-list-header>
+      <ion-list-header data-testid="order-item-detail-popover-header">{{ commonUtil.getProductIdentificationValue(useProductStore().getProductIdentificationPref.primaryId, getProduct(item.productId)) || getProduct(item.productId).productName }}</ion-list-header>
       <ion-item v-for="action in OrderActionValidator.getItemActions(currentOrder, item)" :key="action.id" button :color="action.color" @click="handleItemAction(action.id)" :data-testid="`order-item-detail-action-${action.id.replace(/_/g,'-').toLowerCase()}`">
         {{ translate(action.label) }}
       </ion-item>
@@ -11,27 +11,23 @@
 
 <script setup lang="ts">
 import { IonContent, IonItem, IonList, IonListHeader, alertController, popoverController } from "@ionic/vue"
-import { getProductIdentificationValue, translate, useProductIdentificationStore } from '@hotwax/dxp-components';
 import { computed } from "vue";
-import logger from "@/logger";
-import { hasError } from "@/adapter";
-import { showToast } from "@/utils";
-import { useAuthStore } from "@hotwax/dxp-components";
+import { logger, translate, commonUtil, cookieHelper } from "@common";
 import { OrderActionValidator, OrderItemActionId } from "@/utils/OrderActionValidator";
 import { useOrderStore } from "@/store/order";
-import { useProductStore } from "@/store/product";
-import { useUserStore } from "@/store/user";
+import { useProductStore as useProduct } from "@/store/product";
+import { useProductStore } from "@/store/productStore";
 
-const authStore = useAuthStore()
-const productIdentificationStore = useProductIdentificationStore();
 const props = defineProps(["item"]);
 const orderStore = useOrderStore();
-const productStore = useProductStore();
-const userStore = useUserStore();
 
-const getProduct = computed(() => productStore.getProduct)
+const getProduct = computed(() => useProduct().getProduct)
 const currentOrder = computed(() => orderStore.getCurrent)
-const getOmsBaseUrl = computed(() => userStore.getOmsBaseUrl)
+const getOmsBaseUrl = computed(() => commonUtil.getOmsURL().replace('/api/', '/'))
+const oms = cookieHelper().get("oms");
+const token = cookieHelper().get("token");
+const expirationTime = Number(cookieHelper().get("expirationTime"));
+
 
 function handleItemAction(actionId: OrderItemActionId) {
   switch (actionId) {
@@ -77,10 +73,10 @@ async function removeOrderItem() {
           if (item) item.statusId = "ITEM_CANCELLED";
           orderStore.updateCurrent(order)
           popoverController.dismiss({ isItemUpdated: true });
-          showToast(translate("Item removed successfully."));
+          commonUtil.showToast(translate("Item removed successfully."), { position: 'top' });
         } catch (error) {
           logger.error(error);
-          showToast(translate("Failed to remove item."));
+          commonUtil.showToast(translate("Failed to remove item."), { position: 'top' });
         }
       }
     }]
@@ -105,15 +101,15 @@ async function updateItemStatus(statusId: string, header: string) {
             statusId
           })
 
-          if (!hasError(resp)) {
-            showToast(translate("Item status updated successfully."));
+          if (!commonUtil.hasError(resp)) {
+            commonUtil.showToast(translate("Item status updated successfully."), { position: 'top' });
             popoverController.dismiss({ isItemUpdated: true });
           } else {
             throw resp.data;
           }
         } catch (error) {
           logger.error(error);
-          showToast(translate("Failed to update item status."));
+          commonUtil.showToast(translate("Failed to update item status."), { position: 'top' });
         }
       }
     }]
@@ -137,7 +133,7 @@ async function editOrderedQuantity() {
 
         const quantity = Number(data.quantity);
         if(!quantity || quantity < 0) {
-          showToast(translate("Please enter a valid quantity."))
+          commonUtil.showToast(translate("Please enter a valid quantity."), { position: 'top' })
           isUpdatingQuantity = false
           return false;
         }
@@ -150,7 +146,7 @@ async function editOrderedQuantity() {
               quantity
             })
 
-            if(!hasError(resp)) {
+            if(!commonUtil.hasError(resp)) {
               const order = JSON.parse(JSON.stringify(currentOrder.value));
               order.items.find((item: any) => {
                 if(item.orderItemSeqId === props.item.orderItemSeqId) {
@@ -160,13 +156,13 @@ async function editOrderedQuantity() {
               })
               orderStore.updateCurrent(order)
               popoverController.dismiss({ isItemUpdated: true });
-              showToast(translate("Item ordered quantity updated successfully."));
+              commonUtil.showToast(translate("Item ordered quantity updated successfully."), { position: 'top' });
             } else {
               throw resp.data;
             }
           } catch(error) {
             logger.error(error);
-            showToast(translate("Failed to update item ordered quantity."));
+            commonUtil.showToast(translate("Failed to update item ordered quantity."), { position: 'top' });
             return false;
           } finally {
             isUpdatingQuantity = false;
@@ -205,15 +201,15 @@ async function closeFulfillment() {
             }]
           })
 
-          if (!hasError(resp)) {
-            showToast(translate("Fulfillment closed successfully."));
+          if (!commonUtil.hasError(resp)) {
+            commonUtil.showToast(translate("Fulfillment closed successfully."), { position: 'top' });
             popoverController.dismiss({ isItemUpdated: true });
           } else {
             throw resp.data;
           }
         } catch (error) {
           logger.error(error);
-          showToast(translate("Failed to close fulfillment."));
+          commonUtil.showToast(translate("Failed to close fulfillment."), { position: 'top' });
         }
       }
     }]
@@ -221,13 +217,14 @@ async function closeFulfillment() {
   alert.present();
 }
 
+    
 function redirectToFulfillItem() {
-  window.location.href = `${process.env.VUE_APP_FULFILLMENT_LOGIN_URL}?oms=${getOmsBaseUrl.value}&token=${authStore.token.value}&expirationTime=${authStore.token.expiration}&orderId=${currentOrder.value.orderId}&facilityId=${currentOrder.value.facilityId}&omsRedirectionUrl=${authStore.oms}`
+  window.location.href = `${import.meta.env.VITE_FULFILLMENT_LOGIN_URL}?oms=${getOmsBaseUrl.value}&token=${token}&expirationTime=${expirationTime}&orderId=${currentOrder.value.orderId}&facilityId=${currentOrder.value.facilityId}&omsRedirectionUrl=${oms}`
   popoverController.dismiss()
 }
 
 function redirectToReceiveItem() {
-  window.location.href = `${process.env.VUE_APP_RECEIVING_LOGIN_URL}?oms=${getOmsBaseUrl.value}&token=${authStore.token.value}&expirationTime=${authStore.token.expiration}&orderId=${currentOrder.value.orderId}&facilityId=${currentOrder.value.orderFacilityId}&omsRedirectionUrl=${authStore.oms}`
+  window.location.href = `${import.meta.env.VITE_RECEIVING_LOGIN_URL}?oms=${getOmsBaseUrl.value}&token=${token}&expirationTime=${expirationTime}&orderId=${currentOrder.value.orderId}&facilityId=${currentOrder.value.orderFacilityId}&omsRedirectionUrl=${oms}`
   popoverController.dismiss()
 }
 </script>

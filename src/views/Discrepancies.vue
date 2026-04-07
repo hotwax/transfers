@@ -83,8 +83,8 @@
                   <Image :src="getProduct(item.productId)?.mainImageUrl" />
                 </ion-thumbnail>
                 <ion-label class="ion-text-wrap">
-                  {{ getProductIdentificationValue(productIdentificationStore.getProductIdentificationPref.primaryId, getProduct(item.productId)) || getProduct(item.productId).productName || item.productId }}
-                  <p>{{ getProductIdentificationValue(productIdentificationStore.getProductIdentificationPref.secondaryId, getProduct(item.productId)) }}</p>
+                  {{ commonUtil.getProductIdentificationValue(useProductStore().getProductIdentificationPref.primaryId, getProduct(item.productId)) || getProduct(item.productId).productName || item.productId }}
+                  <p>{{ commonUtil.getProductIdentificationValue(useProductStore().getProductIdentificationPref.secondaryId, getProduct(item.productId)) }}</p>
                 </ion-label>
               </ion-item>
               <ion-chip outline>
@@ -117,16 +117,14 @@
 <script setup lang="ts">
 import { IonBadge, IonButtons, IonChip, IonContent, IonHeader, IonIcon, IonItem, IonLabel, IonList, IonMenuButton, IonPage, IonSelect, IonSelectOption, IonSpinner, IonThumbnail, IonTitle, IonToolbar, onIonViewWillEnter, IonInfiniteScroll, IonInfiniteScrollContent } from '@ionic/vue';
 import { checkmarkCircleOutline, downloadOutline, filterOutline, sendOutline } from 'ionicons/icons';
-import { getProductIdentificationValue, translate, useProductIdentificationStore } from '@hotwax/dxp-components';
 import { computed, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import { api, hasError } from '@/adapter';
-import logger from '@/logger';
-import { formatUtcDate } from '@/utils';
+import { commonUtil, logger, translate } from "@common";
+import { useUserStore } from "@/store/user";
 import Image from "@/components/Image.vue";
 import DiscrepancyFilters from "@/components/DiscrepancyFilters.vue";
-import { useProductStore } from "@/store/product";
-import { useUtilStore } from "@/store/util";
+import { useProductStore as useProduct } from "@/store/product";
+import { useProductStore } from "@/store/productStore";
 import { useOrderStore } from "@/store/order";
 
 const selectedTab = ref('TransferOrderOverReceived');
@@ -136,16 +134,15 @@ const discrepancies = ref<any[]>([]);
 const isLoading = ref(false);
 const isScrollable = ref(true);
 const router = useRouter();
-const productIdentificationStore = useProductIdentificationStore();
 const productStore = useProductStore();
-const utilStore = useUtilStore();
 const orderStore = useOrderStore();
+const userStore = useUserStore();
 
-const getProduct = computed(() => productStore.getProduct);
-const facilities = computed(() => utilStore.getFacilitiesByProductStore);
+const getProduct = computed(() => useProduct().getProduct);
+const facilities = computed(() => useProductStore().getProductStoreFacilities);
 
 const fetchDiscrepancies = async (vSize?: any, vIndex?: any) => {
-  const viewSize = vSize ? vSize : process.env.VUE_APP_VIEW_SIZE;
+  const viewSize = vSize ? vSize : import.meta.env.VITE_VIEW_SIZE;
   const viewIndex = vIndex ? vIndex : 0;
   const parsedViewSize = parseInt(viewSize as string) || 20;
 
@@ -194,7 +191,7 @@ const fetchDiscrepancies = async (vSize?: any, vIndex?: any) => {
     if (discrepancies.value.length) {
       const productIds = discrepancies.value.map((item: any) => item.productId).filter((id: any, index: number, self: any) => id && self.indexOf(id) === index);
       if (productIds.length) {
-        await productStore.fetchProducts({ productIds });
+        await useProduct().fetchProducts({ productIds });
       }
     }
   } catch (error) {
@@ -205,7 +202,7 @@ const fetchDiscrepancies = async (vSize?: any, vIndex?: any) => {
 };
 
 const loadMoreDiscrepancies = async (event: any) => {
-  const viewSize = parseInt(process.env.VUE_APP_VIEW_SIZE as string) || 20;
+  const viewSize = parseInt(import.meta.env.VITE_VIEW_SIZE as string) || 20;
   const viewIndex = Math.ceil(discrepancies.value.length / viewSize);
   await fetchDiscrepancies(viewSize, viewIndex).then(() => {
     event.target.complete();
@@ -229,7 +226,7 @@ watch([selectedTab, originFacilityId, destinationFacilityId], () => updateFilter
 
 const formatDate = (date: any) => {
   if (!date) return '-';
-  return formatUtcDate(date, 'dd MMM yyyy');
+  return commonUtil.formatUtcDate(date, userStore.getUserProfile.userTimeZone, 'dd MMM yyyy');
 };
 
 const getFacilityName = (facilityId: string) => {

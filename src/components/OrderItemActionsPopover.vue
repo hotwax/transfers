@@ -1,7 +1,7 @@
 <template>
   <ion-content>
     <ion-list>
-      <ion-list-header v-if="item?.productId" data-testid="order-item-actions-popover-header">{{ getProductIdentificationValue(productIdentificationStore.getProductIdentificationPref.primaryId, getProduct(item.productId)) || getProduct(item.productId).productName }}</ion-list-header>
+      <ion-list-header v-if="item?.productId" data-testid="order-item-actions-popover-header">{{ commonUtil.getProductIdentificationValue(useProductStore().getProductIdentificationPref.primaryId, getProduct(item.productId)) || getProduct(item.productId).productName }}</ion-list-header>
       <ion-item button @click="handleItemAction('bookQOH')" data-testid="order-item-action-book-qoh">
         {{ translate("Book QoH") }}
       </ion-item>
@@ -17,15 +17,13 @@
 
 <script setup lang="ts">
 import { IonContent, IonItem, IonList, IonListHeader, popoverController } from "@ionic/vue"
-import { getProductIdentificationValue, translate, useProductIdentificationStore } from '@hotwax/dxp-components';
+import { translate } from "@common"
 import { computed , defineProps } from "vue";
-import { useProductStore } from "@/store/product";
+import { useProductStore as useProduct } from "@/store/product";
+import { useProductStore } from "@/store/productStore";
 
-const productIdentificationStore = useProductIdentificationStore();
 defineProps(["item"]);
-const productStore = useProductStore();
-
-const getProduct = computed(() => productStore.getProduct)
+const getProduct = computed(() => useProduct().getProduct)
 
 function handleItemAction(action: string) {
   popoverController.dismiss({ action })

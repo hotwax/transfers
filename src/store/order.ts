@@ -1,7 +1,8 @@
 import { defineStore } from "pinia";
-import { api, apiClient, hasError } from "@/adapter";
-import logger from "@/logger";
-import { useProductStore } from "@/store/product";
+import { api, commonUtil, cookieHelper } from "@common";
+import { logger } from "@common";
+import { useProductStore as useProduct } from "@/store/product";
+import { useProductStore } from "@/store/productStore";
 import { useUtilStore } from "@/store/util";
 import { useUserStore } from "@/store/user";
 
@@ -58,27 +59,17 @@ export const useOrderStore = defineStore("order", {
   actions: {
     async fetchOrderStatusHistory(params: any): Promise<any> {
       const userStore = useUserStore();
-      return apiClient({
+      return api({
         url: "performFind",
         method: "get",
-        baseURL: userStore.getOmsBaseUrl,
-        headers: {
-          Authorization: "Bearer " + userStore.token,
-          "Content-Type": "application/json"
-        },
         params
       });
     },
     async updateOrderItem(payload: any): Promise<any> {
       const userStore = useUserStore();
-      return apiClient({
+      return api({
         url: "oms/transferOrders/orderItem",
         method: "PUT",
-        baseURL: userStore.getBaseUrl,
-        headers: {
-          Authorization: "Bearer " + userStore.token,
-          "Content-Type": "application/json"
-        },
         data: payload
       });
     },
@@ -98,14 +89,9 @@ export const useOrderStore = defineStore("order", {
     },
     async addOrderItem(payload: any): Promise<any> {
       const userStore = useUserStore();
-      return apiClient({
+      return api({
         url: "oms/transferOrders/orderItem",
         method: "POST",
-        baseURL: userStore.getBaseUrl,
-        headers: {
-          Authorization: "Bearer " + userStore.token,
-          "Content-Type": "application/json"
-        },
         data: payload
       });
     },
@@ -120,14 +106,9 @@ export const useOrderStore = defineStore("order", {
     },
     async cancelOrder(payload: any): Promise<any> {
       const userStore = useUserStore();
-      return apiClient({
+      return api({
         url: `oms/transferOrders/${payload.orderId}/cancel`,
-        method: "POST",
-        baseURL: userStore.getBaseUrl,
-        headers: {
-          Authorization: "Bearer " + userStore.token,
-          "Content-Type": "application/json"
-        }
+        method: "POST"
       });
     },
     async createTransferOrderShipment(payload: any): Promise<any> {
@@ -156,7 +137,9 @@ export const useOrderStore = defineStore("order", {
       let ordersList = [] as any[];
       let ordersCount = 0;
       const productIds = [] as string[];
-      const productStore = useProductStore();
+      const product = useProduct();
+      const oms = cookieHelper().get("oms");
+      const baseURL = oms ? (oms.startsWith?.("http") ? (oms.endsWith("/") ? oms : `${oms}/`) : `https://${oms}.hotwax.io/`) : "";
 
       const payload = {
         orderByField: this.query.sort,
@@ -175,7 +158,7 @@ export const useOrderStore = defineStore("order", {
 
       try {
         resp = await api({ url: "oms/transferOrders/grouped", method: "GET", params: payload });
-        if (!hasError(resp)) {
+        if (!commonUtil.hasError(resp)) {
           const groupFields = params.groupByConfig?.groupingFields;
           const orders = resp.data.orders.map((order: any) => {
             if (order.productId) productIds.push(order.productId);
@@ -186,7 +169,7 @@ export const useOrderStore = defineStore("order", {
           });
 
           if (productIds.length) {
-            await productStore.fetchProducts({ productIds });
+            await product.fetchProducts({ productIds });
           }
 
           ordersList = payload.pageIndex > 0 ? this.orders.concat(orders) : orders;
@@ -207,7 +190,7 @@ export const useOrderStore = defineStore("order", {
       let resp;
       let pageIndex = 0;
       const pageSize = 100;
-      const productStore = useProductStore();
+      const product = useProduct();
 
       try {
         const values = groupValue.split(groupByConfig?.groupValueSeparator);
@@ -221,7 +204,7 @@ export const useOrderStore = defineStore("order", {
           payload.pageIndex = pageIndex;
           resp = await api({ url: "oms/transferOrders/items", method: "GET", params: payload });
 
-          if (!hasError(resp) && resp?.data?.transferOrderItems?.length) {
+          if (!commonUtil.hasError(resp) && resp.data.response?.docs?.length) {
             if (groupByConfig?.id === "ORDER_ID") {
               resp.data.transferOrderItems.forEach((item: any) => {
                 if (item.productId) productIds.add(item.productId);
@@ -262,7 +245,7 @@ export const useOrderStore = defineStore("order", {
         while (productIdArray.length) {
           productIdBatches.push(productIdArray.splice(0, batchSize));
         }
-        await Promise.allSettled(productIdBatches.map((batch) => productStore.fetchProducts({ productIds: batch })));
+        await Promise.allSettled(productIdBatches.map((batch) => product.fetchProducts({ productIds: batch })));
 
         this.orderItemsList[groupValue] = items as any[];
         return resp;
@@ -274,7 +257,7 @@ export const useOrderStore = defineStore("order", {
     },
     async updateAppliedFilters({ value, filterName, groupByConfig }: { value: any; filterName: string; groupByConfig: any }) {
       (this.query as Record<string, any>)[filterName] = value;
-      await this.findTransferOrders({ pageSize: process.env.VUE_APP_VIEW_SIZE, pageIndex: 0, groupByConfig });
+      await this.findTransferOrders({ pageSize: import.meta.env.VITE_VIEW_SIZE, pageIndex: 0, groupByConfig });
     },
     async fetchOrderDetails(orderId: string) {
       let orderDetail = {} as any;
@@ -283,7 +266,7 @@ export const useOrderStore = defineStore("order", {
         this.current = { ...this.current, isFetching: true, loadedItems: 0, totalItems: 0 };
         orderResp = await api({ url: `/oms/transferOrders/${orderId}`, method: "get" });
 
-        if (!hasError(orderResp)) {
+        if (!commonUtil.hasError(orderResp)) {
           orderDetail = orderResp.data.order || {};
           orderDetail = {
             ...orderDetail,
@@ -291,7 +274,7 @@ export const useOrderStore = defineStore("order", {
           };
 
           const shipmentReceiptResp = await api({ url: `poorti/transferOrders/${orderId}/receipts`, method: "GET", params: { orderId } });
-          if (!hasError(shipmentReceiptResp) && shipmentReceiptResp.data.length) {
+          if (!commonUtil.hasError(shipmentReceiptResp) && shipmentReceiptResp.data.length) {
             orderDetail.receipts = shipmentReceiptResp.data.reduce((groups: any, receipt: any) => {
               if (!receipt?.datetimeReceived) return groups;
               const key = receipt.datetimeReceived;
@@ -301,7 +284,7 @@ export const useOrderStore = defineStore("order", {
           }
 
           const shipmentResp = await api({ url: "poorti/transferShipments", method: "get", params: { orderId, shipmentStatusId: "SHIPMENT_SHIPPED" } });
-          if (!hasError(shipmentResp)) {
+          if (!commonUtil.hasError(shipmentResp)) {
             orderDetail = {
               ...orderDetail,
               shipments: shipmentResp.data?.shipments || []
@@ -317,9 +300,10 @@ export const useOrderStore = defineStore("order", {
           }
 
           const utilStore = useUtilStore();
+          const product = useProduct();
           const productStore = useProductStore();
           const [facilityAddresses] = await Promise.allSettled([
-            utilStore.fetchFacilityAddresses([orderDetail.facilityId, orderDetail.orderFacilityId]),
+            productStore.fetchFacilityAddresses([orderDetail.facilityId, orderDetail.orderFacilityId]),
             utilStore.fetchStoreCarrierAndMethods(orderDetail.productStoreId)
           ]);
 
@@ -346,7 +330,7 @@ export const useOrderStore = defineStore("order", {
 
           let loadedProducts = 0;
           await Promise.allSettled(productIdBatches.map(async (batchIds) => {
-            await productStore.fetchProducts({ productIds: batchIds });
+            await product.fetchProducts({ productIds: batchIds });
             loadedProducts += batchIds.length;
             this.current = { ...orderDetail, isFetching: true, loadedItems: loadedProducts, totalItems: totalProducts };
           }));
@@ -366,14 +350,9 @@ export const useOrderStore = defineStore("order", {
 
       try {
         const userStore = useUserStore();
-        const resp = await apiClient({
+        const resp = await api({
           url: "performFind",
           method: "get",
-          baseURL: userStore.getOmsBaseUrl,
-          headers: {
-            Authorization: "Bearer " + userStore.token,
-            "Content-Type": "application/json"
-          },
           params: {
           entityName: "Shipment",
           inputFields: {
@@ -387,7 +366,7 @@ export const useOrderStore = defineStore("order", {
           }
         });
 
-        if (!hasError(resp)) {
+        if (!commonUtil.hasError(resp)) {
           shipments = resp.data.docs;
           const shipmentIds = shipments.map((shipment: any) => shipment.shipmentId);
           const [shipmentItems, shipmentRoutes, shipmentStatuses] = await Promise.allSettled([
@@ -397,14 +376,9 @@ export const useOrderStore = defineStore("order", {
               let shipmentResp;
               try {
                 do {
-                  shipmentResp = await apiClient({
+                  shipmentResp = await api({
                     url: "performFind",
                     method: "get",
-                    baseURL: userStore.getOmsBaseUrl,
-                    headers: {
-                      Authorization: "Bearer " + userStore.token,
-                      "Content-Type": "application/json"
-                    },
                     params: {
                       entityName: "ShipmentItemDetail",
                       inputFields: { shipmentId: shipmentIds, shipmentId_op: "in" },
@@ -414,7 +388,7 @@ export const useOrderStore = defineStore("order", {
                       distinct: "Y"
                     }
                   }) as any;
-                  if (!hasError(shipmentResp) && shipmentResp.data.docs?.length) {
+                  if (!commonUtil.hasError(shipmentResp) && shipmentResp.data.docs?.length) {
                     items = items.concat(shipmentResp.data.docs);
                     viewIndex++;
                   } else {
@@ -428,14 +402,9 @@ export const useOrderStore = defineStore("order", {
             })(),
             (async () => {
               try {
-                const trackingResp = await apiClient({
+                const trackingResp = await api({
                   url: "performFind",
                   method: "get",
-                  baseURL: userStore.getOmsBaseUrl,
-                  headers: {
-                    Authorization: "Bearer " + userStore.token,
-                    "Content-Type": "application/json"
-                  },
                   params: {
                     entityName: "ShipmentAndRouteSegment",
                     inputFields: {
@@ -449,7 +418,7 @@ export const useOrderStore = defineStore("order", {
                     distinct: "Y"
                   }
                 }) as any;
-                if (!hasError(trackingResp) && trackingResp.data.docs?.length) return trackingResp.data.docs;
+                if (!commonUtil.hasError(trackingResp) && trackingResp.data.docs?.length) return trackingResp.data.docs;
                 throw trackingResp.data;
               } catch (error) {
                 logger.error(error);
@@ -459,14 +428,9 @@ export const useOrderStore = defineStore("order", {
             (async () => {
               const statuses = {} as any;
               try {
-                const statusesResp = await apiClient({
+                const statusesResp = await api({
                   url: "performFind",
                   method: "get",
-                  baseURL: userStore.getOmsBaseUrl,
-                  headers: {
-                    Authorization: "Bearer " + userStore.token,
-                    "Content-Type": "application/json"
-                  },
                   params: {
                     entityName: "ShipmentStatus",
                     inputFields: {
@@ -479,7 +443,7 @@ export const useOrderStore = defineStore("order", {
                     distinct: "Y"
                   }
                 }) as any;
-                if (!hasError(statusesResp) && statusesResp.data.docs?.length) {
+                if (!commonUtil.hasError(statusesResp) && statusesResp.data.docs?.length) {
                   statusesResp.data.docs.forEach((status: any) => {
                     statuses[status.shipmentId] = status.statusDate;
                   });
@@ -499,8 +463,8 @@ export const useOrderStore = defineStore("order", {
           while (productIds.length) {
             productIdBatches.push(productIds.splice(0, batchSize));
           }
-          const productStore = useProductStore();
-          Promise.allSettled(productIdBatches.map((batch) => productStore.fetchProducts({ productIds: batch })));
+          const product = useProduct();
+          Promise.allSettled(productIdBatches.map((batch) => product.fetchProducts({ productIds: batch })));
 
           shipments.forEach((shipment: any) => {
             const items = [] as any[];
@@ -543,13 +507,13 @@ export const useOrderStore = defineStore("order", {
       const payload = {
         orderId,
         orderByField: "-datetimeReceived",
-        pageSize: Number(process.env.VUE_APP_VIEW_SIZE)
+        pageSize: Number(import.meta.env.VITE_VIEW_SIZE)
       };
       let resp;
 
       try {
         resp = await api({ url: `poorti/transferOrders/${payload.orderId}/receipts`, method: "GET", params: payload });
-        if (!hasError(resp)) {
+        if (!commonUtil.hasError(resp)) {
           this.orderReceipts = resp.data;
         } else {
           throw resp.data;

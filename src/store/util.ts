@@ -1,8 +1,7 @@
 import { defineStore } from "pinia";
-import { api, client, hasError } from "@/adapter";
-import logger from "@/logger";
-import { useUserStore as useDxpUserStore } from "@hotwax/dxp-components";
-import { useUserStore } from "@/store/user";
+import { api, commonUtil, cookieHelper } from "@common";
+import { logger } from "@common";
+import { useProductStore } from "@/store/productStore"
 
 interface UtilState {
   statusDesc: Record<string, string>;
@@ -10,8 +9,6 @@ interface UtilState {
   dataManagerStatusDesc: Record<string, string>;
   shipmentMethodsByCarrier: Record<string, any[]>;
   carrierDesc: Record<string, string>;
-  facilities: any[];
-  facilityAddresses: Record<string, any>;
   sampleProducts: any[];
 }
 
@@ -22,8 +19,6 @@ export const useUtilStore = defineStore("util", {
     dataManagerStatusDesc: {},
     shipmentMethodsByCarrier: {},
     carrierDesc: {},
-    facilities: [],
-    facilityAddresses: {},
     sampleProducts: []
   }),
   getters: {
@@ -34,33 +29,13 @@ export const useUtilStore = defineStore("util", {
     getCarrierDesc: (state) => (partyId: string) => state.carrierDesc[partyId] ? state.carrierDesc[partyId] : partyId,
     getCarriers: (state) => state.carrierDesc,
     getSampleProducts: (state) => state.sampleProducts,
-    getFacilitiesByProductStore: (state) => state.facilities,
     getDataManagerStatusDesc: (state) => (statusId: string) => state.dataManagerStatusDesc[statusId] ? state.dataManagerStatusDesc[statusId] : statusId
   },
   actions: {
-    async fetchFacilities(payload: any): Promise<any> {
-      return api({
-        url: "oms/facilities",
-        method: "get",
-        params: payload
-      });
-    },
-    async fetchProductStoreDetails(payload: any): Promise<any> {
-      return api({
-        url: `/oms/productStores/${payload.productStoreId}`,
-        method: "GET"
-      });
-    },
     async getInventoryAvailableByFacility(query: any): Promise<any> {
-      const userStore = useUserStore();
-      return client({
+      return api({
         url: "/poorti/getInventoryAvailableByFacility",
         method: "get",
-        baseURL: userStore.getBaseUrl,
-        headers: {
-          Authorization: "Bearer " + userStore.token,
-          "Content-Type": "application/json"
-        },
         params: query
       });
     },
@@ -72,17 +47,12 @@ export const useUtilStore = defineStore("util", {
       });
     },
     async downloadLogDataManagerFile(payload: any): Promise<any> {
-      const userStore = useUserStore();
-      let baseURL = userStore.instanceUrl;
-      baseURL = baseURL.startsWith("http") ? `${baseURL}/` : `https://${baseURL}.hotwax.io/`;
-      return client({
+      const oms = cookieHelper().get("oms");
+      const baseURL = oms ? (oms.startsWith("http") ? (oms.endsWith("/") ? oms : `${oms}/`) : `https://${oms}.hotwax.io/`) : "";
+      return api({
         url: "apps/Oms/DataManager/DataManagerConfig/DataManagerConfigView/downloadContent",
         method: "GET",
         baseURL,
-        headers: {
-          Authorization: "Bearer " + userStore.token,
-          "Content-Type": "application/json"
-        },
         params: payload
       });
     },
@@ -148,7 +118,7 @@ export const useUtilStore = defineStore("util", {
           }
         });
 
-        if (!hasError(resp)) {
+        if (!commonUtil.hasError(resp)) {
           resp.data.forEach((shipmentMethodInformation: any) => {
             shipmentMethodTypeDesc[shipmentMethodInformation.shipmentMethodTypeId] = shipmentMethodInformation.description;
           });
@@ -182,7 +152,7 @@ export const useUtilStore = defineStore("util", {
     async fetchStatusDesc() {
       if (Object.keys(this.statusDesc).length) return this.statusDesc;
 
-      let statusDesc = {} as Record<string, string>;
+      const statusDesc = {} as Record<string, string>;
       try {
         const resp = await api({
           url: "/oms/statuses",
@@ -195,7 +165,7 @@ export const useUtilStore = defineStore("util", {
           }
         });
 
-        if (!hasError(resp)) {
+        if (!commonUtil.hasError(resp)) {
           resp.data.forEach((statusItem: any) => {
             statusDesc[statusItem.statusId] = statusItem.description;
           });
@@ -232,7 +202,7 @@ export const useUtilStore = defineStore("util", {
           }
         });
 
-        if (!hasError(resp)) {
+        if (!commonUtil.hasError(resp)) {
           shipmentMethodsByCarrier = resp.data.entityValueList.reduce((result: Record<string, any[]>, storeCarrierAndMethod: any) => {
             const { partyId, shipmentMethodTypeId, description } = storeCarrierAndMethod;
 
@@ -265,7 +235,7 @@ export const useUtilStore = defineStore("util", {
           }
         });
 
-        if (!hasError(resp)) {
+        if (!commonUtil.hasError(resp)) {
           resp.data.forEach((carrier: any) => {
             carrierDesc[carrier.partyId] = carrier.groupName || [carrier.firstName, carrier.lastName].filter(Boolean).join(" ") || carrier.partyId;
           });
@@ -277,80 +247,6 @@ export const useUtilStore = defineStore("util", {
       }
 
       this.carrierDesc = carrierDesc;
-    },
-    async fetchFacilitiesByCurrentStore(productStoreId: string) {
-      let facilities = [] as any[];
-
-      try {
-        const resp = await api({
-          url: `/oms/productStores/${productStoreId}/facilities`,
-          method: "get",
-          params: {
-            productStoreId,
-            facilityTypeId: "VIRTUAL_FACILITY",
-            facilityTypeId_op: "equals",
-            facilityTypeId_not: "Y",
-            parentFacilityTypeId: "VIRTUAL_FACILITY",
-            parentFacilityTypeId_op: "equals",
-            parentFacilityTypeId_not: "Y",
-            fieldsToSelect: ["facilityId", "facilityName"],
-            pageSize: 200
-          }
-        });
-
-        if (!hasError(resp)) {
-          facilities = resp.data;
-        } else {
-          throw resp.data;
-        }
-      } catch (error) {
-        logger.error(error);
-      }
-
-      this.facilities = facilities;
-    },
-    async fetchFacilityAddresses(facilityIds: string[]) {
-      const facilityAddresses = this.facilityAddresses ? JSON.parse(JSON.stringify(this.facilityAddresses)) : {};
-      const addresses = [] as any[];
-      const remainingFacilityIds = [] as string[];
-
-      facilityIds.forEach((facilityId) => {
-        facilityAddresses[facilityId] ? addresses.push(facilityAddresses[facilityId]) : remainingFacilityIds.push(facilityId);
-      });
-
-      if (!remainingFacilityIds.length) return addresses;
-
-      try {
-        const responses = await Promise.allSettled(
-          remainingFacilityIds.map((facilityId) => api({
-            url: "/oms/facilityContactMechs",
-            method: "get",
-            params: {
-              contactMechPurposeTypeId: "PRIMARY_LOCATION",
-              contactMechTypeId: "POSTAL_ADDRESS",
-              facilityId
-            }
-          }))
-        );
-
-        if (responses.some((response: any) => response.status === "rejected")) {
-          throw responses;
-        }
-
-        responses.forEach((response: any) => {
-          if (response.value.data?.facilityContactMechs?.length) {
-            response.value.data.facilityContactMechs.forEach((facilityAddress: any) => {
-              facilityAddresses[facilityAddress.facilityId] = facilityAddress;
-              addresses.push(facilityAddress);
-            });
-          }
-        });
-      } catch (error) {
-        logger.error(error);
-      }
-
-      this.facilityAddresses = facilityAddresses;
-      return addresses;
     },
     async fetchSampleProducts() {
       let products = this.sampleProducts ? JSON.parse(JSON.stringify(this.sampleProducts)) : [];
@@ -368,8 +264,8 @@ export const useUtilStore = defineStore("util", {
           }
         }) as any;
 
-        if (!hasError(resp) && resp.data?.length) {
-          const currentProductStore = useDxpUserStore().getCurrentEComStore as any;
+        if (!commonUtil.hasError(resp) && resp.data?.length) {
+          const currentProductStore = useProductStore().getCurrentEComStore as any;
           let fieldName = currentProductStore?.productIdentifierEnumId || "SKU";
           if (fieldName === "SHOPIFY_BARCODE") fieldName = "UPCA";
 
@@ -395,7 +291,6 @@ export const useUtilStore = defineStore("util", {
       "carrierDesc",
       "statusDesc",
       "shipmentMethodTypeDesc",
-      "facilityAddresses",
       "sampleProducts",
       "dataManagerStatusDesc"
     ]

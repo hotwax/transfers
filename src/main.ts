@@ -27,22 +27,12 @@ import "@hotwax/apps-theme";
 
 import { createPinia } from "pinia";
 import piniaPluginPersistedstate from "pinia-plugin-persistedstate";
-import { useUserStore } from "@/store/user";
-import { DateTime } from "luxon";
-import logger from './logger';
-import permissionPlugin, { Actions, hasPermission } from '@/authorization';
-import permissionRules from '@/authorization/Rules';
-import permissionActions from '@/authorization/Actions';
-import { dxpComponents } from "@hotwax/dxp-components"
-import { login, logout, loader } from "@/user-utils";
-import { fetchGoodIdentificationTypes, getConfig, getEComStores, getProductIdentificationPref, getUserPreference, initialise, setProductIdentificationPref, setUserPreference, setUserLocale, setUserTimeZone, getAvailableTimeZones } from './adapter';
-import localeMessages from '@/locales';
+import { logger } from '@common';
 import VueVirtualScroller from 'vue-virtual-scroller';
 import 'vue-virtual-scroller/dist/vue-virtual-scroller.css';
 
 const pinia = createPinia();
 pinia.use(piniaPluginPersistedstate);
-const userStore = useUserStore(pinia);
 
 const app = createApp(App)
   .use(IonicVue, {
@@ -50,63 +40,11 @@ const app = createApp(App)
     innerHTMLTemplatesEnabled: true
   })
   .use(logger, {
-    level: process.env.VUE_APP_DEFAULT_LOG_LEVEL
+    level: import.meta.env.VITE_DEFAULT_LOG_LEVEL
   })
   .use(pinia)
   .use(router)
   .use(VueVirtualScroller)
-  .use(permissionPlugin, {
-    rules: permissionRules,
-    actions: permissionActions
-  })
-  .use(dxpComponents, {
-    Actions,
-    defaultImgUrl: require("@/assets/images/defaultImage.png"),
-    login,
-    logout,
-    loader,
-    appLoginUrl: process.env.VUE_APP_LOGIN_URL as string,
-    fetchGoodIdentificationTypes,
-    getAvailableTimeZones,
-    getConfig,
-    getEComStores,
-    getProductIdentificationPref,
-    getUserPreference,
-    hasPermission,
-    initialise,
-    localeMessages,
-    setProductIdentificationPref,
-    setUserPreference,
-    setUserLocale,
-    setUserTimeZone, 
-  });
-
-// Filters are removed in Vue 3 and global filter introduced https://v3.vuejs.org/guide/migration/filters.html#global-filters
-app.config.globalProperties.$filters = {
-  formatDate(value: any, inFormat?: string, outFormat?: string) {
-    // TODO Make default format configurable and from environment variables
-    if(inFormat){
-      return DateTime.fromFormat(value, inFormat).toFormat(outFormat ? outFormat : "MM-DD-YYYY");
-    }
-    return DateTime.fromISO(value).toFormat(outFormat ? outFormat : "MM-DD-YYYY");
-  },
-  formatUtcDate(value: any, inFormat?: any, outFormat?: string) {
-    // TODO Make default format configurable and from environment variables
-    const userProfile = userStore.current;
-    // TODO Fix this setDefault should set the default timezone instead of getting it everytiem and setting the tz
-    return DateTime.utc(value, inFormat).setZone(userProfile.userTimeZone).toFormat(outFormat ? outFormat : "MM-DD-YYYY")
-  },
-  getFeature(featureHierarchy: any, featureKey: string) {
-    let  featureValue = ""
-    if (featureHierarchy) {
-      const feature = featureHierarchy.find((featureItem: any) => featureItem.startsWith(featureKey))
-      const featureSplit = feature ? feature.split("/") : [];
-      featureValue = featureSplit[2] ? featureSplit[2] : "";
-    }
-    return featureValue;
-  }
-}
-
 
 router.isReady().then(() => {
   app.mount("#app");

@@ -14,7 +14,7 @@
 
 <script setup lang="ts">
 import { IonContent, IonHeader, IonMenu, IonTitle, IonToolbar } from "@ionic/vue";
-import { translate } from "@hotwax/dxp-components";
+import { translate } from "@common";
 import TransferFiltersContent from "./TransferFiltersContent.vue";
 
 </script>

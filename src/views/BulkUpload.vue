@@ -102,11 +102,8 @@
 <script setup>
 import { IonBackButton, IonButton, IonContent, IonHeader, IonIcon, IonItem, IonItemDivider, IonLabel, IonList, IonListHeader, IonNote, IonPage, IonPopover, IonSelect, IonSelectOption, IonTitle, IonToolbar, onIonViewDidEnter } from '@ionic/vue';
 import { cloudUploadOutline, downloadOutline, ellipsisVerticalOutline } from "ionicons/icons";
-import { translate } from '@hotwax/dxp-components';
 import { onBeforeUnmount, computed, ref } from "vue";
-import logger from "@/logger";
-import { showToast, jsonToCsv, parseCsv } from "@/utils"
-import { hasError } from '@/adapter';
+import { commonUtil, logger, translate } from "@common";
 import { DateTime } from 'luxon';
 import { saveAs } from 'file-saver';
 import { useUtilStore } from "@/store/util";
@@ -139,7 +136,7 @@ let fieldMapping = ref({});
 let fileColumns = ref([]);
 
 // We are mapping fields that are needed to create an order
-const fields = process.env.VUE_APP_MAPPING_FIELDS ? JSON.parse(process.env.VUE_APP_MAPPING_FIELDS) : {};
+const fields = import.meta.env.VITE_MAPPING_FIELDS ? JSON.parse(import.meta.env.VITE_MAPPING_FIELDS) : {};
 
 const templateRows = [
   {
@@ -200,7 +197,7 @@ function downloadTemplate() {
     return columns.reduce((result, key) => ({ ...result, [key]: row[key] || "" }), {});
   });
 
-  jsonToCsv(rowsWithColumns, {
+  commonUtil.jsonToCsv(rowsWithColumns, {
     parse: {},
     download: true,
     name: "TransferOrderUploadTemplate.csv"
@@ -213,20 +210,20 @@ async function parse(event) {
     if (file) {
       uploadedFile.value = file;
       fileName.value = file.name;
-      content.value = await parseCsv(file);
+      content.value = await commonUtil.parseCsv(file);
       fileColumns.value = Object.keys(content.value[0]);
-      showToast(translate("File uploaded successfully"));
+      commonUtil.showToast(translate("File uploaded successfully"), { position: 'top' });
       resetFieldMapping();
     }
   } catch {
     content.value = [];
-    showToast(translate("Please upload a valid csv to continue"));
+    commonUtil.showToast(translate("Please upload a valid csv to continue"), { position: 'top' });
   }
 }
 async function save() {
   const required = Object.keys(getFilteredFields(fields, true));
   const selected = Object.keys(fieldMapping.value).filter(key => fieldMapping.value[key]);
-  if (!required.every(field => selected.includes(field))) return showToast(translate("Select all required fields to continue"));
+  if (!required.every(field => selected.includes(field))) return commonUtil.showToast(translate("Select all required fields to continue"), { position: 'top' });
   const uploadedData = content.value.map(row => {
     const dataRow = {};
     Object.keys(fields).forEach(field => {
@@ -237,7 +234,7 @@ async function save() {
     })
     return dataRow;
   });
-  const data = jsonToCsv(uploadedData, {
+  const data = commonUtil.jsonToCsv(uploadedData, {
     parse: {},
     download: false,
     name: fileName.value
@@ -248,14 +245,14 @@ async function save() {
   fd.append("configId", "IMP_TRANS_ORD");
   try {
     const resp = await orderStore.uploadTransferOrders({ data: fd, headers: { "Content-Type": "multipart/form-data;" } });
-    if (!hasError(resp)) {
+    if (!commonUtil.hasError(resp)) {
       resetDefaults();
       await fetchDataManagerLogs();
-      showToast(translate("The transfer orders file uploaded successfully."));
+      commonUtil.showToast(translate("The transfer orders file uploaded successfully."), { position: 'top' });
     } else throw resp.data;
   } catch (err) {
     logger.error(err);
-    showToast(translate("Failed to upload the file, please try again"));
+    commonUtil.showToast(translate("Failed to upload the file, please try again"), { position: 'top' });
   }
 }
 
@@ -283,7 +280,7 @@ async function downloadDataManagerFile(fileType) {
   });
   if (resp?.status === 200 && resp.data) {
     downloadCsv(resp.data, extractFilename(selectedDataManagerLog.value, fileType));
-    showToast(translate("File downloaded successfully"));
+    commonUtil.showToast(translate("File downloaded successfully"), { position: 'top' });
   } else throw resp.data;
 }
 
@@ -298,12 +295,12 @@ const downloadCsv = (csv, fileName) => {
 async function cancelUpload() {
   try {
     const resp = await utilStore.cancelDataManagerFileProcessing({ logId: selectedDataManagerLog.value?.logId, statusId: "DmlsCancelled" });
-    if (!hasError(resp)) {
-      showToast(translate("Transfer Order cancelled successfully."));
+    if (!commonUtil.hasError(resp)) {
+      commonUtil.showToast(translate("Transfer Order cancelled successfully."), { position: 'top' });
       await fetchDataManagerLogs();
     }
   } catch (err) {
-    showToast(translate("Failed to cancel uploaded transfer order."));
+    commonUtil.showToast(translate("Failed to cancel uploaded transfer order."), { position: 'top' });
     logger.error(err);
   }
   closeUploadPopover();

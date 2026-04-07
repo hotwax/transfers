@@ -13,14 +13,14 @@
       <ion-label>
         <p class="overline">{{ translate("Browser TimeZone") }}</p>
         {{ browserTimeZone.id }}
-        <p v-if="showDateTime">{{ getCurrentTime(browserTimeZone.id, dateTimeFormat) }}</p>
+        <p v-if="showDateTime">{{ commonUtil.getCurrentTime(browserTimeZone.id, dateTimeFormat) }}</p>
       </ion-label>
     </ion-item>
         <ion-item lines="none">
       <ion-label>
         <p class="overline">{{ translate("Selected TimeZone") }}</p>
         {{ currentTimeZoneId }}
-        <p v-if="showDateTime">{{ getCurrentTime(currentTimeZoneId, dateTimeFormat) }}</p>
+        <p v-if="showDateTime">{{ commonUtil.getCurrentTime(currentTimeZoneId, dateTimeFormat) }}</p>
       </ion-label>
           <ion-button id="time-zone-modal" data-testid="time-zone-change-btn" slot="end" fill="outline" color="dark">{{ translate("Change") }}</ion-button>
     </ion-item>
@@ -51,7 +51,7 @@
               <ion-radio label-placement="end" justify="start" :value="browserTimeZone.id">
                 <ion-label>
                   {{ browserTimeZone.label }} ({{ browserTimeZone.id }})
-                  <p v-if="showDateTime">{{ getCurrentTime(browserTimeZone.id, dateTimeFormat) }}</p>
+                  <p v-if="showDateTime">{{ commonUtil.getCurrentTime(browserTimeZone.id, dateTimeFormat) }}</p>
                 </ion-label>
               </ion-radio>
             </ion-item>
@@ -74,7 +74,7 @@
                 <ion-radio label-placement="end" justify="start" :value="timeZone.id">
                   <ion-label>
                     {{ timeZone.label }} ({{ timeZone.id }})
-                    <p v-if="showDateTime">{{ getCurrentTime(timeZone.id, dateTimeFormat) }}</p>
+                    <p v-if="showDateTime">{{ commonUtil.getCurrentTime(timeZone.id, dateTimeFormat) }}</p>
                   </ion-label>
                 </ion-radio>
               </ion-item>
@@ -118,22 +118,20 @@ import {
   IonToolbar
 } from '@ionic/vue';
 import { closeOutline, saveOutline } from "ionicons/icons";
-import { computed, onBeforeMount, ref, defineProps, defineEmits } from "vue";
-import { getCurrentTime } from '../utils'
-import { translate, useUserStore } from "@hotwax/dxp-components"
-import { useUserStore as useAppUserStore } from "@/store/user";
-
+import { computed, onBeforeMount, ref } from "vue";
+import { translate, commonUtil } from '@common'
+import { useUserStore } from "@/store/user";
 const userStore = useUserStore();
-const appUserStore = useAppUserStore();
 
-const userProfile = computed(() => appUserStore.getUserProfile)
-const timeZones = computed(() => userStore.getTimeZones)
+
+const userProfile = computed(() => useUserStore().getUserProfile)
+const timeZones = computed(() => useUserStore().getTimeZones)
 const currentTimeZoneId = computed(() => userProfile.value.timeZone)
 
 const isLoading = ref(true);
 const timeZoneModal = ref();
 const queryString = ref('');
-const filteredTimeZones = ref([])
+const filteredTimeZones = ref([]) as any;
 const timeZoneId = ref('')
 // Fetching timeZone of the browser
 const browserTimeZone = ref({
