@@ -1,7 +1,7 @@
 import { ref, onMounted, onUnmounted } from 'vue';
 
 export function useMobile(breakpoint = 991) {
-  const mediaQueryString = `(max-width: ${breakpoint}px)`;
+  const mediaQueryString = `(max-width: ${breakpoint - 1}px)`;
   const mediaQueryList = window.matchMedia(mediaQueryString);
   const isMobile = ref(mediaQueryList.matches);
 
