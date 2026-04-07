@@ -1,6 +1,6 @@
 <template>
   <ion-page>
-    <Filters menu-id="transfers-filter" content-id="filter-content"/>
+    <Filters v-if="isMobile" menu-id="transfers-filter" content-id="filter-content"/>
 
     <ion-header :translucent="true">
       <ion-toolbar>
@@ -281,6 +281,7 @@ import TransferFiltersContent from "@/components/TransferFiltersContent.vue";
 import logger from '@/logger';
 import { useStore } from 'vuex';
 import { computed, ref } from "vue";
+import { useMobile } from '@/composables/useMobile';
 import { STATUSCOLOR } from "@/adapter";
 import { formatUtcDate } from "@/utils"
 
@@ -292,7 +293,7 @@ const groupByOptions = [
   {
     id: "ORDER_ID",
     description: translate("Order item"),
-    selectFields: ["orderId", "orderName", "facilityId", "facilityName", "orderFacilityId", "orderFacilityName", "orderStatusDesc, orderStatusId"],
+    selectFields: ["orderId", "orderName", "facilityId", "facilityName", "orderFacilityId", "orderFacilityName", "orderStatusDesc", "orderStatusId"],
     groupingFields: ["orderId"],
     groupValueSeparator: '-' 
   },
@@ -348,6 +349,8 @@ onIonViewWillEnter(async () => {
   await Promise.allSettled([store.dispatch('order/findTransferOrders', { pageSize: process.env.VUE_APP_VIEW_SIZE, pageIndex: 0, groupByConfig: selectedGroupBy.value }), store.dispatch('util/fetchStatusDesc'), store.dispatch("util/fetchCarriersDetail"), store.dispatch("util/fetchShipmentMethodTypeDesc")])
   isFetchingOrders.value = false;
 })
+
+const isMobile = useMobile();
 
 function updateGroupByFilter(groupById: string) {
   const option = groupByOptions.find(value => value.id === groupById)
