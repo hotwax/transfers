@@ -1,6 +1,7 @@
 import { createApp } from "vue"
 import App from "./App.vue"
 import router from "./router";
+import { createDxpI18n } from '@common';
 
 
 import { IonicVue } from "@ionic/vue";
@@ -30,9 +31,12 @@ import piniaPluginPersistedstate from "pinia-plugin-persistedstate";
 import { logger } from '@common';
 import VueVirtualScroller from 'vue-virtual-scroller';
 import 'vue-virtual-scroller/dist/vue-virtual-scroller.css';
+import localeMessages from '@/locales'
 
 const pinia = createPinia();
 pinia.use(piniaPluginPersistedstate);
+
+export const i18n = createDxpI18n(localeMessages)
 
 const app = createApp(App)
   .use(IonicVue, {
@@ -44,6 +48,7 @@ const app = createApp(App)
   })
   .use(pinia)
   .use(router)
+  .use(i18n)
   .use(VueVirtualScroller)
 
 router.isReady().then(() => {

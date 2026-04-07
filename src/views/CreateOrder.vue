@@ -200,7 +200,7 @@
 import { IonBackButton, IonButton, IonCard, IonCardHeader, IonCardTitle, IonCheckbox, IonChip, IonContent, IonDatetime, IonFab, IonFabButton, IonHeader, IonIcon, IonInput, IonItem, IonLabel, IonModal, IonPage, IonSelect, IonSelectOption, IonSpinner, IonThumbnail, IonTitle, IonToolbar, onIonViewDidEnter, alertController, modalController, popoverController } from '@ionic/vue';
 import { addCircleOutline, checkmarkCircle, checkmarkDoneOutline, ellipsisVerticalOutline, informationCircleOutline, listOutline, sendOutline, storefrontOutline, downloadOutline } from 'ionicons/icons';
 import { computed, ref, watch } from "vue";
-import { commonUtil, emitter, logger, translate } from '@common';
+import { commonUtil, emitter, logger, translate, useSolrSearch } from '@common';
 import Image from '@/components/Image.vue';
 import OrderItemActionsPopover from '@/components/OrderItemActionsPopover.vue';
 import SelectFacilityModal from '@/components/SelectFacilityModal.vue';
@@ -614,15 +614,18 @@ async function findProduct() {
 
   isSearchingProduct.value = true;
   try {
-    const resp = await product.searchProducts({
-      "filters": ['isVirtual: false', `sku: *${queryString.value}*`],
+    const resp = await useSolrSearch().searchProducts({
+      "filters": {
+        "isVirtual": { value: "false" },
+        "sku": { value: `*${queryString.value}*` }
+      },
       "viewSize": 1
     })
-    if (!commonUtil.hasError(resp) && resp.data.response?.docs?.length) {
-      searchedProduct.value = resp.data.response.docs[0];
+    if (resp.products.length) {
+      searchedProduct.value = resp.products[0];
       product.addProductToCached(searchedProduct.value)      
     } else {
-      throw resp.data
+      throw resp
     }
   } catch(err) {
     searchedProduct.value = {}

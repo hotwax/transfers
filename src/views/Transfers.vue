@@ -286,7 +286,6 @@ import { useProductStore } from "@/store/productStore";
 import { useUtilStore } from "@/store/util";
 
 const orderStore = useOrderStore();
-const productStore = useProductStore();
 const utilStore = useUtilStore();
 const userStore = useUserStore();
 

@@ -386,9 +386,5 @@ export const useProductStore = defineStore('productStore', {
       }
     },
   },
-  persist: {
-    paths: [
-      "facilityAddresses"
-    ]
-  }
+  persist: true
 })

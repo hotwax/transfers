@@ -65,7 +65,7 @@ import {
 import { computed, onUnmounted, ref } from "vue";
 import { closeOutline, checkmarkCircle } from "ionicons/icons";
 import Image from "@/components/Image.vue"
-import { commonUtil, logger, translate } from "@common";
+import { commonUtil, logger, translate, useSolrSearch } from "@common";
 import { useOrderStore } from "@/store/order";
 import { useProductStore } from "@/store/productStore";
 import { useProductStore as useProduct } from "@/store/product";
@@ -99,14 +99,16 @@ async function getProducts( vSize?: any, vIndex?: any) {
   const viewIndex = vIndex ? vIndex : 0;
 
   try {
-    const resp = await useProduct().searchProducts({
-      "filters": ['isVirtual: false', 'isVariant: true'],
-      keyword: queryString.value.trim(),
-      viewSize,
-      viewIndex
-    })
+    const payload = {} as any
+    payload.filters["isVirtual"] = { value: "false" };
+    payload.filters["isVariant"] = { value: "true" };
+    payload.keyword = queryString.value.trim();
+    payload.viewSize = viewSize;
+    payload.viewIndex = viewIndex;
 
-    if(!commonUtil.hasError(resp) && resp.data.response?.docs?.length) {
+    const resp = await useSolrSearch().searchProducts(payload)
+
+    if(resp?.products?.length) {
       const productsList = resp.data.response.docs
       if(viewIndex) {
         products.value = products.value.concat(productsList);

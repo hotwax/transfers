@@ -1,7 +1,6 @@
 import { defineStore } from "pinia";
-import { api, commonUtil } from "@common";
+import { api, commonUtil, useSolrSearch } from "@common";
 import { logger } from "@common";
-import { useUserStore } from "@/store/user";
 
 interface ProductState {
   cached: Record<string, any>;
@@ -15,15 +14,6 @@ export const useProductStore = defineStore("product", {
     getProduct: (state) => (productId: string) => state.cached[productId] ? state.cached[productId] : {}
   },
   actions: {
-    async searchProducts(query: any): Promise<any> {
-      const userStore = useUserStore();
-      return api({
-        url: "searchProducts",
-        method: "post",
-        data: query,
-        cache: true
-      });
-    },
     async fetchProducts({ productIds }: { productIds: string[] }) {
       const cachedProductIds = Object.keys(this.cached);
       let viewSize = 0;
@@ -41,15 +31,15 @@ export const useProductStore = defineStore("product", {
 
       let resp;
       try {
-        resp = await this.searchProducts({
-          filters: [`productId: (${productIdFilter})`],
+        resp = await useSolrSearch().searchProducts({
+          filters: { "productId": { value: `(${productIdFilter})` } },
           viewSize
         });
 
-        if (resp.status === 200 && resp.data?.response && !commonUtil.hasError(resp)) {
-          this.addProductToCachedMultiple({ products: resp.data.response.docs });
+        if (resp.products.length) {
+          this.addProductToCachedMultiple({ products: resp.products });
         } else {
-          throw resp.data;
+          throw resp;
         }
       } catch (error) {
         logger.error("Failed to fetch products information", error);

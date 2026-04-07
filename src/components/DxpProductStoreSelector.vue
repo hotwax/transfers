@@ -23,18 +23,18 @@
     
 <script setup lang="ts">
 import { IonCard, IonCardContent, IonCardHeader, IonCardTitle, IonCardSubtitle, IonItem, IonLabel, IonSelect, IonSelectOption } from '@ionic/vue';
-import { useProductStore as useAppProductStore } from '@/store/productStore';
+import { useProductStore } from '@/store/productStore';
 import { computed } from 'vue';
 import { translate } from '@common';
 
 const emit = defineEmits(["updateProductStore"])
 
-const eComStores = computed(() => useAppProductStore().getProductStores) as any; 
-const currentEComStore = computed(() => useAppProductStore().getCurrentEComStore);
+const eComStores = computed(() => useProductStore().getAllProductStores) as any; 
+const currentEComStore = computed(() => useProductStore().getCurrentEComStore);
 
 async function updateProductStore(eComStoreId: any) {
   const selectedProductStore = eComStores.value.find((store: any) => store.productStoreId == eComStoreId)
-  await useAppProductStore().setEComStorePreference(selectedProductStore)
+  await useProductStore().setEComStorePreference(selectedProductStore)
   emit('updateProductStore', selectedProductStore)
 }
 </script>

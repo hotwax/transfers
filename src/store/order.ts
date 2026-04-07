@@ -62,6 +62,7 @@ export const useOrderStore = defineStore("order", {
       return api({
         url: "performFind",
         method: "get",
+        baseURL: commonUtil.getOmsURL(),
         params
       });
     },
@@ -353,16 +354,17 @@ export const useOrderStore = defineStore("order", {
         const resp = await api({
           url: "performFind",
           method: "get",
+          baseURL: commonUtil.getOmsURL(),
           params: {
-          entityName: "Shipment",
-          inputFields: {
-            primaryOrderId: orderId,
-            statusId: "SHIPMENT_CANCELLED",
-            statusId_op: "notEqual"
-          },
-          fieldList: ["shipmentId", "shipmentTypeId", "statusId", "carrierPartyId", "shipmentMethodTypeId"],
-          viewSize: 200,
-          distinct: "Y"
+            entityName: "Shipment",
+            inputFields: {
+              primaryOrderId: orderId,
+              statusId: "SHIPMENT_CANCELLED",
+              statusId_op: "notEqual"
+            },
+            fieldList: ["shipmentId", "shipmentTypeId", "statusId", "carrierPartyId", "shipmentMethodTypeId"],
+            viewSize: 200,
+            distinct: "Y"
           }
         });
 
@@ -378,6 +380,7 @@ export const useOrderStore = defineStore("order", {
                 do {
                   shipmentResp = await api({
                     url: "performFind",
+                    baseURL: commonUtil.getOmsURL(),
                     method: "get",
                     params: {
                       entityName: "ShipmentItemDetail",
@@ -405,6 +408,7 @@ export const useOrderStore = defineStore("order", {
                 const trackingResp = await api({
                   url: "performFind",
                   method: "get",
+                  baseURL: commonUtil.getOmsURL(),
                   params: {
                     entityName: "ShipmentAndRouteSegment",
                     inputFields: {
@@ -431,6 +435,7 @@ export const useOrderStore = defineStore("order", {
                 const statusesResp = await api({
                   url: "performFind",
                   method: "get",
+                  baseURL: commonUtil.getOmsURL(),
                   params: {
                     entityName: "ShipmentStatus",
                     inputFields: {

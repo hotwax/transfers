@@ -72,7 +72,6 @@ const orderStore = useOrderStore();
 const utilStore = useUtilStore();
 const productStore = useProductStore();
 
-const productStores = ref({}) as any;
 const orderStatusIds = ["ORDER_APPROVED", "ORDER_CANCELLED", "ORDER_COMPLETED", "ORDER_CREATED"];
 const statusFlows = [
   {
@@ -94,10 +93,11 @@ const getStatusDesc = computed(() => utilStore.getStatusDesc)
 const shipmentMethods = computed(() => utilStore.getShipmentMethods)
 const carriersList = computed(() => utilStore.getCarriers)
 const facilities = computed(() => productStore.getAllFacilities)
+const productStores = computed(() => productStore.getAllProductStores)
 
 onMounted(async () => {
   await productStore.fetchAllFacilities();
-  productStores.value = await useProductStore().fetchAllProductStores();
+  await useProductStore().fetchAllProductStores();
 })
 
 async function updateAppliedFilters(value: string | boolean, filterName: string) {
