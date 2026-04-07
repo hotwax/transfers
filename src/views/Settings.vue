@@ -45,7 +45,7 @@
 
       <section>
         <DxpProductIdentifier data-testid="settings-product-identifier" />
-        <TimeZoneSwitcher data-testid="settings-timezone-switcher" @timeZoneUpdated="timeZoneUpdated" />
+        <DxpTimeZoneSwitcher data-testid="settings-timezone-switcher"/>
       </section>
     </ion-content>
   </ion-page>
@@ -58,12 +58,12 @@ import Image from "@/components/Image.vue";
 import { openOutline } from "ionicons/icons";
 import { useProductStore } from "@/store/productStore";
 import { logger } from "@common";
-import TimeZoneSwitcher from "@/components/TimeZoneSwitcher.vue"
 import { useUserStore } from "@/store/user";
 import DxpProductStoreSelector from "@/components/DxpProductStoreSelector.vue";
 import DxpAppVersionInfo from "@/components/DxpAppVersionInfo.vue";
 import DxpProductIdentifier from "@/components/DxpProductIdentifier.vue";
 import DxpOmsInstanceNavigator from "@/components/DxpOmsInstanceNavigator.vue";
+import DxpTimeZoneSwitcher from "@/components/DxpTimeZoneSwitcher.vue";
 import { commonUtil, cookieHelper, translate } from "@common";
 import { useAuth } from "@/composables/useAuth";
 
@@ -90,10 +90,6 @@ async function logout() {
   }
 }
 
-async function timeZoneUpdated(tzId: string) {
-  await userStore.setUserTimeZone(tzId)
-}
-
 const refreshProductStoreData = async (selectedProductStore: any) => {
   await productStore.fetchEComStoreDependencies(selectedProductStore?.productStoreId);
   await productStore.fetchProductStoreFacilities(selectedProductStore.productStoreId).catch((error: any) => logger.error(error))
@@ -103,9 +99,6 @@ function goToLaunchpad() {
   window.location.href = `${import.meta.env.VITE_LOGIN_URL}`
 }
 
-function goToOms(token: string, url: string) {
-  window.open(`${url}/control/main?token=${token}`, '_blank');
-}
 </script>
 
 <style scoped>
