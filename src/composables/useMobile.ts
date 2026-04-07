@@ -1,20 +1,20 @@
 import { ref, onMounted, onUnmounted } from 'vue';
 
-export function useMobile(breakpoint = 991) {
-  const mediaQueryString = `(max-width: ${breakpoint - 1}px)`;
+export function useMobile(breakpoint = 990) {
+  const mediaQueryString = `(max-width: ${breakpoint}px)`;
   const mediaQueryList = window.matchMedia(mediaQueryString);
   const isMobile = ref(mediaQueryList.matches);
 
-  function updateIsMobile(e: any) {
+  function updateIsMobile(e: MediaQueryListEvent) {
     isMobile.value = e.matches;
   }
 
   onMounted(() => {
-    mediaQueryList.addEventListener('change', updateIsMobile);
+    mediaQueryList.addEventListener('change', updateIsMobile as EventListener);
   });
 
   onUnmounted(() => {
-    mediaQueryList.removeEventListener('change', updateIsMobile);
+    mediaQueryList.removeEventListener('change', updateIsMobile as EventListener);
   });
 
   return isMobile;
