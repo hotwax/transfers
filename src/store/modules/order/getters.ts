@@ -6,9 +6,6 @@ const getters: GetterTree <OrderState, RootState> = {
   getOrders (state) {
     return state.orders
   },
-  getItemsByGroupId: (state) => (orderId: string) => {
-    return state.orderItemsList[orderId] || []
-  },
   isScrollable: (state) => {
     return state.orders?.length > 0 && state.orders?.length < state.ordersCount
   },

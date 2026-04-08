@@ -28,24 +28,7 @@ async function expectIonSelectValue(page: any, testId: string, expectedValue: st
 }
 
 test.describe('Transfers Listing Filters', () => {
-  test('Group by filter switches listing layout and keeps page stable', async ({ page }) => {
-    await gotoTransfers(page);
-    await waitForTransfersLoadingToSettle(page);
 
-    // ORDER_ID => list-item order cards path
-    await setIonSelectValue(page, 'transfers-groupby-select', 'ORDER_ID');
-    await waitForTransfersLoadingToSettle(page);
-    await expect(page.locator('body')).toContainText(/Transfer orders|No transfer orders found/i);
-
-    // DESTINATION => accordion path
-    await setIonSelectValue(page, 'transfers-groupby-select', 'DESTINATION');
-    await waitForTransfersLoadingToSettle(page);
-    await expect(page.locator('body')).toContainText(/Transfer orders|No transfer orders found/i);
-
-    // Reset back
-    await setIonSelectValue(page, 'transfers-groupby-select', 'ORDER_ID');
-    await waitForTransfersLoadingToSettle(page);
-  });
 
   test('Sort by toggle updates icon state and keeps data fetch healthy', async ({ page }) => {
     await gotoTransfers(page);

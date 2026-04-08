@@ -65,7 +65,6 @@ import { hasError } from "@/adapter";
 import { UtilService } from '@/services/UtilService';
 import logger from '@/logger';
 
-const props = defineProps(['groupByConfig']);
 
 const store = useStore();
 const userStore = useUserStore();
@@ -127,6 +126,6 @@ async function fetchFacilities() {
 
 async function updateAppliedFilters(value: string | boolean, filterName: string) {
   await store.dispatch('order/updateOrdersList', { orders: [], ordersCount: 0 })
-  await store.dispatch('order/updateAppliedFilters', { value, filterName, groupByConfig: props.groupByConfig })
+  await store.dispatch('order/updateAppliedFilters', { value, filterName })
 }
 </script>

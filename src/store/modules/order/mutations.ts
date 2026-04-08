@@ -7,9 +7,6 @@ const mutations: MutationTree <OrderState> = {
     state.orders = payload.orders
     state.ordersCount = payload.ordersCount
   },
-  [types.ORDER_ITEMS_LIST_UPDATED] (state, payload) {
-    state.orderItemsList[payload.groupValue] = payload.items
-  },
   [types.ORDER_FILTERS_UPDATED] (state, payload) {
     state.query[payload.filterName] = payload.value
   },
@@ -29,7 +26,6 @@ const mutations: MutationTree <OrderState> = {
       carrierPartyId: "",
       shipmentMethodTypeId: "",
       sort: 'orderDate desc',
-      groupBy: "ORDER_ID",
       statusFlowId: ""
     }
     state.current = {}
