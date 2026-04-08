@@ -5,7 +5,7 @@
       <p class="overline">{{ translate("Version: ", { appVersion }) }}</p>
     </div>
     <div class="ion-text-end">
-      <p class="overline">{{ translate("Built: ", { builtDateTime: getDateTime(appInfo.builtTime) }) }}</p>
+      <p class="overline">{{ translate("Built: ", { builtTime: getDateTime(appInfo.builtTime) }) }}</p>
       <ion-button v-if="pwaState.updateExists" @click="refreshApp()" fill="outline" color="dark" size="small">{{ translate("Update") }}</ion-button>
     </div>
   </div>
@@ -32,3 +32,12 @@ const appInfo = (import.meta.env.VITE_APP_VERSION_INFO ? JSON.parse(import.meta.
 const appVersion = appInfo.branch ? (appInfo.branch + "-" + appInfo.revision) : appInfo.tag ? appInfo.tag : "";
 const getDateTime = (time: any) => time ? DateTime.fromMillis(time).setZone(userStore.currentTimeZoneId).toLocaleString(DateTime.DATETIME_MED) : "";
 </script>
+
+<style scoped>
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacer-xs) 10px 0px;
+}
+</style>

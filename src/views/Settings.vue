@@ -52,42 +52,36 @@
 </template>
 
 <script setup lang="ts">
-import { IonAvatar, IonButton, IonCard, IonCardContent, IonCardHeader, IonCardSubtitle, IonCardTitle, IonContent, IonHeader, IonIcon, IonItem, IonPage, IonTitle, IonToolbar } from "@ionic/vue";
+import { IonAvatar, IonButton, IonCard, IonCardHeader, IonCardSubtitle, IonCardTitle, IonContent, IonHeader, IonIcon, IonItem, IonPage, IonTitle, IonToolbar } from "@ionic/vue";
 import { computed } from "vue";
 import Image from "@/components/Image.vue";
 import { openOutline } from "ionicons/icons";
+import router from "@/router";
 import { useProductStore } from "@/store/productStore";
-import { logger } from "@common";
 import { useUserStore } from "@/store/user";
 import DxpProductStoreSelector from "@/components/DxpProductStoreSelector.vue";
 import DxpAppVersionInfo from "@/components/DxpAppVersionInfo.vue";
 import DxpProductIdentifier from "@/components/DxpProductIdentifier.vue";
 import DxpOmsInstanceNavigator from "@/components/DxpOmsInstanceNavigator.vue";
 import DxpTimeZoneSwitcher from "@/components/DxpTimeZoneSwitcher.vue";
-import { commonUtil, cookieHelper, translate } from "@common";
+import { logger, translate } from "@common";
 import { useAuth } from "@/composables/useAuth";
+
 
 
 const userStore = useUserStore()
 const productStore = useProductStore()
-const { logout: authLogout } = useAuth()
 
 const userProfile = computed(() => userStore.getUserProfile)
-const oms = computed(() => commonUtil.getOmsURL())
-const omsRedirectionInfo = computed(() => ({
-  url: commonUtil.getOmsURL(),
-  token: cookieHelper().get("token") || ""
-}))
-
 async function logout() {
-  const redirectionUrl = await authLogout({ isUserUnauthorised: false })
-  // if not having redirection url then redirect the user to login
-  if(!redirectionUrl) {
-    const redirectUrl = window.location.origin + '/login'
-    window.location.href = `${import.meta.env.VITE_LOGIN_URL}?isLoggedOut=true&redirectUrl=${redirectUrl}`
-  } else {
-    window.location.href = redirectionUrl
-  }
+  useAuth().logout({ isUserUnauthorised: false }).then((redirectionUrl) => {
+    // redirectionUrl is only present when SSO enables, thus when not present redirect user to login
+    if(!redirectionUrl) {
+      router.replace("/login");
+    } else {
+      window.location.href = redirectionUrl
+    }
+  })
 }
 
 const refreshProductStoreData = async (selectedProductStore: any) => {
