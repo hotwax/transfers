@@ -13,8 +13,8 @@ const orderModule: Module<OrderState, RootState> = {
     query: {
       orderName: "",
       productStoreId: "",
-      facilityId: "",
-      orderFacilityId: "",
+      originFacilityId: "",
+      destinationFacilityId: "",
       orderStatusId: "",
       carrierPartyId: "",
       shipmentMethodTypeId: "",

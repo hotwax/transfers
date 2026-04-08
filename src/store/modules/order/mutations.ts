@@ -20,8 +20,8 @@ const mutations: MutationTree <OrderState> = {
     state.query = {
       orderName: "",
       productStoreId: "",
-      facilityId: "",
-      orderFacilityId: "",
+      originFacilityId: "",
+      destinationFacilityId: "",
       orderStatusId: "",
       carrierPartyId: "",
       shipmentMethodTypeId: "",
