@@ -4,19 +4,12 @@ import store from '@/store';
 
 const findTransferOrders = async (payload: any): Promise<any> => {
   return api({
-    url: 'oms/transferOrders/grouped',
+    url: 'oms/transferOrders',
     method: "GET",
     params: payload
   });
 }
 
-const findTransferOrderItems = async (payload: any): Promise<any> => {
-  return api({
-    url: `oms/transferOrders/items`,
-    method: "GET",
-    params: payload
-  });
-}
 
 const createOrder = async (payload: any): Promise<any> => {
  
@@ -366,7 +359,6 @@ export const OrderService = {
   fetchTransferOrderDetail,
   fetchShippedTransferShipments,
   findTransferOrders,
-  findTransferOrderItems,
   createTransferOrderShipment,
   shipTransferOrderShipment,
   receiveTransferOrder,
