@@ -7,7 +7,14 @@
       </ion-toolbar>
     </ion-header>
     <ion-content>
-      <main data-testid="order-detail-loading" v-if="isFetchingOrderDetail">
+      <StreamingLoader 
+        :tasks="tasks" 
+        :is-open="isLoading" 
+        @dismiss="isLoading = false"
+        @reload="reloadPage"
+        @go-back="goBack"
+      />
+      <main data-testid="order-detail-loading" v-if="isFetchingOrderDetail && !currentOrder.orderId">
         <div class="empty-state">
           <ProgressBar :total-items="currentOrder.totalItems || 0" :loaded-items="currentOrder.loadedItems || 0" v-if="currentOrder.isFetching" />
           <template v-else>
@@ -290,6 +297,7 @@ import { IonBackButton, IonBadge, IonButton, IonButtons, IonCard, IonCardContent
 import { getProductIdentificationValue, translate, useProductIdentificationStore } from '@hotwax/dxp-components';
 import { chevronDownOutline, checkmarkDoneOutline, playOutline, ellipsisVerticalOutline, ticketOutline, downloadOutline, sendOutline, shirtOutline, informationCircleOutline, closeCircleOutline, openOutline, warningOutline } from "ionicons/icons";
 import Image from "@/components/Image.vue";
+import StreamingLoader from "@/components/StreamingLoader.vue";
 import OrderItemDetailActionsPopover from '@/components/OrderItemDetailActionsPopover.vue';
 import ShipmentDetailModal from '@/components/ShipmentDetailModal.vue';
 import CancellationDetailModal from '@/components/CancellationDetailModal.vue';
@@ -299,6 +307,7 @@ import { useOrderQueue } from '@/composables/useProductQueue';
 import { useOrderTimeline } from '@/composables/useOrderTimeline';
 import { computed, ref, watch } from "vue";
 import { useStore } from "vuex";
+import { useRouter } from "vue-router";
 import logger from "@/logger";
 import { OrderService } from "@/services/OrderService";
 import BulkReceiveModal from "@/components/BulkReceiveModal.vue";
@@ -312,6 +321,15 @@ import ProgressBar from "@/components/ProgressBar.vue";
 import { DynamicScroller, DynamicScrollerItem } from 'vue-virtual-scroller';
 
 const store = useStore();
+const router = useRouter();
+const isLoading = ref(false);
+const tasks = ref({
+  order: { label: 'Order details', status: 'pending', errorMessage: '', fullError: null },
+  metadata: { label: 'Status metadata', status: 'pending', errorMessage: '', fullError: null },
+  carriers: { label: 'Carrier information', status: 'pending', errorMessage: '', fullError: null },
+  timeline: { label: 'Order timeline', status: 'pending', errorMessage: '', fullError: null },
+  methods: { label: 'Shipment methods', status: 'pending', errorMessage: '', fullError: null }
+} as any);
 
 async function openMobileActions() {
   const actions = OrderActionValidator.getFooterActions(currentOrder.value, selectedItemSeqIds.value, flattenedScrollerItems.value.length > 0);
@@ -699,9 +717,57 @@ function handleDiscrepancyFilterChange(value: string) {
 }
 
 onIonViewWillEnter(async () => {
-  await store.dispatch("order/fetchOrderDetails", props.orderId)
-  await Promise.allSettled([store.dispatch('util/fetchStatusDesc'), store.dispatch("util/fetchCarriersDetail"), fetchOrderTimeline(), store.dispatch("util/fetchShipmentMethodTypeDesc")])
+  isLoading.value = true;
+  Object.keys(tasks.value).forEach(key => tasks.value[key].status = 'pending');
+
+  try {
+    await store.dispatch("order/fetchOrderDetails", props.orderId)
+    tasks.value.order.status = 'success';
+  } catch (e: any) {
+    tasks.value.order.status = 'error';
+    tasks.value.order.errorMessage = translate('Failed to fetch order details');
+    tasks.value.order.fullError = e;
+  }
+
+  await Promise.allSettled([
+    store.dispatch('util/fetchStatusDesc')
+      .then(() => tasks.value.metadata.status = 'success')
+      .catch((e) => {
+        tasks.value.metadata.status = 'error';
+        tasks.value.metadata.errorMessage = translate('Failed to load status metadata');
+        tasks.value.metadata.fullError = e;
+      }),
+    store.dispatch("util/fetchCarriersDetail")
+      .then(() => tasks.value.carriers.status = 'success')
+      .catch((e) => {
+        tasks.value.carriers.status = 'error';
+        tasks.value.carriers.errorMessage = translate('Failed to retrieve carrier information');
+        tasks.value.carriers.fullError = e;
+      }),
+    fetchOrderTimeline()
+      .then(() => tasks.value.timeline.status = 'success')
+      .catch((e) => {
+        tasks.value.timeline.status = 'error';
+        tasks.value.timeline.errorMessage = translate('Failed to load order timeline');
+        tasks.value.timeline.fullError = e;
+      }),
+    store.dispatch("util/fetchShipmentMethodTypeDesc")
+      .then(() => tasks.value.methods.status = 'success')
+      .catch((e) => {
+        tasks.value.methods.status = 'error';
+        tasks.value.methods.errorMessage = translate('Failed to fetch shipment methods');
+        tasks.value.methods.fullError = e;
+      })
+  ])
+
   carrierMethods.value = shipmentMethodsByCarrier.value[currentOrder.value.carrierPartyId]
+
+  const hasError = Object.values(tasks.value).some((task: any) => task.status === 'error');
+  if (!hasError) {
+    setTimeout(() => {
+      isLoading.value = false;
+    }, 500);
+  }
 })
 
 onIonViewWillLeave(() => {
@@ -840,6 +906,14 @@ async function addProduct() {
 }
 
 
+
+function reloadPage() {
+  window.location.reload();
+}
+
+function goBack() {
+  router.back();
+}
 
 async function viewEventDetails(event: any) {
   if (!event.eventType) return;
