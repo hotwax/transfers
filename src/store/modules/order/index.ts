@@ -10,21 +10,20 @@ const orderModule: Module<OrderState, RootState> = {
   state: {
     orders: [],
     ordersCount: 0,
-    orderItemsList: [],
     query: {
       orderName: "",
       productStoreId: "",
-      facilityId: "",
-      orderFacilityId: "",
+      originFacilityId: "",
+      destinationFacilityId: "",
       orderStatusId: "",
       carrierPartyId: "",
       shipmentMethodTypeId: "",
       sort: 'orderDate desc',
-      groupBy: "ORDER_ID",
       statusFlowId: ""
     },
     current: {},
-    orderReceipts: []
+    orderReceipts: [],
+    isFetching: false
   },
   getters,
   actions,

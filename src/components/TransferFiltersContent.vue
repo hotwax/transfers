@@ -12,13 +12,13 @@
       </ion-select>
     </ion-item>
     <ion-item lines="none">
-      <ion-select data-testid="transfer-filter-origin-select" :label="translate('Origin')" interface="popover" :value="query.facilityId" @ionChange="updateAppliedFilters($event['detail'].value, 'facilityId')">
+      <ion-select data-testid="transfer-filter-origin-select" :label="translate('Origin')" interface="popover" :value="query.originFacilityId" @ionChange="updateAppliedFilters($event['detail'].value, 'originFacilityId')">
         <ion-select-option value="">{{ translate("All") }}</ion-select-option>
         <ion-select-option v-for="facility in facilities" :key="facility.facilityId" :value="facility.facilityId">{{ facility.facilityName ? facility.facilityName : facility.facilityId }}</ion-select-option>
       </ion-select>
     </ion-item>
     <ion-item lines="none">
-      <ion-select data-testid="transfer-filter-destination-select" :label="translate('Destination')" interface="popover" :value="query.orderFacilityId" @ionChange="updateAppliedFilters($event['detail'].value, 'orderFacilityId')">
+      <ion-select data-testid="transfer-filter-destination-select" :label="translate('Destination')" interface="popover" :value="query.destinationFacilityId" @ionChange="updateAppliedFilters($event['detail'].value, 'destinationFacilityId')">
         <ion-select-option value="">{{ translate("All") }}</ion-select-option>
         <ion-select-option v-for="facility in facilities" :key="facility.facilityId" :value="facility.facilityId">{{ facility.facilityName ? facility.facilityName : facility.facilityId }}</ion-select-option>
       </ion-select>
@@ -65,7 +65,6 @@ import { hasError } from "@/adapter";
 import { UtilService } from '@/services/UtilService';
 import logger from '@/logger';
 
-const props = defineProps(['groupByConfig']);
 
 const store = useStore();
 const userStore = useUserStore();
@@ -126,7 +125,6 @@ async function fetchFacilities() {
 }
 
 async function updateAppliedFilters(value: string | boolean, filterName: string) {
-  await store.dispatch('order/updateOrdersList', { orders: [], ordersCount: 0 })
-  await store.dispatch('order/updateAppliedFilters', { value, filterName, groupByConfig: props.groupByConfig })
+  await store.dispatch('order/updateAppliedFilters', { value, filterName })
 }
 </script>

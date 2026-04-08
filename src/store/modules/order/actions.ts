@@ -10,45 +10,27 @@ import store from "@/store"
 const actions: ActionTree<OrderState, RootState> = {
   async findTransferOrders({ commit, state }, params) {
     let resp, ordersList, ordersCount = 0;
-    const productIds = [] as any;
 
     // Build payload
     const payload = {
       orderByField: state.query.sort,
       pageSize: params.pageSize,
       pageIndex: params.pageIndex,
-      ...(params.groupByConfig?.selectFields?.length && {
-        fieldsToSelect: params.groupByConfig.selectFields.join(',')
-      })
+      fieldsToSelect: ["orderId", "orderName", "facilityId", "orderFacilityId", "orderStatusId", "orderStatusDesc", "orderDate", "orderExternalId"]
     } as any
 
-    // include only non-empty filters from state.query (exclude groupBy and sort)
+    // include only non-empty filters from state.query (exclude sort)
     Object.entries(state.query).forEach(([fieldName, fieldValue]) => {
-      if(fieldValue != null && fieldValue !== '' && fieldName !== 'groupBy' && fieldName !== 'sort') {
+      if(fieldValue != null && fieldValue !== '' && fieldName !== 'sort') {
         payload[fieldName] = fieldValue
       }
     })
 
     try {
+      if(!params.pageIndex || params.pageIndex == 0) commit(types.ORDER_IS_FETCHING_UPDATED, true)
       resp = await OrderService.findTransferOrders(payload)
       if(!hasError(resp)) {
-        // groupBy cases: ORDER_ID / DESTINATION / ORIGIN → single field
-        // DESTINATION_PRODUCT / ORIGIN_PRODUCT → multiple fields joined with '-'
-        const groupFields = params.groupByConfig?.groupingFields
-
-        const orders = resp.data.orders.map((order: any) => {
-          if(order.productId) productIds.push(order.productId)
-          return {
-            ...order,
-            // We are using this field in ion-accordion to identify the expanded accordion
-            groupValue: groupFields?.map((field: any) => order[field]).join('-')
-          }
-        })
-
-        if(productIds.length) {
-          await this.dispatch('product/fetchProducts', { productIds })
-        }
-
+        const orders = resp.data.orders
         ordersList = payload.pageIndex > 0 ? (state.orders).concat(orders) : orders
         ordersCount = resp.data.ordersCount
       } else {
@@ -58,86 +40,13 @@ const actions: ActionTree<OrderState, RootState> = {
       logger.error(error)
     }
     commit(types.ORDER_LIST_UPDATED, { orders: ordersList, ordersCount });
+    if(!params.pageIndex || params.pageIndex == 0) commit(types.ORDER_IS_FETCHING_UPDATED, false)
     return resp;
   },
 
-  // Fetch transfer order items, group them by orderId, accumulate quantities, and update state
-  async findTransferOrderItems({ commit, state }, { groupValue, groupByConfig}) {
-    // Filter out already fetched orderIds to avoid duplicate calls
-    const productIds: any = new Set()
-    const groupedItems: any = [];
-    let resp, pageIndex = 0
-    const pageSize = 100
-
-    try {
-      // Build API payload from grouping fields
-      const values = groupValue.split(groupByConfig?.groupValueSeparator)
-      const payload: any = {}
-      groupByConfig?.groupingFields.forEach((field: string, key: number) => payload[field] = values[key])
-      // Fetch items in batches until last page
-      do {
-        payload.pageSize = pageSize
-        payload.pageIndex = pageIndex
-        resp = await OrderService.findTransferOrderItems(payload)
-
-        if(!hasError(resp) && resp?.data?.transferOrderItems?.length) {
-          // If grouping by ORDER_ID → no grouping
-          if(groupByConfig?.id === "ORDER_ID") {
-            resp.data.transferOrderItems.forEach((item: any) => {
-              if(item.productId) productIds.add(item.productId)
-              groupedItems.push({
-                ...item,
-                shippedQty: item.shippedQuantity || 0,
-                receivedQty: item.receivedQuantity || 0,
-              })
-            })
-          } else {
-            // Group items by orderId & accumulate quantities
-            resp.data.transferOrderItems.forEach((item: any) => {
-              if(item.productId) productIds.add(item.productId)
-              const key = item.orderId
-              if(!groupedItems[key]) {
-                groupedItems[key] = {
-                  ...item,
-                  shippedQty: item.shippedQuantity || 0,
-                  receivedQty: item.receivedQuantity || 0,
-                  quantity: item.quantity || 0
-                }
-              } else {
-                groupedItems[key].quantity += item.quantity || 0
-                groupedItems[key].shippedQty += item.shippedQuantity || 0
-                groupedItems[key].receivedQty += item.receivedQuantity || 0
-              }
-            })
-          }
-          pageIndex++
-        } else {
-          throw resp.data
-        }
-      } while (resp?.data?.transferOrderItems?.length >= pageSize)
-
-      const items = Object.values(groupedItems)
-
-      // Fetch product details in batches (to avoid payload limit)
-      const productIdArray = [...productIds]
-      const batchSize = 250, productIdBatches = []
-      while (productIdArray.length) {
-        productIdBatches.push(productIdArray.splice(0, batchSize))
-      }
-      await Promise.allSettled(productIdBatches.map((productIds) => this.dispatch('product/fetchProducts', { productIds })))
-
-      commit(types.ORDER_ITEMS_LIST_UPDATED, { groupValue, items })
-      return resp
-    } catch (error) {
-      logger.error(error)
-      commit(types.ORDER_ITEMS_LIST_UPDATED, { groupValue, items: [] })
-      return resp
-    }
-  },
-
-  async updateAppliedFilters({ commit, dispatch }, { value, filterName, groupByConfig }) {
+  async updateAppliedFilters({ commit, dispatch }, { value, filterName }) {
     commit(types.ORDER_FILTERS_UPDATED, { value, filterName })
-    await dispatch("findTransferOrders", { pageSize: process.env.VUE_APP_VIEW_SIZE, pageIndex: 0, groupByConfig })
+    await dispatch("findTransferOrders", { pageSize: process.env.VUE_APP_VIEW_SIZE, pageIndex: 0 })
   },
   
   async fetchOrderDetails({ commit, state }, orderId) {

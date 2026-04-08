@@ -7,9 +7,6 @@ const mutations: MutationTree <OrderState> = {
     state.orders = payload.orders
     state.ordersCount = payload.ordersCount
   },
-  [types.ORDER_ITEMS_LIST_UPDATED] (state, payload) {
-    state.orderItemsList[payload.groupValue] = payload.items
-  },
   [types.ORDER_FILTERS_UPDATED] (state, payload) {
     state.query[payload.filterName] = payload.value
   },
@@ -23,19 +20,21 @@ const mutations: MutationTree <OrderState> = {
     state.query = {
       orderName: "",
       productStoreId: "",
-      facilityId: "",
-      orderFacilityId: "",
+      originFacilityId: "",
+      destinationFacilityId: "",
       orderStatusId: "",
       carrierPartyId: "",
       shipmentMethodTypeId: "",
       sort: 'orderDate desc',
-      groupBy: "ORDER_ID",
       statusFlowId: ""
     }
     state.current = {}
   },
   [types.ORDER_RECEIPTS]( state , payload ){
     state.orderReceipts = payload;
+  },
+  [types.ORDER_IS_FETCHING_UPDATED](state, payload) {
+    state.isFetching = payload
   }
 }
 export default mutations;
