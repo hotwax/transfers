@@ -323,13 +323,20 @@ import { DynamicScroller, DynamicScrollerItem } from 'vue-virtual-scroller';
 const store = useStore();
 const router = useRouter();
 const isLoading = ref(false);
-const tasks = ref({
+interface Task {
+  label: string;
+  status: 'pending' | 'success' | 'error';
+  errorMessage: string;
+  fullError: any;
+}
+
+const tasks = ref<Record<string, Task>>({
   order: { label: 'Order details', status: 'pending', errorMessage: '', fullError: null },
   metadata: { label: 'Status metadata', status: 'pending', errorMessage: '', fullError: null },
   carriers: { label: 'Carrier information', status: 'pending', errorMessage: '', fullError: null },
   timeline: { label: 'Order timeline', status: 'pending', errorMessage: '', fullError: null },
   methods: { label: 'Shipment methods', status: 'pending', errorMessage: '', fullError: null }
-} as any);
+});
 
 async function openMobileActions() {
   const actions = OrderActionValidator.getFooterActions(currentOrder.value, selectedItemSeqIds.value, flattenedScrollerItems.value.length > 0);
@@ -716,7 +723,7 @@ function handleDiscrepancyFilterChange(value: string) {
   selectedStatusFilter.value = "ALL";
 }
 
-onIonViewWillEnter(async () => {
+async function fetchOrderDetails() {
   isLoading.value = true;
   Object.keys(tasks.value).forEach(key => tasks.value[key].status = 'pending');
 
@@ -768,6 +775,10 @@ onIonViewWillEnter(async () => {
       isLoading.value = false;
     }, 500);
   }
+}
+
+onIonViewWillEnter(async () => {
+  await fetchOrderDetails();
 })
 
 onIonViewWillLeave(() => {
@@ -908,10 +919,11 @@ async function addProduct() {
 
 
 function reloadPage() {
-  window.location.reload();
+  fetchOrderDetails();
 }
 
 function goBack() {
+  isLoading.value = false;
   router.back();
 }
 

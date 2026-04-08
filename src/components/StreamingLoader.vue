@@ -1,5 +1,5 @@
 <template>
-  <ion-modal :is-open="isOpen" class="streaming-loader-modal">
+  <ion-modal :is-open="isOpen" :backdrop-dismiss="false" class="streaming-loader-modal">
     <div class="loader-container">
       <ion-card class="loader-card">
         <ion-card-header>
@@ -135,8 +135,9 @@ export default defineComponent({
       if (!errorTask) return '';
       
       const e = errorTask.fullError;
-      // Try to get a better message if available from response
-      return e?.response?.data?.errors || e?.message || errorTask.errorMessage || translate('An unexpected error occurred');
+      const errors = e?.response?.data?.errors;
+      // Handle array of errors or single error message
+      return (Array.isArray(errors) ? errors.join(', ') : errors) || e?.message || errorTask.errorMessage || translate('An unexpected error occurred');
     });
 
     const diagnosticData = computed(() => {
