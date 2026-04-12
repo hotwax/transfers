@@ -8,18 +8,52 @@
       </ion-buttons>
       <ion-title>{{ translate(modalTitle) }}</ion-title>
     </ion-toolbar>
+    <ion-progress-bar :value="discrepancyImpact.progressValue" :color="discrepancyImpact.color"></ion-progress-bar>
   </ion-header>
 
   <ion-content>
     <div v-if="!isProcessing && !isCompleted">
-      <div class="ion-padding">
-        <p v-if="props.actionType === 'RECEIVE'">{{ translate("You are about to bulk receive") }} {{ itemsToProcess.length }} {{ translate("items.") }}</p>
-        <p v-else-if="props.actionType === 'FULFILL'">{{ translate("You are about to bulk fulfill") }} {{ itemsToProcess.length }} {{ translate("items.") }}</p>
-        <p>
-          {{ itemsToProcess.length }} {{ translate("items") }} &nbsp;·&nbsp;
-          {{ totalQty }} {{ translate("units") }}
-        </p>
-      </div>
+      <ion-list lines="none">
+        <ion-list-header>
+          <p v-if="props.actionType === 'RECEIVE'">{{ translate("You are about to bulk receive") }} {{
+            itemsToProcess.length }} {{ translate("items.") }}</p>
+          <p v-else-if="props.actionType === 'FULFILL'">{{ translate("You are about to bulk fulfill") }} {{
+            itemsToProcess.length }} {{ translate("items.") }}</p>
+        </ion-list-header>
+        <ion-accordion-group>
+          <ion-accordion value="summary">
+            <ion-item slot="header" color="light">
+              <ion-label>
+                {{ translate("To be received") }}
+                <p>{{ totalQty }} {{ translate("units") }}</p>
+              </ion-label>
+              <ion-badge slot="end" :color="discrepancyImpact.color">
+                {{ discrepancyImpact.delta > 0 ? '+' : '' }}{{ discrepancyImpact.delta }} {{ translate("discrepancy") }}
+              </ion-badge>
+            </ion-item>
+            <div slot="content">
+              <ion-item lines="none">
+                <ion-label>
+                  <h3>{{ translate("Total Ordered") }}</h3>
+                  <p>{{ summaryTotals.orderedUnits }} {{ translate("units") }}</p>
+                </ion-label>
+              </ion-item>
+              <ion-item lines="none">
+                <ion-label>
+                  <h3>{{ translate("Total Shipped") }}</h3>
+                  <p>{{ summaryTotals.shippedUnits }} {{ translate("units") }}</p>
+                </ion-label>
+              </ion-item>
+              <ion-item lines="none">
+                <ion-label>
+                  <h3>{{ translate("Already Received") }}</h3>
+                  <p>{{ summaryTotals.receivedUnits }} {{ translate("units") }}</p>
+                </ion-label>
+              </ion-item>
+            </div>
+          </ion-accordion>
+        </ion-accordion-group>
+      </ion-list>
 
       <ion-list>
         <!-- Receive mode selector (RECEIVE only) -->
@@ -27,13 +61,25 @@
           <ion-list-header data-testid="bulk-modal-receive-as-header">{{ translate("Receive as") }}</ion-list-header>
           <ion-radio-group data-testid="bulk-modal-receive-mode-group" :value="receiveMode" @ionChange="receiveMode = $event.detail.value">
             <ion-item>
-              <ion-radio data-testid="bulk-modal-receive-mode-issued" value="ISSUED" class="ion-text-wrap">{{ translate("Remaining issued quantity") }}</ion-radio>
+              <ion-radio data-testid="bulk-modal-receive-mode-issued" value="ISSUED" class="ion-text-wrap" :disabled="!isIssuedQtyAvailable">
+                <ion-label>{{ translate("Remaining shipped quantity") }}
+                  <p v-if="isIssuedQtyAvailable">{{ getModePreview('ISSUED') }} {{ translate("unit discrepancy") }}</p>
+                </ion-label>
+              </ion-radio>
             </ion-item>
             <ion-item>
-              <ion-radio data-testid="bulk-modal-receive-mode-ordered" value="ORDERED" class="ion-text-wrap">{{ translate("Remaining ordered quantity") }}</ion-radio>
+              <ion-radio data-testid="bulk-modal-receive-mode-ordered" value="ORDERED" class="ion-text-wrap">
+                <ion-label>{{ translate("Remaining ordered quantity") }}
+                  <p>{{ getModePreview('ORDERED') > 0 ? '+' : '' }}{{ getModePreview('ORDERED') }} {{ translate("unit discrepancy") }}</p>
+                </ion-label>
+              </ion-radio>
             </ion-item>
             <ion-item>
-              <ion-radio data-testid="bulk-modal-receive-mode-close" value="CLOSE" class="ion-text-wrap">{{ translate("Close items with 0 receipt") }}</ion-radio>
+              <ion-radio data-testid="bulk-modal-receive-mode-close" value="CLOSE" class="ion-text-wrap">
+                <ion-label>{{ translate("Close items with 0 receipt") }}
+                  <p>{{ getModePreview('CLOSE') }} {{ translate("unit discrepancy") }}</p>
+                </ion-label>  
+              </ion-radio>
             </ion-item>
           </ion-radio-group>
         </template>
@@ -102,6 +148,9 @@
 
 <script setup lang="ts">
 import { 
+  IonAccordion,
+  IonAccordionGroup,
+  IonBadge,
   IonButton, 
   IonButtons, 
   IonContent, 
@@ -116,7 +165,6 @@ import {
   IonRadioGroup,
   IonTitle, 
   IonToolbar, 
-  IonText,
   modalController 
 } from "@ionic/vue";
 import { ref, computed } from "vue";
@@ -155,9 +203,18 @@ const completedItemsCount = ref(0);
 const successCount = ref(0);
 const errorCount = ref(0);
 
+const itemsToProcess = computed(() => {
+  if (props.actionType === 'RECEIVE') {
+    return props.items.filter((item: any) => !OrderActionValidator.isItemPendingFulfillment(props.order, item));
+  }
+  return props.items;
+});
+
+const isIssuedQtyAvailable = computed(() => itemsToProcess.value.some((item: any) => (item.totalIssuedQuantity || 0) > 0));
+
 // Receive mode: how to calculate quantityAccepted
 // ORDERED = remaining ordered qty, ISSUED = remaining issued qty, CLOSE = 0
-const receiveMode = ref<'ORDERED' | 'ISSUED' | 'CLOSE'>('ISSUED');
+const receiveMode = ref<'ORDERED' | 'ISSUED' | 'CLOSE'>(isIssuedQtyAvailable.value ? 'ISSUED' : 'ORDERED');
 
 const modalTitle = computed(() => {
   return props.actionType === 'FULFILL' ? "Bulk Fulfill" : "Bulk Receive";
@@ -170,27 +227,50 @@ const pendingFulfillmentItemsCount = computed(() => {
   return 0;
 });
 
-const itemsToProcess = computed(() => {
-  if (props.actionType === 'RECEIVE') {
-    return props.items.filter((item: any) => !OrderActionValidator.isItemPendingFulfillment(props.order, item));
-  }
-  return props.items;
-});
-
-function getReceiveQty(item: any): number {
+function getReceiveQtyForMode(item: any, mode: string): number {
   if (props.actionType !== 'RECEIVE') {
     // FULFILL: qty not yet shipped
     return Math.max(0, (item.quantity || 0) - (item.shippedQty || 0));
   }
-  if (receiveMode.value === 'ORDERED') {
+  if (mode === 'ORDERED') {
     return Math.max(0, (item.quantity || 0) - (item.receivedQty || 0));
   }
-  if (receiveMode.value === 'ISSUED') {
+  if (mode === 'ISSUED') {
     return Math.max(0, (item.totalIssuedQuantity || 0) - (item.receivedQty || 0));
   }
   // CLOSE
   return 0;
 }
+
+function getReceiveQty(item: any): number {
+  return getReceiveQtyForMode(item, receiveMode.value);
+}
+
+const summaryTotals = computed(() => {
+  return itemsToProcess.value.reduce((acc: any, item: any) => {
+    acc.orderedUnits += (item.quantity || 0);
+    acc.shippedUnits += (item.totalIssuedQuantity || 0);
+    acc.receivedUnits += (item.receivedQty || 0);
+    return acc;
+  }, { orderedUnits: 0, shippedUnits: 0, receivedUnits: 0 });
+});
+
+const getModePreview = (mode: string) => {
+  const toReceive = itemsToProcess.value.reduce((sum: number, item: any) => sum + getReceiveQtyForMode(item, mode), 0);
+  const delta = (summaryTotals.value.receivedUnits + toReceive) - summaryTotals.value.shippedUnits;
+  return delta;
+}
+
+const discrepancyImpact = computed(() => {
+  const delta = getModePreview(receiveMode.value);
+  const newReceivedTotal = summaryTotals.value.receivedUnits + totalQty.value;
+  const progressValue = summaryTotals.value.shippedUnits > 0 ? newReceivedTotal / summaryTotals.value.shippedUnits : (newReceivedTotal > 0 ? 1 : 0);
+  return {
+    delta,
+    progressValue,
+    color: delta === 0 ? 'success' : 'danger'
+  }
+});
 
 const totalQty = computed(() =>
   itemsToProcess.value.reduce((sum: number, item: any) => sum + getReceiveQty(item), 0)
