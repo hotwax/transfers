@@ -165,6 +165,7 @@ import {
   IonRadioGroup,
   IonTitle, 
   IonToolbar, 
+  IonText,
   modalController 
 } from "@ionic/vue";
 import { ref, computed } from "vue";
@@ -227,7 +228,7 @@ const pendingFulfillmentItemsCount = computed(() => {
   return 0;
 });
 
-function getReceiveQtyForMode(item: any, mode: string): number {
+function getReceiveQtyForMode(item: any, mode: 'ORDERED' | 'ISSUED' | 'CLOSE'): number {
   if (props.actionType !== 'RECEIVE') {
     // FULFILL: qty not yet shipped
     return Math.max(0, (item.quantity || 0) - (item.shippedQty || 0));
@@ -247,7 +248,7 @@ function getReceiveQty(item: any): number {
 }
 
 const summaryTotals = computed(() => {
-  return itemsToProcess.value.reduce((acc: any, item: any) => {
+  return itemsToProcess.value.reduce((acc: { orderedUnits: number, shippedUnits: number, receivedUnits: number }, item: any) => {
     acc.orderedUnits += (item.quantity || 0);
     acc.shippedUnits += (item.totalIssuedQuantity || 0);
     acc.receivedUnits += (item.receivedQty || 0);
@@ -255,11 +256,17 @@ const summaryTotals = computed(() => {
   }, { orderedUnits: 0, shippedUnits: 0, receivedUnits: 0 });
 });
 
-const getModePreview = (mode: string) => {
-  const toReceive = itemsToProcess.value.reduce((sum: number, item: any) => sum + getReceiveQtyForMode(item, mode), 0);
-  const delta = (summaryTotals.value.receivedUnits + toReceive) - summaryTotals.value.shippedUnits;
-  return delta;
-}
+const modeDeltas = computed(() => {
+  const totals = summaryTotals.value;
+  const modes = ['ISSUED', 'ORDERED', 'CLOSE'] as const;
+  return modes.reduce((acc, mode) => {
+    const toReceive = itemsToProcess.value.reduce((sum: number, item: any) => sum + getReceiveQtyForMode(item, mode), 0);
+    acc[mode] = (totals.receivedUnits + toReceive) - totals.shippedUnits;
+    return acc;
+  }, {} as Record<string, number>);
+});
+
+const getModePreview = (mode: 'ORDERED' | 'ISSUED' | 'CLOSE') => modeDeltas.value[mode];
 
 const discrepancyImpact = computed(() => {
   const delta = getModePreview(receiveMode.value);
