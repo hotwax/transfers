@@ -5,7 +5,7 @@ const defaultProductStoreSettings = JSON.parse(import.meta.env.VITE_DEFAULT_PROD
 
 export const useProductStore = defineStore('productStore', {
   state: () => ({
-    currentEComStore: {
+    currentProductStore: {
       facilities: [] as any[]
     } as any,
     settings: {
@@ -28,9 +28,9 @@ export const useProductStore = defineStore('productStore', {
   }),
 
   getters: {
-    getCurrentEComStore: (state) => state.currentEComStore,
+    getCurrentProductStore: (state) => state.currentProductStore,
     getAllFacilities: (state) => state.facilities,
-    getProductStoreFacilities: (state) => state.currentEComStore.facilities || [],
+    getProductStoreFacilities: (state) => state.currentProductStore.facilities || [],
     getAllProductStores: (state) => state.productStores,
     getSettings: (state) => state.settings,
     getProductIdentificationPref: (state) => state.settings.productIdentifier.productIdentificationPref,
@@ -40,9 +40,9 @@ export const useProductStore = defineStore('productStore', {
   },
 
   actions: {
-    async setCurrentEComStore(store: any) {
-      this.currentEComStore = store
-      await this.fetchEComStoreDependencies(store.productStoreId)
+    async setCurrentProductStore(store: any) {
+      this.currentProductStore = store
+      await this.fetchProductStoreDependencies(store.productStoreId)
     },
     async fetchAllFacilities() {
       let facilities = []
@@ -110,7 +110,7 @@ export const useProductStore = defineStore('productStore', {
         logger.error(error);
       }
 
-      this.currentEComStore.facilities = facilities;
+      this.currentProductStore.facilities = facilities;
     },
     async fetchProductStoreDetails(payload: any): Promise<any> {
       return api({
@@ -201,18 +201,18 @@ export const useProductStore = defineStore('productStore', {
         const preferredStoreId = preferredStoreResp.data?.[0]?.preferenceValue
         if (preferredStoreId) {
           const store = this.productStores?.find((store: any) => store.productStoreId === preferredStoreId);
-          store && this.setCurrentEComStore(store)
+          store && this.setCurrentProductStore(store)
         }
       } catch (err) {
         logger.error('Favourite product store not found', err)
       }
     },
-    async fetchEComStoreDependencies(productStoreId: string) {
+    async fetchProductStoreDependencies(productStoreId: string) {
       await useProductStore().fetchProductStoreSettings(productStoreId)
         .catch((error) => logger.error(error))
     },
 
-    async setEComStorePreference(payload: any) {
+    async setProductStorePreference(payload: any) {
       const userStore = useUserStore();
       try {
         await api({
@@ -227,7 +227,7 @@ export const useProductStore = defineStore('productStore', {
       } catch (error) {
         console.error('error', error)
       }
-      this.currentEComStore = payload;
+      this.currentProductStore = payload;
     },
     async fetchProductStoreSettings(productStoreId: string) {
       const productStoreSettings = {} as any

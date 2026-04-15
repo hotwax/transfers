@@ -86,7 +86,7 @@ onMounted(async () => {
     userProfile.value.timeZone && (Settings.defaultZone = userProfile.value.timeZone);
   }
   if(userToken.value) {
-    const currentProductStore : any = productStore.getCurrentEComStore;
+    const currentProductStore : any = productStore.getCurrentProductStore;
     await Promise.all([
       productStore.fetchProductStoreSettings(currentProductStore.productStoreId).catch((error) => logger.error(error)),
       productStore.fetchProductStoreFacilities(currentProductStore.productStoreId).catch((error) => logger.error(error))

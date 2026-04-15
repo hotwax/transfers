@@ -299,7 +299,7 @@ watch(queryString, (value) => {
 onIonViewDidEnter(async () => {
   emitter.emit("presentLoader")
   stores.value = useProductStore().productStores
-  const currentProductStoreId = (useProductStore().getCurrentEComStore as any)?.productStoreId || "";
+  const currentProductStoreId = (useProductStore().getCurrentProductStore as any)?.productStoreId || "";
   currentOrder.value.productStoreId = currentProductStoreId
   await Promise.allSettled([utilStore.fetchStoreCarrierAndMethods(currentProductStoreId), utilStore.fetchCarriersDetail()])
   await fetchProductStoreDetails(currentProductStoreId);

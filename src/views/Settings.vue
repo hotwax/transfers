@@ -85,7 +85,7 @@ async function logout() {
 }
 
 const refreshProductStoreData = async (selectedProductStore: any) => {
-  await productStore.fetchEComStoreDependencies(selectedProductStore?.productStoreId);
+  await productStore.fetchProductStoreDependencies(selectedProductStore?.productStoreId);
   await productStore.fetchProductStoreFacilities(selectedProductStore.productStoreId).catch((error: any) => logger.error(error))
 };
 
