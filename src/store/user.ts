@@ -11,6 +11,7 @@ interface UserState {
     registration: any
   }
   timeZones: any[]
+  oms: any
 }
 
 export const useUserStore = defineStore("user", {
@@ -21,7 +22,8 @@ export const useUserStore = defineStore("user", {
       updateExists: false,
       registration: null
     },
-    timeZones: []
+    timeZones: [],
+    oms: ""
   }),
   getters: {
     getTimeZones: (state) => state.timeZones,
@@ -71,35 +73,6 @@ export const useUserStore = defineStore("user", {
       this.pwaState.registration = payload.registration;
       this.pwaState.updateExists = payload.updateExists;
     },
-    async samlLogin(token: string, expirationTime: string) {
-      try {
-        cookieHelper().set("token", token)
-        cookieHelper().set("expirationTime", expirationTime)
-
-        try {
-          const userProfileResp = await api({
-            url: "admin/user/profile",
-            method: "get",
-            baseURL: commonUtil.getMaargURL()
-          }) as any;
-          this.current = userProfileResp.data
-        } catch (error: any) {
-          useAuth().clearAuth();
-          commonUtil.showToast(translate("Failed to fetch user profile information"));
-          console.error("error", error);
-          return Promise.reject(new Error(error));
-        }
-
-        await this.fetchPermissions();
-      } catch (error: any) {
-        // If any of the API call in try block has status code other than 2xx it will be handled in common catch block.
-        // TODO Check if handling of specific status codes is required.
-        commonUtil.showToast(translate('Something went wrong while login. Please contact administrator.'));
-        console.error("error: ", error);
-        return Promise.reject(new Error(error))
-      }
-    },
-
     async fetchUserProfile() {
       try {
         const userProfileResp = await api({
@@ -107,6 +80,7 @@ export const useUserStore = defineStore("user", {
           method: "get",
         }) as any;
         this.current = userProfileResp.data
+        useAuth().updateUserId(this.current.userId)
 
         if (this.current.timeZone) {
           Settings.defaultZone = this.current.timeZone;
