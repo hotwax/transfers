@@ -65,7 +65,7 @@ import DxpProductIdentifier from "@/components/DxpProductIdentifier.vue";
 import DxpOmsInstanceNavigator from "@/components/DxpOmsInstanceNavigator.vue";
 import DxpTimeZoneSwitcher from "@/components/DxpTimeZoneSwitcher.vue";
 import { logger, translate } from "@common";
-import { useAuth } from "@/composables/useAuth";
+import { useAuth } from "@common/composables/auth";
 
 
 
@@ -74,7 +74,7 @@ const productStore = useProductStore()
 
 const userProfile = computed(() => userStore.getUserProfile)
 async function logout() {
-  useAuth().logout({ isUserUnauthorised: false }).then((redirectionUrl) => {
+  useAuth().logout({ isUserUnauthorised: false }).then((redirectionUrl: any) => {
     // redirectionUrl is only present when SSO enables, thus when not present redirect user to login
     if(!redirectionUrl) {
       router.replace("/login");

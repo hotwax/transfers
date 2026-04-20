@@ -1,7 +1,8 @@
 import { createApp } from "vue"
 import App from "./App.vue"
 import router from "./router";
-import { createDxpI18n } from '@common';
+import { createDxpI18n, initialiseConfig } from '@common';
+import { useUserStore } from "./store/user";
 
 
 import { IonicVue } from "@ionic/vue";
@@ -51,6 +52,16 @@ const app = createApp(App)
   .use(router)
   .use(i18n)
   .use(VueVirtualScroller)
+
+initialiseConfig({
+  postLogin: useUserStore().postLogin,
+  postLogout: useUserStore().postLogout,
+  get oms() { return useUserStore().oms },
+  set oms(val) { useUserStore().oms = val },
+  get current() { return useUserStore().current },
+  set current(val) { useUserStore().current = val },
+  router: router
+})
 
 router.isReady().then(() => {
   app.mount("#app");

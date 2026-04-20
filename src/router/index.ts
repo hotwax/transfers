@@ -2,10 +2,11 @@ import { createRouter, createWebHistory } from "@ionic/vue-router";
 import { RouteRecordRaw } from "vue-router";
 import Tabs from "@/views/Tabs.vue"
 import { commonUtil, translate } from "@common";
-import { useAuth } from "@/composables/useAuth";
+import { useAuth } from "@common/composables/auth";
 import OrderDetail from "@/views/OrderDetail.vue";
 import CreateOrder from "@/views/CreateOrder.vue";
 import BulkUpload from "@/views/BulkUpload.vue";
+import Login from "@common/components/Login.vue";
 import { useUserStore } from "@/store/user";
 declare module 'vue-router' {
   interface RouteMeta {
@@ -80,7 +81,8 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: "/login",
     name: "Login",
-    component: () => import("@/views/Login.vue")  },
+    component: Login
+  },
 ]
 
 const router = createRouter({
