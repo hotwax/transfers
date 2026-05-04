@@ -777,12 +777,6 @@ onMounted(async () => {
   await computeProductSearchPlaceholder();
 });
 
-watch(
-  [() => productIdentificationStore.getProductIdentificationPref?.primaryId, () => productIdentificationStore.getProductIdentificationOptions],
-  async () => { await computeProductSearchPlaceholder(); }
-);
-
-
 async function prepareProductIdentifierOptions() {
   const productIdentificationOptions = [
     { goodIdentificationTypeId: "productId", description: "Product ID" },
