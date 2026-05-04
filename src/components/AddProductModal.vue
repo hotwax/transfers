@@ -2,7 +2,7 @@
   <ion-header>
     <ion-toolbar>
       <ion-buttons slot="start">
-        <ion-button @click="closeModal">
+        <ion-button data-testid="add-product-close-btn" @click="closeModal">
           <ion-icon slot="icon-only" :icon="closeOutline" />
         </ion-button>
       </ion-buttons>
@@ -10,10 +10,10 @@
     </ion-toolbar>
   </ion-header>
   <ion-content>
-    <ion-searchbar v-model="queryString" :placeholder="translate('Search SKU or product name')" @keyup.enter="handleSearch" @ionInput="handleInput"/>
+    <ion-searchbar data-testid="add-product-searchbar" v-model="queryString" :placeholder="translate('Search SKU or product name')" @keyup.enter="handleSearch" @ionInput="handleInput"/>
 
     <template v-if="products.length">
-      <ion-list v-for="product in products" :key="product.productId">
+      <ion-list v-for="product in products" :key="product.productId" :data-testid="`add-product-row-${product.productId}`">
         <ion-item lines="none">
           <ion-thumbnail slot="start">
             <Image :src="product.mainImageUrl" />
@@ -22,22 +22,22 @@
             <h2>{{ getProductIdentificationValue(productIdentificationStore.getProductIdentificationPref.primaryId, product) || getProduct(product.productId).productName }}</h2>
             <p>{{ getProductIdentificationValue(productIdentificationStore.getProductIdentificationPref.secondaryId, product) }}</p>
           </ion-label>
-          <ion-icon v-if="isProductInOrder(product.productId)" color="success" :icon="checkmarkCircle" />
-          <ion-button v-else fill="outline" @click="addItemToOrder(product)" :disabled="pendingProductIds.has(product.productId)">
+          <ion-icon v-if="isProductInOrder(product.productId)" color="success" :icon="checkmarkCircle" data-testid="add-product-in-order-${product.productId}" />
+          <ion-button v-else data-testid="add-product-btn-${product.productId}" fill="outline" @click="addItemToOrder(product)" :disabled="pendingProductIds.has(product.productId)">
             {{ pendingProductIds.has(product.productId) ? translate("Adding...") : translate("Add to order") }}
           </ion-button>
         </ion-item>
       </ion-list>
 
-      <ion-infinite-scroll @ionInfinite="loadMoreProducts($event)" threshold="100px" :disabled="!isScrollable()">
+      <ion-infinite-scroll data-testid="add-product-infinite-scroll" @ionInfinite="loadMoreProducts($event)" threshold="100px" :disabled="!isScrollable()">
         <ion-infinite-scroll-content loading-spinner="crescent" :loading-text="translate('Loading')" />
       </ion-infinite-scroll>
     </template>
 
-    <div v-else-if="queryString && isSearching && !products.length" class="empty-state">
+    <div v-else-if="queryString && isSearching && !products.length" class="empty-state" data-testid="add-product-no-results">
       <p>{{ translate("No product found") }}</p>
     </div>
-    <div v-else class="empty-state">
+    <div v-else class="empty-state" data-testid="add-product-empty">
       <img src="../assets/images/empty-state-add-product-modal.png" alt="empty-state" />
       <p>{{ translate("Enter a SKU, or product name to search a product") }}</p>
     </div>

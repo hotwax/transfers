@@ -26,6 +26,9 @@ const getters: GetterTree <UtilState, RootState> = {
   },
   getFacilitiesByProductStore (state) {
     return state.facilities
-  }
+  },
+  getDataManagerStatusDesc: (state) => (statusId: string) => {
+    return state.dataManagerStatusDesc[statusId] ? state.dataManagerStatusDesc[statusId] : statusId
+  },
 }
 export default getters;

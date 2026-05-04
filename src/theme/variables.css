@@ -306,6 +306,10 @@ body {
   display: unset;
 }
 
+.desktop-only {
+  display: none;
+}
+
 p:has(a) {
   cursor: pointer;
 }
@@ -330,6 +334,15 @@ p:has(a) {
   .mobile-only {
     display: none;
   }
+
+  .desktop-only {
+    display: unset;
+  }
+}
+
+.action-disabled {
+  opacity: 0.5;
+  pointer-events: none;
 }
 
 @media (prefers-color-scheme: dark) {

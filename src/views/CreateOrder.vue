@@ -2,8 +2,11 @@
   <ion-page>
     <ion-header :translucent="true">
       <ion-toolbar>
-        <ion-back-button slot="start" :default-href="`/tabs/transfers`" />
+        <ion-back-button data-testid="create-order-back-btn" slot="start" :default-href="`/tabs/transfers`" />
         <ion-title>{{ translate("Create transfer order") }}</ion-title>
+        <ion-buttons slot="end" v-if="hasPermission('APP_BULK_UPLOAD')">
+          <ion-button data-testid="create-order-bulk-upload-btn" @click="router.push('/bulk-upload')">{{ translate("Bulk upload") }}</ion-button>
+        </ion-buttons>
       </ion-toolbar>
     </ion-header>
 
@@ -22,7 +25,7 @@
             </ion-card-header>
             <ion-item>
               <ion-icon :icon="storefrontOutline" slot="start" />
-              <ion-select value="" :label="translate('Product Store')" :placeholder="translate('Select')" interface="popover" v-model="currentOrder.productStoreId" @ionChange="productStoreUpdated()">
+              <ion-select data-testid="create-order-store-select" value="" :label="translate('Product Store')" :placeholder="translate('Select')" interface="popover" v-model="currentOrder.productStoreId" @ionChange="productStoreUpdated()">
                 <ion-select-option v-for="store in stores" :value="store.productStoreId" :key="store.productStoreId">{{ store.storeName ? store.storeName : store.productStoreId }}</ion-select-option>
               </ion-select>
             </ion-item>
@@ -30,11 +33,11 @@
               <ion-icon :icon="sendOutline" slot="start" />
               <ion-label>{{ translate("Origin") }}</ion-label>
               <template v-if="currentOrder.originFacilityId" slot="end">
-                <ion-chip outline @click="openSelectFacilityModal('originFacilityId')">
+                <ion-chip data-testid="create-order-origin-chip" outline @click="openSelectFacilityModal('originFacilityId')">
                   {{ getFacilityName(currentOrder.originFacilityId) ? getFacilityName(currentOrder.originFacilityId) : currentOrder.originFacilityId }}
                 </ion-chip>
               </template>
-              <ion-button v-else slot="end" fill="outline" @click="openSelectFacilityModal('originFacilityId')">
+              <ion-button data-testid="create-order-origin-assign-btn" v-else slot="end" fill="outline" @click="openSelectFacilityModal('originFacilityId')">
                 <ion-icon slot="start" :icon="addCircleOutline" />
                 <ion-label>{{ translate("Assign") }}</ion-label>
               </ion-button>
@@ -43,11 +46,11 @@
               <ion-icon :icon="downloadOutline" slot="start" />
               <ion-label>{{ translate("Destination") }}</ion-label>
               <template v-if="currentOrder.destinationFacilityId" slot="end">
-                <ion-chip outline @click="openSelectFacilityModal('destinationFacilityId')">
+                <ion-chip data-testid="create-order-destination-chip" outline @click="openSelectFacilityModal('destinationFacilityId')">
                   {{ getFacilityName(currentOrder.destinationFacilityId) ? getFacilityName(currentOrder.destinationFacilityId) : currentOrder.destinationFacilityId }}
                 </ion-chip>
               </template>
-              <ion-button v-else slot="end" fill="outline" @click="openSelectFacilityModal('destinationFacilityId')">
+              <ion-button data-testid="create-order-destination-assign-btn" v-else slot="end" fill="outline" @click="openSelectFacilityModal('destinationFacilityId')">
                 <ion-icon slot="start" :icon="addCircleOutline" />
                 <ion-label>{{ translate("Assign") }}</ion-label>
               </ion-button>
@@ -59,12 +62,12 @@
               <ion-card-title>{{ translate("Shipping Method") }}</ion-card-title>
             </ion-card-header>
             <ion-item>
-              <ion-select :label="translate('Carrier')" :placeholder="translate('Select')" v-model="currentOrder.carrierPartyId" interface="popover" @ionChange="selectUpdatedMethod()">
+              <ion-select data-testid="create-order-carrier-select" :label="translate('Carrier')" :placeholder="translate('Select')" v-model="currentOrder.carrierPartyId" interface="popover" @ionChange="selectUpdatedMethod()">
                 <ion-select-option :value="carrierPartyId" v-for="(carrierPartyId, index) in Object.keys(shipmentMethodsByCarrier)" :key="index">{{ getCarrierDesc(carrierPartyId) }}</ion-select-option>
               </ion-select>
             </ion-item>
             <ion-item lines="none">
-              <ion-select :label="translate('Method')" :placeholder="translate('Select')" v-model="currentOrder.shipmentMethodTypeId" v-if="getCarrierShipmentMethods()?.length" interface="popover">
+              <ion-select data-testid="create-order-method-select" :label="translate('Method')" :placeholder="translate('Select')" v-model="currentOrder.shipmentMethodTypeId" v-if="getCarrierShipmentMethods()?.length" interface="popover">
                 <ion-select-option :value="shipmentMethod.shipmentMethodTypeId" v-for="(shipmentMethod, index) in getCarrierShipmentMethods()" :key="index">{{ shipmentMethod.description ? shipmentMethod.description : shipmentMethod.shipmentMethodTypeId }}</ion-select-option>
               </ion-select>
               <template v-else>
@@ -79,42 +82,31 @@
               <ion-card-title>{{ translate("Plan") }}</ion-card-title>
             </ion-card-header>
             <ion-item>
-              <ion-select :label="translate('Lifecycle')" placeholder="Select" v-model="currentOrder.statusFlowId" interface="popover">
+              <ion-select data-testid="create-order-lifecycle-select" :label="translate('Lifecycle')" placeholder="Select" v-model="currentOrder.statusFlowId" interface="popover">
                 <ion-select-option v-for="flow in statusFlows" :key="flow.statusFlowId" :value="flow.statusFlowId">{{ translate(flow.description) }}</ion-select-option>
               </ion-select>
             </ion-item>
             <ion-item>
               <ion-label>{{ translate("Ship Date") }}</ion-label>
-              <ion-button slot="end" class="date-time-button" @click="openDateTimeModal('shipDate')">{{ currentOrder.shipDate ? formatDateTime(currentOrder.shipDate) : translate("Select date") }}</ion-button>
+              <ion-button data-testid="create-order-shipdate-btn" slot="end" class="date-time-button" @click="openDateTimeModal('shipDate')">{{ currentOrder.shipDate ? formatDateTime(currentOrder.shipDate) : translate("Select date") }}</ion-button>
             </ion-item>
             <ion-item>
               <ion-label>{{ translate("Delivery Date") }}</ion-label>
-              <ion-button slot="end" class="date-time-button" @click="openDateTimeModal('deliveryDate')">{{ currentOrder.deliveryDate ? formatDateTime(currentOrder.deliveryDate) : translate("Select date") }}</ion-button>
+              <ion-button data-testid="create-order-deliverydate-btn" slot="end" class="date-time-button" @click="openDateTimeModal('deliveryDate')">{{ currentOrder.deliveryDate ? formatDateTime(currentOrder.deliveryDate) : translate("Select date") }}</ion-button>
             </ion-item>
           </ion-card>
 
-          <ion-item>
-            <ion-icon :icon="cloudUploadOutline" slot="start" />
-            <ion-label>
-              {{ translate("Import items CSV") }}
-              <p @click="downloadSampleCsv()">
-                <a>{{ translate("Download example") }}</a>
-              </p>
-            </ion-label>
-            <input @change="parse" ref="file" class="ion-hide" type="file" id="updateProductFile" :key="fileUploaded.toString()"/>
-            <label for="updateProductFile" class="pointer">{{ translate("Upload") }}</label>
-          </ion-item>
         </aside>
 
         <ion-modal class="date-time-modal" :is-open="dateTimeModalOpen" @didDismiss="closeDateTimeModal">
-          <ion-content force-overscroll="false">
+          <ion-content :force-overscroll="false">
             <ion-datetime 
               :value="currentOrder[selectedDateFilter] ? currentOrder[selectedDateFilter] : DateTime.now().toISO()"
-              show-clear-button
+              :show-clear-button="true"
               show-default-buttons
               presentation="date"
-              :min="currentOrder.shipDate"
-              :max="currentOrder.deliveryDate" 
+              :min="currentOrder.shipDate ? currentOrder.shipDate : undefined"
+              :max="currentOrder.deliveryDate ? currentOrder.deliveryDate : undefined" 
               @ionChange="updateDateTimeFilter($event.detail.value)"
             />
           </ion-content>
@@ -124,7 +116,7 @@
           <div class="item-search">
             <ion-item>
               <ion-icon slot="start" :icon="listOutline"/>
-              <ion-input :label="translate('Add product')" label-placement="floating" :clear-input="true" v-model="queryString" :placeholder="productSearchPlaceholder" @keyup.enter="addProductToCount()" />
+              <ion-input data-testid="create-order-add-product-input" :label="translate('Add product')" label-placement="floating" :clear-input="true" v-model="queryString" :placeholder="productSearchPlaceholder" @keyup.enter="addProductToCount()" />
             </ion-item>
             <ion-item lines="none" v-if="isSearchingProduct">
               <ion-spinner color="secondary" name="crescent"></ion-spinner>
@@ -137,7 +129,7 @@
                 <p class="overline">{{ translate("Search result") }}</p>
                 {{ searchedProduct.internalName || searchedProduct.sku || searchedProduct.productId }}
               </ion-label>
-              <ion-button :disabled="isAddingProduct" size="default" slot="end" fill="clear" @click="addProductToCount" :color="isProductAvailableInOrder() ? 'success' : 'primary'">
+              <ion-button data-testid="create-order-add-product-btn" :disabled="isAddingProduct" size="default" slot="end" fill="clear" @click="addProductToCount" :color="isProductAvailableInOrder() ? 'success' : 'primary'">
                 <ion-icon slot="icon-only" :icon="isProductAvailableInOrder() ? checkmarkCircle : addCircleOutline"/>
               </ion-button>
             </ion-item>
@@ -189,14 +181,14 @@
               </ion-button>
             </div>
           </template>
-          <div v-else class="empty-state">
+          <div v-else class="empty-state" data-testid="create-order-empty">
             <p>{{ translate("No item added to order") }}</p>
           </div>
         </main>
       </div>
 
       <ion-fab vertical="bottom" horizontal="end" slot="fixed">
-        <ion-fab-button @click="createOrder()">
+        <ion-fab-button data-testid="create-order-submit-btn" @click="createOrder()">
           <ion-icon :icon="checkmarkDoneOutline" />
         </ion-fab-button>
       </ion-fab>
@@ -206,16 +198,15 @@
 
 <script setup lang="ts">
 import { IonBackButton, IonButton, IonCard, IonCardHeader, IonCardTitle, IonCheckbox, IonChip, IonContent, IonDatetime, IonFab, IonFabButton, IonHeader, IonIcon, IonInput, IonItem, IonLabel, IonModal, IonPage, IonSelect, IonSelectOption, IonSpinner, IonThumbnail, IonTitle, IonToolbar, onIonViewDidEnter, alertController, modalController, popoverController } from '@ionic/vue';
-import { addCircleOutline, checkmarkCircle, checkmarkDoneOutline, cloudUploadOutline, downloadOutline, ellipsisVerticalOutline, informationCircleOutline, listOutline, sendOutline, storefrontOutline } from 'ionicons/icons';
+import { addCircleOutline, checkmarkCircle, checkmarkDoneOutline, ellipsisVerticalOutline, informationCircleOutline, listOutline, sendOutline, storefrontOutline, downloadOutline } from 'ionicons/icons';
 import { getProductIdentificationValue, translate, useProductIdentificationStore, useUserStore } from '@hotwax/dxp-components'
 import { computed, onMounted, ref, watch } from "vue";
-import { getDateWithOrdinalSuffix, jsonToCsv, parseCsv, showToast } from '@/utils';
+import { getDateWithOrdinalSuffix, showToast } from '@/utils';
 import logger from '@/logger';
 import { useStore } from 'vuex';
 import Image from '@/components/Image.vue';
 import OrderItemActionsPopover from '@/components/OrderItemActionsPopover.vue';
 import SelectFacilityModal from '@/components/SelectFacilityModal.vue';
-import ImportCsvModal from '@/components/ImportCsvModal.vue';
 import { ProductService } from '@/services/ProductService';
 import { UtilService } from '@/services/UtilService';
 import { OrderService } from '@/services/OrderService';
@@ -223,6 +214,7 @@ import router from '@/router';
 import { DateTime } from 'luxon';
 import { fetchGoodIdentificationTypes, hasError } from "@/adapter";
 import emitter from '@/event-bus';
+import { hasPermission } from '@/authorization';
 
 const store = useStore();
 const productIdentificationStore = useProductIdentificationStore();
@@ -236,7 +228,19 @@ const dateTimeModalOpen = ref(false);
 const isAddingProduct = ref(false)
 const selectedDateFilter = ref("");
 const currencyUom = ref("");
-const currentOrder = ref({
+const currentOrder = ref<{
+  name: string;
+  productStoreId: string;
+  originFacilityId: string;
+  destinationFacilityId: string;
+  carrierPartyId: string;
+  shipmentMethodTypeId: string; 
+  items: any[];
+  statusFlowId: string;
+  shipDate: string;
+  deliveryDate: string;
+  [key: string]: any;
+}>({
   name: "",
   productStoreId: "",
   originFacilityId: "",
@@ -244,8 +248,10 @@ const currentOrder = ref({
   carrierPartyId: "",
   shipmentMethodTypeId: "", 
   items: [],
-  statusFlowId: ""
-}) as any;
+  statusFlowId: "TO_Fulfill_And_Receive",
+  shipDate: "",
+  deliveryDate: ""
+});
 //TODO: In future when transfers app is migrated to Moqui, fetch the status flows using API
 const statusFlows = [
   {
@@ -262,15 +268,9 @@ const statusFlows = [
   }
 ]
 
-let content = ref([]) as any 
-let fileColumns = ref([]) as any 
-let uploadedFile = ref({}) as any
-const fileUploaded = ref(false);
-
 const getProduct = computed(() => store.getters["product/getProduct"])
 const shipmentMethodsByCarrier = computed(() => store.getters["util/getShipmentMethodsByCarrier"])
 const getCarrierDesc = computed(() => store.getters["util/getCarrierDesc"])
-const sampleProducts = computed(() => store.getters["util/getSampleProducts"])
 const facilities = computed(() => store.getters["util/getFacilitiesByProductStore"])
 
 // Implemented watcher to display the search spinner correctly. Mainly the watcher is needed to not make the findProduct call always and to create the debounce effect.
@@ -300,37 +300,16 @@ watch(queryString, (value) => {
 onIonViewDidEnter(async () => {
   emitter.emit("presentLoader")
   stores.value = useUserStore().eComStores
-  const currentProductStoreId = useUserStore().getCurrentEComStore?.productStoreId
+  const currentProductStoreId = (useUserStore().getCurrentEComStore as any)?.productStoreId || "";
   currentOrder.value.productStoreId = currentProductStoreId
-  await Promise.allSettled([store.dispatch("util/fetchFacilitiesByCurrentStore", currentOrder.value.productStoreId), store.dispatch("util/fetchStoreCarrierAndMethods", currentOrder.value.productStoreId), store.dispatch("util/fetchCarriersDetail"), store.dispatch("util/fetchSampleProducts")])
+  await Promise.allSettled([store.dispatch("util/fetchStoreCarrierAndMethods", currentProductStoreId), store.dispatch("util/fetchCarriersDetail")])
   await fetchProductStoreDetails(currentProductStoreId);
   if(Object.keys(shipmentMethodsByCarrier.value)?.length) {
     currentOrder.value.carrierPartyId = Object.keys(shipmentMethodsByCarrier.value)[0]
     selectUpdatedMethod()
   }
-  uploadedFile.value = {}
-  content.value = []
   emitter.emit("dismissLoader")
 })
-
-async function parse(event: any) {
-  let file = event.target.files[0];
-  try {
-    if (file) { 
-      uploadedFile.value = file;
-      content.value = await parseCsv(uploadedFile.value);
-      fileColumns.value = Object.keys(content.value[0]);
-      showToast(translate("File uploaded successfully"));
-      fileUploaded.value =!fileUploaded.value; 
-      openImportCsvModal();
-    } else {
-      showToast(translate("No new file upload. Please try again"));
-    }
-  } catch {
-    content.value = []
-    showToast(translate("Please upload a valid csv to continue"));
-  }
-}
 
 async function fetchProductStoreDetails(productStoreId: string) {
   try {
@@ -343,68 +322,6 @@ async function fetchProductStoreDetails(productStoreId: string) {
   } catch (err) {
     logger.error(err);
   }
-}
-
-async function findProductFromIdentifier(payload: any) {
-  const productField = payload.productField
-  const quantityField = payload.quantityField
-  const idType = payload.idType
-  const uploadedItemsByIdValue = {} as any;
-  content.value.map((row: any) => {
-    uploadedItemsByIdValue[row[productField]] = row
-  })
-
-  const idValues = Object.keys(uploadedItemsByIdValue);
-  const productIdsAlreadyAddedInList = currentOrder.value.items.map((item: any) => item.productId)
-  const filterString = (idType === 'productId') ? `${idType}: (${idValues.join(' OR ')})` : `goodIdentifications: (${idValues.map((value: any) => `${idType}/${value}`).join(' OR ')})`;
-  
-  emitter.emit("presentLoader", { message: "Uploading items...", backdropDismiss: false });
-
-  try {
-    const resp = await ProductService.fetchProducts({
-      "filters": [filterString],
-      "viewSize": idValues.length
-    })
-
-    if(!hasError(resp) && resp.data.response?.docs?.length) {
-      const productsToAdd = resp.data.response.docs
-      store.dispatch("product/addProductToCachedMultiple", { products: productsToAdd })
-      const productsByIdValue = {} as any;
-      productsToAdd.map((product: any) => {
-        if(idType === "SKU") {
-          productsByIdValue[product["sku"]] = product
-        } else {
-          const idValue = getProductIdentificationValue(idType, product)
-          productsByIdValue[idValue] = product
-        }
-      })
-
-      for (const [idValue, product] of Object.entries(productsByIdValue)) {
-        if(productIdsAlreadyAddedInList.includes(product.productId)) {
-          if(quantityField) {
-            const item = currentOrder.value.items.find((item: any) => item.productId === product.productId)
-            item.quantity = Number(item.quantity) + (Number(uploadedItemsByIdValue[idValue][quantityField]) || 0)
-          }
-        } else {
-          const stock = currentOrder.value.originFacilityId ?  await fetchStock(product.productId) : null;
-          currentOrder.value.items.push({
-            productId: product.productId,
-            sku: product.sku,
-            quantity: quantityField && uploadedItemsByIdValue[idValue]?.[quantityField] ? Number(uploadedItemsByIdValue[idValue][quantityField]) || 0 : 0,
-            isChecked: false,
-            qoh: stock?.qoh ?? null,
-            atp: stock?.atp || 0
-          })
-        }
-      }
-    } else {
-      throw resp.data;
-    }
-  } catch(error) {
-    logger.error(error)
-    showToast(translate("Failed to add items to the order due to incorrect SKU mapping or invalid SKUs."))
-  }
-  emitter.emit("dismissLoader")
 }
 
 async function addProductToCount() {
@@ -431,7 +348,7 @@ async function addProductToCount() {
 }
 
 async function productStoreUpdated() {
-  await store.dispatch("util/fetchFacilitiesByCurrentStore", currentOrder.value.productStoreId);
+
   const isFacilityUpdated = currentOrder.value.originFacilityId !== facilities.value[0]?.facilityId
   if(isFacilityUpdated) {
     currentOrder.value.originFacilityId = "";
@@ -494,7 +411,7 @@ async function updateBulkOrderItemQuantity(action: any) {
       }],
       inputs: [{
         name: "quantity",
-        placeholder: translate("ordered quantity"),
+        placeholder: translate("Order quantity"),
         min: 0,
         type: "number"
       }]
@@ -552,6 +469,11 @@ async function createOrder() {
 		orderDate: DateTime.now().toFormat("yyyy-MM-dd HH:mm:ss.SSS"),
 		entryDate: DateTime.now().toFormat("yyyy-MM-dd HH:mm:ss.SSS"),
 		originFacilityId: currentOrder.value.originFacilityId,
+    'org.apache.ofbiz.order.order.OrderStatus': {
+      statusId: 'ORDER_CREATED',
+      statusDatetime: DateTime.now().toMillis(),
+      statusUserLogin: store.getters['user/getUserProfile'].username,
+    },
 		shipGroups: [
 			{
 				shipGroupSeqId: "00001",
@@ -649,29 +571,6 @@ async function openOrderItemActionsPopover(event: any, selectedItem: any, isBulk
   })
 
   await popover.present();
-}
-
-async function openImportCsvModal() {
-  const importCsvModal = await modalController.create({
-    component: ImportCsvModal,
-    componentProps: {
-      fileColumns: fileColumns.value,
-      content: content.value
-    }
-  })
-  importCsvModal.onDidDismiss().then((result: any) => {
-    if (result?.data?.identifierData && Object.keys(result?.data?.identifierData).length) {
-      findProductFromIdentifier(result.data.identifierData)
-    }
-  })
-  importCsvModal.present();
-}
-
-function downloadSampleCsv() {
-  jsonToCsv(sampleProducts.value, {
-    download: true,
-    name: "Sample CSV.csv"
-  })
 }
 
 async function openSelectFacilityModal(facilityType: any) {

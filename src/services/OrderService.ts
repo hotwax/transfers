@@ -212,6 +212,14 @@ const updateOrderItem = async (payload: any): Promise<any> => {
   });
 }
 
+const cancelOrderItem = async (orderId: string, orderItemSeqId: string, cancelOrder: boolean): Promise<any> => {
+  return api({
+    url: `oms/transferOrders/${orderId}/items/${orderItemSeqId}/status`,
+    method: "put",
+    data: { statusId: "ITEM_CANCELLED", checkCancelCompleteOrder: cancelOrder }
+  })
+}
+
 const updateOrderStatus = async (payload: any): Promise<any> => {
   const baseURL = store.getters['user/getOmsBaseUrl'];
   const omstoken = store.getters['user/getUserToken'];
@@ -259,10 +267,26 @@ const approveOrder = async (payload: any): Promise<any> => {
   })
 }
 
+const uploadTransferOrders = async (payload: any): Promise<any> => {
+  return api({
+    url: `admin/uploadDataManagerFile`,
+    method: "post",
+    ...payload
+  })
+}
+
 const approveWarehouseFulfillOrder = async (payload: any): Promise<any> => { 
   return api({
     url: `oms/transferOrders/${payload.orderId}/approveWhFulfill`,
-    method: "post",
+    method: "POST",
+  })
+}
+
+const closeFulfillment = async (payload: any): Promise<any> => {
+  return api({
+    url: `poorti/transferOrders/${payload.orderId}/closeFulfillment`,
+    method: "POST",
+    data: payload
   })
 }
 
@@ -288,6 +312,46 @@ const fetchOrderReceipts = async (params :any): Promise<any> => {
   });
 }
 
+const createTransferOrderShipment = async (payload: any): Promise<any> => {
+  return api({
+    url: "poorti/transferShipments",
+    method: "post",
+    data: payload
+  });
+}
+
+const shipTransferOrderShipment = async (payload: any): Promise<any> => {
+  return api({
+    url: `poorti/transferShipments/${payload.shipmentId}/ship`,
+    method: "post",
+    data: payload
+  });
+}
+
+const receiveTransferOrder = async (payload: any): Promise<any> => {
+  return api({
+    url: `poorti/transferOrders/${payload.orderId}/receipts`,
+    method: "post",
+    data: payload
+  });
+}
+
+const fetchDiscrepancies = async (payload: any): Promise<any> => {
+  return api({
+    url: `poorti/transferOrders/discrepancies`,
+    method: "GET",
+    params: payload
+  });
+}
+
+const fetchMisShippedItems = async (payload: any): Promise<any> => {
+  return api({
+    url: `poorti/transferOrders/misShippedItems`,
+    method: "GET",
+    params: payload
+  });
+}
+
 export const OrderService = {
   addOrderItem,
   approveOrder,
@@ -303,8 +367,16 @@ export const OrderService = {
   fetchShippedTransferShipments,
   findTransferOrders,
   findTransferOrderItems,
+  createTransferOrderShipment,
+  shipTransferOrderShipment,
+  receiveTransferOrder,
   updateOrderItem,
   updateOrderItemShipGroup,
   updateOrderStatus,
-  fetchOrderReceipts
+  fetchOrderReceipts,
+  closeFulfillment,
+  uploadTransferOrders,
+  fetchDiscrepancies,
+  fetchMisShippedItems,
+  cancelOrderItem
 }

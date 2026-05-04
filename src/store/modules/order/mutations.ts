@@ -29,7 +29,8 @@ const mutations: MutationTree <OrderState> = {
       carrierPartyId: "",
       shipmentMethodTypeId: "",
       sort: 'orderDate desc',
-      groupBy: "ORDER_ID"
+      groupBy: "ORDER_ID",
+      statusFlowId: ""
     }
     state.current = {}
   },

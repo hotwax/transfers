@@ -34,7 +34,7 @@ export function useOrderQueue() {
 
   // Helper function to check if product is in order
   const isProductInOrder = (productId: string) => {
-    return currentOrder.value?.items?.some((item: any) => item.productId === productId);
+    return currentOrder.value?.items?.some((item: any) => item.productId === productId && item.statusId !== 'ITEM_CANCELLED');
   };
 
   // Helper function to check if product is being processed

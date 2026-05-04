@@ -1,5 +1,6 @@
 <template>
   <ion-card>
+    <ion-card data-testid="time-zone-switcher-card">
     <ion-card-header>
       <ion-card-title>
         {{ translate('Timezone') }}
@@ -15,14 +16,15 @@
         <p v-if="showDateTime">{{ getCurrentTime(browserTimeZone.id, dateTimeFormat) }}</p>
       </ion-label>
     </ion-item>
-    <ion-item lines="none">
+        <ion-item lines="none">
       <ion-label>
         <p class="overline">{{ translate("Selected TimeZone") }}</p>
         {{ currentTimeZoneId }}
         <p v-if="showDateTime">{{ getCurrentTime(currentTimeZoneId, dateTimeFormat) }}</p>
       </ion-label>
-      <ion-button id="time-zone-modal" slot="end" fill="outline" color="dark">{{ translate("Change") }}</ion-button>
+          <ion-button id="time-zone-modal" data-testid="time-zone-change-btn" slot="end" fill="outline" color="dark">{{ translate("Change") }}</ion-button>
     </ion-item>
+  </ion-card>
   </ion-card>
   <!-- Using inline modal(as recommended by ionic), also using it inline as the component inside modal is not getting mounted when using modalController -->
   <ion-modal ref="timeZoneModal" trigger="time-zone-modal" @didPresent="search()" @didDismiss="clearSearch()">
@@ -36,13 +38,13 @@
         <ion-title>{{ translate("Select time zone") }}</ion-title>
       </ion-toolbar>
       <ion-toolbar>
-        <ion-searchbar @ionFocus="selectSearchBarText($event)" :placeholder="translate('Search time zones')"  v-model="queryString" @keyup.enter="queryString = $event.target.value; findTimeZone()" @keydown="preventSpecialCharacters($event)" />
+            <ion-searchbar data-testid="time-zone-searchbar" @ionFocus="selectSearchBarText($event)" :placeholder="translate('Search time zones')"  v-model="queryString" @keyup.enter="queryString = $event.target.value; findTimeZone()" @keydown="preventSpecialCharacters($event)" />
       </ion-toolbar>
     </ion-header>
 
     <ion-content>
       <div>
-        <ion-radio-group v-model="timeZoneId">
+          <ion-radio-group data-testid="time-zone-radio-group" v-model="timeZoneId">
           <ion-list v-if="showBrowserTimeZone">
             <ion-list-header>{{ translate("Browser time zone") }}</ion-list-header>
             <ion-item>
@@ -82,7 +84,7 @@
       </div>
 
       <ion-fab vertical="bottom" horizontal="end" slot="fixed">
-        <ion-fab-button :disabled="!timeZoneId || timeZoneId === currentTimeZoneId" @click="setUserTimeZone">
+          <ion-fab-button data-testid="time-zone-save-btn" :disabled="!timeZoneId || timeZoneId === currentTimeZoneId" @click="setUserTimeZone">
           <ion-icon :icon="saveOutline" />
         </ion-fab-button>
       </ion-fab>
