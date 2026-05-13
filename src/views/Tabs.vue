@@ -23,12 +23,11 @@
 <script setup lang="ts">
 import { IonIcon, IonLabel, IonPage, IonRouterOutlet, IonTabBar, IonTabButton, IonTabs } from "@ionic/vue";
 import { alertCircleOutline, businessOutline, settingsOutline } from "ionicons/icons";
-import { useRouter } from "vue-router";
+import router from "../router";
 import { translate } from "@common";
 import { useUserStore } from "@/store/user";
 
 const userStore = useUserStore();
-const router = useRouter();
 
 function showFooter() {
   if (['/tabs/transfers', '/tabs/discrepancies', '/tabs/settings'].includes(router.currentRoute.value.path)) return true

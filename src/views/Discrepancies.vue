@@ -118,7 +118,7 @@
 import { IonBadge, IonButtons, IonChip, IonContent, IonHeader, IonIcon, IonItem, IonLabel, IonList, IonMenuButton, IonPage, IonSelect, IonSelectOption, IonSpinner, IonThumbnail, IonTitle, IonToolbar, onIonViewWillEnter, IonInfiniteScroll, IonInfiniteScrollContent } from '@ionic/vue';
 import { checkmarkCircleOutline, downloadOutline, filterOutline, sendOutline } from 'ionicons/icons';
 import { computed, ref, watch } from 'vue';
-import { useRouter } from 'vue-router';
+import router from '../router';
 import { commonUtil, logger, translate } from "@common";
 import { useUserStore } from "@/store/user";
 import Image from "@/components/Image.vue";
@@ -133,7 +133,6 @@ const destinationFacilityId = ref('');
 const discrepancies = ref<any[]>([]);
 const isLoading = ref(false);
 const isScrollable = ref(true);
-const router = useRouter();
 const productStore = useProductStore();
 const orderStore = useOrderStore();
 const userStore = useUserStore();

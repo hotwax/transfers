@@ -65,7 +65,7 @@ import DxpProductIdentifier from "@/components/DxpProductIdentifier.vue";
 import DxpOmsInstanceNavigator from "@/components/DxpOmsInstanceNavigator.vue";
 import DxpTimeZoneSwitcher from "@/components/DxpTimeZoneSwitcher.vue";
 import { logger, translate } from "@common";
-import { useAuth } from "@common/composables/auth";
+import { useAuth } from "@common/composables/useAuth";
 
 
 

@@ -1,7 +1,7 @@
 import { api, commonUtil, cookieHelper, i18n, logger, translate } from "@common";
 import { defineStore } from "pinia"
 import { DateTime, Settings } from "luxon"
-import { useAuth } from "@common/composables/auth";
+import { useAuth } from "@common/composables/useAuth";
 import { useProductStore } from "@/store/productStore";
 import { useProductStore as useProduct } from "@/store/product";
 import { useOrderStore } from "@/store/order";
