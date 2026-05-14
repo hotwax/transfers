@@ -1,6 +1,6 @@
 <template>
   <ion-page>
-    <Filters menu-id="transfers-filter" content-id="filter-content"/>
+    <Filters v-if="isMobile" menu-id="transfers-filter" content-id="filter-content"/>
 
     <ion-header :translucent="true">
       <ion-toolbar>
@@ -24,17 +24,11 @@
         </section>
 
         <aside class="filters">
-          <TransferFiltersContent :groupByConfig="selectedGroupBy" />
+          <TransferFiltersContent />
         </aside>
 
         <main class="ion-content-scroll-host">
           <section class="sort">
-            <ion-item lines="none">
-              <ion-icon slot="start" :icon="documentTextOutline" />
-              <ion-select data-testid="transfers-groupby-select" :label="translate('Group by')" interface="popover" :value="selectedGroupBy.id" @ionChange="updateGroupByFilter($event.detail.value)">
-                <ion-select-option v-for="option in groupByOptions" :value="option.id" :key="option.id">{{ option.description }}</ion-select-option>
-              </ion-select>
-            </ion-item>
             <ion-item data-testid="transfers-sort-btn" lines="none" button @click="updateAppliedFilters('', 'sort')">
               <ion-icon slot="start" :icon="swapVerticalOutline" />
               <ion-label>{{ translate("Sort by") }}</ion-label>
@@ -62,7 +56,7 @@
               </ion-button>
             </template>
           </div>
-          <template v-if="query.groupBy === 'ORDER_ID'">
+          <template v-if="ordersList?.length">
             <div class="list-item order" :data-testid="`orders-row-${order.orderId}`" v-for="(order, index) in ordersList" :key="index" @click="router.push(`/order-detail/${order.orderId}`)">
               <ion-item lines="none">
                 <ion-label>
@@ -71,13 +65,13 @@
                 </ion-label>
               </ion-item>
               <div>
-                <ion-chip outline>
+                <ion-chip outline v-if="order.facilityId">
                   <ion-icon :icon="sendOutline" />
-                  <ion-label>{{ order.facilityName ?? order.facilityId }}</ion-label>
+                  <ion-label>{{ getFacilityName(order.facilityId) }}</ion-label>
                 </ion-chip>
-                <ion-chip outline>
+                <ion-chip outline v-if="order.orderFacilityId">
                   <ion-icon :icon="downloadOutline" />
-                  <ion-label>{{ order.orderFacilityName ?? order.orderFacilityId }}</ion-label>
+                  <ion-label>{{ getFacilityName(order.orderFacilityId) }}</ion-label>
                 </ion-chip>
               </div>
               <div class="metadata">
@@ -88,172 +82,6 @@
               </div>
             </div>
           </template>
-          <ion-accordion-group v-else :multiple="true" @ionChange="showOrderItems($event)">
-            <template v-for="(order, index) in ordersList" :key="index">
-              <ion-accordion :value="order.groupValue">
-                <!-- Different accordion header and content based on groupBy value on origin and destination facility -->
-                <template  v-if="query.groupBy === 'ORIGIN' || query.groupBy === 'DESTINATION'">
-                  <!-- order header -->
-                  <div class="list-item" slot="header" color="light">
-                    <ion-item lines="none">
-                      <ion-icon slot="start" :icon="query.groupBy === 'ORIGIN' ? sendOutline : downloadOutline" />
-                      <ion-label>
-                        {{ query.groupBy === 'ORIGIN' ? getFacilityName(order.facilityId) : getFacilityName(order.orderFacilityId) }}
-                        <p>{{ query.groupBy === 'ORIGIN' ? order.facilityId : order.orderFacilityId }}</p>
-                      </ion-label>
-                    </ion-item>
-                    <!-- TODO: Currently the api is not returning these values -->
-                    <div class="tablet ion-text-center">
-                      <ion-label>
-                        {{ order.totalOrdered || '-' }}
-                        <p>{{ translate("ordered") }}</p>
-                      </ion-label>
-                    </div>
-                    <div class="tablet ion-text-center">
-                      <ion-label>
-                        {{ order.totalShipped || '-' }}
-                        <p>{{ translate("shipped") }}</p>
-                      </ion-label>
-                    </div>
-                    <div class="tablet ion-text-center">
-                      <ion-label>
-                        {{ order.totalReceived || '-' }}
-                        <p>{{ translate("received") }}</p>
-                      </ion-label>
-                    </div>
-                    <div class="ion-padding-end">
-                      <ion-icon :icon="chevronDownOutline" class="ion-accordion-toggle-icon" />
-                    </div>
-                  </div>
-                  <div class="ion-padding" slot="content">
-                    <!-- items loader -->
-                    <div v-if="!orderItemsList(query.groupBy === 'ORIGIN' ? order.facilityId : order.orderFacilityId)?.length" class="empty-state">
-                      <ion-spinner name="crescent" />
-                      <p>{{ translate("Loading") }}</p>
-                    </div>
-                    <!-- order items -->
-                    <div v-else class="list-item" :data-testid="`orders-row-${item.orderId}`" v-for="(item, index) in orderItemsList(query.groupBy === 'ORIGIN' ? order.facilityId : order.orderFacilityId)" :key="index" @click="router.push(`/order-detail/${item.orderId}`)">
-                      <ion-item lines="none">
-                        <ion-label class="ion-text-wrap">
-                          {{ item.orderName }}
-                          <p>{{ item.orderId }}</p>
-                        </ion-label>
-                      </ion-item>
-                      <ion-chip outline>
-                        <ion-icon :icon="query.groupBy === 'ORIGIN' ? downloadOutline : sendOutline" />
-                        <ion-label>{{ query.groupBy === "ORIGIN" ? item.facilityName : item.orderFacilityName }}</ion-label>
-                      </ion-chip>
-                      <div class="tablet ion-text-center">
-                        <ion-label>
-                          {{ item.quantity || 0 }}
-                          <p>{{ translate("ordered") }}</p>
-                        </ion-label>
-                      </div>
-                      <div class="tablet ion-text-center">
-                        <ion-label>
-                          {{ item.shippedQty || 0 }}
-                          <p>{{ translate("shipped") }}</p>
-                        </ion-label>
-                      </div>
-                      <div class="tablet ion-text-center">
-                        <ion-label>
-                          {{ item.receivedQty || 0 }}
-                          <p>{{ translate("received") }}</p>
-                        </ion-label>
-                      </div>
-                      <div class="metadata ion-padding-end">
-                        <ion-note>{{ translate("Created on") }} {{ commonUtil.formatUtcDate(item.orderDate, userStore.getUserProfile.userTimeZone, "dd LLL yyyy") }}</ion-note>
-                        <ion-badge slot="end" :color="commonUtil.getStatusColor(item.itemStatusId)">{{ getStatusDesc(item.itemStatusId) }}</ion-badge>
-                      </div>
-                    </div>
-                  </div>
-                </template>
-
-                <!-- Different accordion header and content based on groupBy value on origin and destination facility with product -->
-                <template v-else>
-                  <!-- order header -->
-                  <div class="list-item" slot="header">
-                    <ion-item lines="none">
-                      <ion-thumbnail slot="start">
-                        <Image :src="getProduct(order.productId)?.mainImageUrl" />
-                      </ion-thumbnail>
-                      <ion-label>
-                        {{ commonUtil.getProductIdentificationValue(useProductStore().getProductIdentificationPref.primaryId, getProduct(order.productId)) || getProduct(order.productId).productName }}
-                        <p>{{ commonUtil.getProductIdentificationValue(useProductStore().getProductIdentificationPref.secondaryId, getProduct(order.productId)) }}</p>
-                      </ion-label>
-                    </ion-item>
-                    <ion-chip outline>
-                      <ion-icon :icon="query.groupBy === 'ORIGIN_PRODUCT' ? sendOutline : downloadOutline" />
-                      <ion-label>{{ query.groupBy === "ORIGIN_PRODUCT" ? getFacilityName(order.facilityId) : getFacilityName(order.orderFacilityId) }}</ion-label>
-                    </ion-chip>
-                    <div class="tablet ion-text-center">
-                      <ion-label>
-                        {{ order.totalOrdered || '-' }}
-                        <p>{{ translate("ordered") }}</p>
-                      </ion-label>
-                    </div>
-                    <div class="tablet ion-text-center">
-                      <ion-label>
-                        {{ order.totalShipped || '-' }}
-                        <p>{{ translate("shipped") }}</p>
-                      </ion-label>
-                    </div>
-                    <div class="tablet ion-text-center">
-                      <ion-label>
-                        {{ order.totalReceived || '-' }}
-                        <p>{{ translate("received") }}</p>
-                      </ion-label>
-                    </div>
-                    <div class="ion-padding-end tablet">
-                      <ion-icon :icon="chevronDownOutline" class="ion-accordion-toggle-icon" />
-                    </div>
-                  </div>
-                  <div class="ion-padding" slot="content">
-                    <!-- items loader -->
-                    <div v-if="!orderItemsList(query.groupBy === 'ORIGIN_PRODUCT' ? `${order.productId}-${order.facilityId}` : `${order.productId}-${order.orderFacilityId}`)?.length" class="empty-state">
-                      <ion-spinner name="crescent" />
-                      <p>{{ translate("Loading") }}</p>
-                    </div>
-                    <!-- order items -->
-                    <div class="list-item" v-for="(item, index) in orderItemsList(query.groupBy === 'ORIGIN_PRODUCT' ? `${order.productId}-${order.facilityId}` : `${order.productId}-${order.orderFacilityId}`)" :key="index" @click="router.push(`/order-detail/${item.orderId}`)">
-                      <ion-item lines="none">
-                        <ion-label class="ion-text-wrap">
-                          {{ item.orderName }}
-                          <p>{{ item.orderId }}</p>
-                        </ion-label>
-                      </ion-item>
-                      <ion-chip outline>
-                        <ion-icon :icon="query.groupBy === 'ORIGIN_PRODUCT' ? downloadOutline : sendOutline" />
-                        <ion-label>{{ query.groupBy === "ORIGIN_PRODUCT" ? item.facilityName : item.orderFacilityName }}</ion-label>
-                      </ion-chip>
-                      <div class="tablet ion-text-center">
-                        <ion-label>
-                          {{ item.quantity || 0 }}
-                          <p>{{ translate("ordered") }}</p>
-                        </ion-label>
-                      </div>
-                      <div class="tablet ion-text-center">
-                        <ion-label>
-                          {{ item.shippedQty || 0 }}
-                          <p>{{ translate("shipped") }}</p>
-                        </ion-label>
-                      </div>
-                      <div class="tablet ion-text-center">
-                        <ion-label>
-                          {{ item.receivedQty || 0 }}
-                          <p>{{ translate("received") }}</p>
-                        </ion-label>
-                      </div>
-                      <div class="metadata ion-padding-end">
-                        <ion-note>{{ translate("Created on") }} {{ commonUtil.formatUtcDate(item.orderDate, userStore.getUserProfile.userTimeZone, "dd LLL yyyy") }}</ion-note>
-                        <ion-badge slot="end" :color="commonUtil.getStatusColor(item.itemStatusId)">{{ getStatusDesc(item.itemStatusId) }}</ion-badge>
-                      </div>
-                    </div>
-                  </div>
-                </template>
-              </ion-accordion>
-            </template>
-          </ion-accordion-group>
 
           <ion-infinite-scroll data-testid="transfers-infinite-scroll" @ionInfinite="loadMoreOrders($event)" threshold="100px" v-if="isScrollable">
             <ion-infinite-scroll-content loading-spinner="crescent" :loading-text="translate('Loading')"/>
@@ -271,72 +99,31 @@
 </template>
 
 <script setup lang="ts">
-import { IonAccordion, IonAccordionGroup, IonBadge, IonButton, IonButtons, IonChip, IonContent, IonFab, IonFabButton, IonHeader, IonIcon, IonInfiniteScroll, IonInfiniteScrollContent, IonItem, IonLabel, IonMenuButton, IonNote, IonPage, IonSearchbar, IonSelect, IonSelectOption, IonSpinner, IonThumbnail, IonTitle, IonToolbar, onIonViewWillEnter } from '@ionic/vue';
-import { addOutline, arrowUpOutline, chevronDownOutline, documentTextOutline, downloadOutline, filterOutline, sendOutline, swapVerticalOutline } from 'ionicons/icons';
+import { IonBadge, IonButton, IonButtons, IonChip, IonContent, IonFab, IonFabButton, IonHeader, IonIcon, IonInfiniteScroll, IonInfiniteScrollContent, IonItem, IonLabel, IonMenuButton, IonNote, IonPage, IonSearchbar, IonSpinner, IonTitle, IonToolbar, onIonViewWillEnter } from '@ionic/vue';
+import { addOutline, arrowUpOutline, downloadOutline, filterOutline, sendOutline, swapVerticalOutline } from 'ionicons/icons';
 import router from '@/router';
-import Image from '@/components/Image.vue';
 import Filters from "@/components/Filters.vue";
 import TransferFiltersContent from "@/components/TransferFiltersContent.vue";
 import { commonUtil, translate } from "@common";
 import { computed, ref } from "vue";
 import { useUserStore } from "@/store/user";
 import { useOrderStore } from "@/store/order";
-import { useProductStore as useProduct } from "@/store/product";
 import { useProductStore } from "@/store/productStore";
 import { useUtilStore } from "@/store/util";
+import { useMobile } from '@/composables/useMobile';
 
 const orderStore = useOrderStore();
 const utilStore = useUtilStore();
 const userStore = useUserStore();
 
-const groupByOptions = [
-  {
-    id: "ORDER_ID",
-    description: translate("Order item"),
-    selectFields: ["orderId", "orderName", "facilityId", "facilityName", "orderFacilityId", "orderFacilityName", "orderStatusDesc, orderStatusId"],
-    groupingFields: ["orderId"],
-    groupValueSeparator: '-' 
-  },
-  {
-    id: "DESTINATION",
-    description: translate("Destination"),
-    selectFields: ["orderFacilityId", "orderFacilityName"],
-    groupingFields: ["orderFacilityId"],
-    groupValueSeparator: '-' 
-  },
-  {
-    id: "DESTINATION_PRODUCT",
-    description: translate("Destination and product"),
-    selectFields: ["productId", "orderFacilityId", "orderFacilityName"],
-    groupingFields: ["productId", "orderFacilityId"],
-    groupValueSeparator: '-' 
-  },
-  {
-    id: "ORIGIN",
-    description: translate("Origin"),
-    selectFields: ["facilityId", "facilityName"],
-    groupingFields: ["facilityId"],
-    groupValueSeparator: '-' 
-  },
-  {
-    id: "ORIGIN_PRODUCT",
-    description: translate("Origin and product"),
-    selectFields: ["productId", "facilityId", "facilityName"],
-    groupingFields: ["productId", "facilityId"],
-    groupValueSeparator: '-' 
-  }
-]
-
-const selectedGroupBy = ref(groupByOptions[0])
-
 const orderName = ref("");
 const isFetchingOrders = ref(false);
 const query = computed(() => orderStore.getQuery)
-const getProduct = computed(() => useProduct().getProduct)
 const ordersList = computed(() => orderStore.getOrders)
-const orderItemsList = computed(() => orderStore.getItemsByGroupId)
 const getStatusDesc = computed(() => utilStore.getStatusDesc)
 const isScrollable = computed(() => orderStore.isScrollable)
+
+const isMobile = useMobile();
 
 const isAnyFilterApplied = computed(() => {
   const { orderName, productStoreId, facilityId, orderFacilityId, orderStatusId, carrierPartyId, shipmentMethodTypeId, statusFlowId } = query.value;
@@ -346,46 +133,25 @@ const isAnyFilterApplied = computed(() => {
 onIonViewWillEnter(async () => {
   orderStore.updateOrdersList({ orders: [], ordersCount: 0 })
   isFetchingOrders.value = true;
-  await Promise.allSettled([orderStore.findTransferOrders({ pageSize: import.meta.env.VITE_VIEW_SIZE, pageIndex: 0, groupByConfig: selectedGroupBy.value }), utilStore.fetchStatusDesc(), utilStore.fetchCarriersDetail(), utilStore.fetchShipmentMethodTypeDesc()])
+  await Promise.allSettled([orderStore.findTransferOrders({ pageSize: import.meta.env.VITE_VIEW_SIZE, pageIndex: 0 }), utilStore.fetchStatusDesc(), utilStore.fetchCarriersDetail(), utilStore.fetchShipmentMethodTypeDesc()])
   isFetchingOrders.value = false;
 })
 
-function updateGroupByFilter(groupById: string) {
-  const option = groupByOptions.find(value => value.id === groupById)
-  if(option) {
-    selectedGroupBy.value = option
-    updateAppliedFilters(groupById, "groupBy" , option)
-  }
-}
-
-async function updateAppliedFilters(value: string | boolean, filterName: string, groupByConfig = selectedGroupBy.value ) {
+async function updateAppliedFilters(value: string | boolean, filterName: string ) {
   isFetchingOrders.value = true
   if(filterName === "sort") value = query.value.sort === 'orderDate desc' ? 'orderDate asc' : 'orderDate desc'
   orderStore.updateOrdersList({ orders: [], ordersCount: 0 })
-  await orderStore.updateAppliedFilters({ value, filterName, groupByConfig })
+  await orderStore.updateAppliedFilters({ value, filterName })
   isFetchingOrders.value = false
 }
 
 async function loadMoreOrders(event: any) {
   await orderStore.findTransferOrders({
     pageSize: 20,
-    pageIndex: Math.ceil(ordersList.value.length / 20).toString(),
-    groupByConfig: selectedGroupBy.value
+    pageIndex: Math.ceil(ordersList.value.length / 20).toString()
   }).then(async () => {
     await event.target.complete();
   })
-}
-
-async function showOrderItems($event: any) {
-  const groupValues = $event.detail.value;
-  // Only fetch items when an accordion is opened, not closed
-  if(!groupValues) return
-
-  const newlySelectedGroupValue = groupValues.filter((value: string) => value && !orderStore.orderItemsList[value])
-  if(!newlySelectedGroupValue.length) return
-
-  const groupValue = newlySelectedGroupValue[0];
-  await orderStore.findTransferOrderItems({ groupValue, groupByConfig: selectedGroupBy.value })  
 }
 
 function getFacilityName(facilityId: string) {

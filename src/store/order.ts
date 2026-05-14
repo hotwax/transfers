@@ -9,20 +9,18 @@ import { useUserStore } from "@/store/user";
 interface OrderQueryState {
   orderName: string;
   productStoreId: string;
-  facilityId: string;
-  orderFacilityId: string;
+  originFacilityId: string;
+  destinationFacilityId: string;
   orderStatusId: string;
   carrierPartyId: string;
   shipmentMethodTypeId: string;
   sort: string;
-  groupBy: string;
   statusFlowId: string;
 }
 
 interface OrderState {
   orders: any[];
   ordersCount: number;
-  orderItemsList: Record<string, any[]>;
   query: OrderQueryState;
   current: any;
   orderReceipts: any[];
@@ -32,17 +30,15 @@ export const useOrderStore = defineStore("order", {
   state: (): OrderState => ({
     orders: [],
     ordersCount: 0,
-    orderItemsList: {},
     query: {
       orderName: "",
       productStoreId: "",
-      facilityId: "",
-      orderFacilityId: "",
+      originFacilityId: "",
+      destinationFacilityId: "",
       orderStatusId: "",
       carrierPartyId: "",
       shipmentMethodTypeId: "",
       sort: "orderDate desc",
-      groupBy: "ORDER_ID",
       statusFlowId: ""
     },
     current: {},
@@ -50,7 +46,6 @@ export const useOrderStore = defineStore("order", {
   }),
   getters: {
     getOrders: (state) => state.orders,
-    getItemsByGroupId: (state) => (orderId: string) => state.orderItemsList[orderId] || [],
     isScrollable: (state) => state.orders?.length > 0 && state.orders?.length < state.ordersCount,
     getQuery: (state) => state.query,
     getCurrent: (state) => state.current,
@@ -137,42 +132,24 @@ export const useOrderStore = defineStore("order", {
       let resp;
       let ordersList = [] as any[];
       let ordersCount = 0;
-      const productIds = [] as string[];
-      const product = useProduct();
-      const oms = cookieHelper().get("oms");
-      const baseURL = oms ? (oms.startsWith?.("http") ? (oms.endsWith("/") ? oms : `${oms}/`) : `https://${oms}.hotwax.io/`) : "";
 
       const payload = {
         orderByField: this.query.sort,
         pageSize: params.pageSize,
         pageIndex: params.pageIndex,
-        ...(params.groupByConfig?.selectFields?.length && {
-          fieldsToSelect: params.groupByConfig.selectFields.join(",")
-        })
+        fieldsToSelect: "orderId,orderName,facilityId,orderFacilityId,orderStatusId,orderStatusDesc,orderDate,orderExternalId"
       } as any;
 
       Object.entries(this.query).forEach(([fieldName, fieldValue]) => {
-        if (fieldValue != null && fieldValue !== "" && fieldName !== "groupBy" && fieldName !== "sort") {
+        if (fieldValue != null && fieldValue !== "" && fieldName !== "sort") {
           payload[fieldName] = fieldValue;
         }
       });
 
       try {
-        resp = await api({ url: "oms/transferOrders/grouped", method: "GET", params: payload });
+        resp = await api({ url: "oms/transferOrders", method: "GET", params: payload });
         if (!commonUtil.hasError(resp)) {
-          const groupFields = params.groupByConfig?.groupingFields;
-          const orders = resp.data.orders.map((order: any) => {
-            if (order.productId) productIds.push(order.productId);
-            return {
-              ...order,
-              groupValue: groupFields?.map((field: any) => order[field]).join("-")
-            };
-          });
-
-          if (productIds.length) {
-            await product.fetchProducts({ productIds });
-          }
-
+          const orders = resp.data.orders
           ordersList = payload.pageIndex > 0 ? this.orders.concat(orders) : orders;
           ordersCount = resp.data.ordersCount;
         } else {
@@ -185,80 +162,9 @@ export const useOrderStore = defineStore("order", {
       this.updateOrdersList({ orders: ordersList, ordersCount });
       return resp;
     },
-    async findTransferOrderItems({ groupValue, groupByConfig }: { groupValue: string; groupByConfig: any }) {
-      const productIds = new Set<string>();
-      const groupedItems: any = [];
-      let resp;
-      let pageIndex = 0;
-      const pageSize = 100;
-      const product = useProduct();
-
-      try {
-        const values = groupValue.split(groupByConfig?.groupValueSeparator);
-        const payload: any = {};
-        groupByConfig?.groupingFields.forEach((field: string, key: number) => {
-          payload[field] = values[key];
-        });
-
-        do {
-          payload.pageSize = pageSize;
-          payload.pageIndex = pageIndex;
-          resp = await api({ url: "oms/transferOrders/items", method: "GET", params: payload });
-
-          if (!commonUtil.hasError(resp) && resp.data.response?.docs?.length) {
-            if (groupByConfig?.id === "ORDER_ID") {
-              resp.data.transferOrderItems.forEach((item: any) => {
-                if (item.productId) productIds.add(item.productId);
-                groupedItems.push({
-                  ...item,
-                  shippedQty: item.shippedQuantity || 0,
-                  receivedQty: item.receivedQuantity || 0
-                });
-              });
-            } else {
-              resp.data.transferOrderItems.forEach((item: any) => {
-                if (item.productId) productIds.add(item.productId);
-                const key = item.orderId;
-                if (!groupedItems[key]) {
-                  groupedItems[key] = {
-                    ...item,
-                    shippedQty: item.shippedQuantity || 0,
-                    receivedQty: item.receivedQuantity || 0,
-                    quantity: item.quantity || 0
-                  };
-                } else {
-                  groupedItems[key].quantity += item.quantity || 0;
-                  groupedItems[key].shippedQty += item.shippedQuantity || 0;
-                  groupedItems[key].receivedQty += item.receivedQuantity || 0;
-                }
-              });
-            }
-            pageIndex++;
-          } else {
-            throw resp.data;
-          }
-        } while (resp?.data?.transferOrderItems?.length >= pageSize);
-
-        const items = Object.values(groupedItems);
-        const productIdArray = [...productIds];
-        const batchSize = 250;
-        const productIdBatches = [] as string[][];
-        while (productIdArray.length) {
-          productIdBatches.push(productIdArray.splice(0, batchSize));
-        }
-        await Promise.allSettled(productIdBatches.map((batch) => product.fetchProducts({ productIds: batch })));
-
-        this.orderItemsList[groupValue] = items as any[];
-        return resp;
-      } catch (error) {
-        logger.error(error);
-        this.orderItemsList[groupValue] = [];
-        return resp;
-      }
-    },
-    async updateAppliedFilters({ value, filterName, groupByConfig }: { value: any; filterName: string; groupByConfig: any }) {
+    async updateAppliedFilters({ value, filterName }: { value: any; filterName: string }) {
       (this.query as Record<string, any>)[filterName] = value;
-      await this.findTransferOrders({ pageSize: import.meta.env.VITE_VIEW_SIZE, pageIndex: 0, groupByConfig });
+      await this.findTransferOrders({ pageSize: import.meta.env.VITE_VIEW_SIZE, pageIndex: 0 });
     },
     async fetchOrderDetails(orderId: string) {
       let orderDetail = {} as any;
