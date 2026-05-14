@@ -135,6 +135,8 @@ export const useOrderStore = defineStore("order", {
       let ordersList = [] as any[];
       let ordersCount = 0;
 
+      if(!params.pageIndex || params.pageIndex == 0) this.isFetching = true
+
       const payload = {
         orderByField: this.query.sort,
         pageSize: params.pageSize,

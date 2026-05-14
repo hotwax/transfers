@@ -156,7 +156,9 @@ export default defineComponent({
 
     const copyDiagnostics = async () => {
       try {
-        await navigator.clipboard.writeText(diagnosticData.value);
+        if (navigator.clipboard) {
+          await navigator.clipboard.writeText(diagnosticData.value);
+        }
         commonUtil.showToast(translate("Diagnostics copied to clipboard"));
       } catch (err) {
         console.error('Failed to copy', err);

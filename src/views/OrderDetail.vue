@@ -752,7 +752,7 @@ async function fetchOrderDetails() {
         tasks.value.metadata.errorMessage = translate('Failed to load status metadata');
         tasks.value.metadata.fullError = e;
       }),
-    utilStore.fetchStatusDesc()
+    utilStore.fetchCarriersDetail()
       .then(() => tasks.value.carriers.status = 'success')
       .catch((e) => {
         tasks.value.carriers.status = 'error';
@@ -766,7 +766,7 @@ async function fetchOrderDetails() {
         tasks.value.timeline.errorMessage = translate('Failed to load order timeline');
         tasks.value.timeline.fullError = e;
       }),
-    utilStore.fetchStatusDesc()
+    utilStore.fetchShipmentMethodTypeDesc()
       .then(() => tasks.value.methods.status = 'success')
       .catch((e) => {
         tasks.value.methods.status = 'error';
