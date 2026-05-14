@@ -24,6 +24,7 @@ interface OrderState {
   query: OrderQueryState;
   current: any;
   orderReceipts: any[];
+  isFetching: boolean;
 }
 
 export const useOrderStore = defineStore("order", {
@@ -42,7 +43,8 @@ export const useOrderStore = defineStore("order", {
       statusFlowId: ""
     },
     current: {},
-    orderReceipts: []
+    orderReceipts: [],
+    isFetching: false
   }),
   getters: {
     getOrders: (state) => state.orders,
@@ -160,6 +162,8 @@ export const useOrderStore = defineStore("order", {
       }
 
       this.updateOrdersList({ orders: ordersList, ordersCount });
+
+      if(!params.pageIndex || params.pageIndex == 0) this.isFetching = false
       return resp;
     },
     async updateAppliedFilters({ value, filterName }: { value: any; filterName: string }) {

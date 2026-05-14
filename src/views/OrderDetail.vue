@@ -7,7 +7,14 @@
       </ion-toolbar>
     </ion-header>
     <ion-content>
-      <main data-testid="order-detail-loading" v-if="isFetchingOrderDetail">
+      <StreamingLoader 
+        :tasks="tasks" 
+        :is-open="isLoading" 
+        @dismiss="isLoading = false"
+        @reload="reloadPage"
+        @go-back="goBack"
+      />
+      <main data-testid="order-detail-loading" v-if="isFetchingOrderDetail && !currentOrder.orderId">
         <div class="empty-state">
           <ProgressBar :total-items="currentOrder.totalItems || 0" :loaded-items="currentOrder.loadedItems || 0" v-if="currentOrder.isFetching" />
           <template v-else>
@@ -308,9 +315,27 @@ import { useOrderStore } from "@/store/order";
 import { useProductStore as useProduct } from "@/store/product";
 import { useProductStore } from "@/store/productStore";
 import { useUtilStore } from "@/store/util";
+import StreamingLoader from "@/components/StreamingLoader.vue";
+import router from "@/router";
 
 const orderStore = useOrderStore();
 const utilStore = useUtilStore();
+const isLoading = ref(false);
+
+interface Task {
+  label: string;
+  status: 'pending' | 'success' | 'error';
+  errorMessage: string;
+  fullError: any;
+}
+
+const tasks = ref<Record<string, Task>>({
+  order: { label: 'Order details', status: 'pending', errorMessage: '', fullError: null },
+  metadata: { label: 'Status metadata', status: 'pending', errorMessage: '', fullError: null },
+  carriers: { label: 'Carrier information', status: 'pending', errorMessage: '', fullError: null },
+  timeline: { label: 'Order timeline', status: 'pending', errorMessage: '', fullError: null },
+  methods: { label: 'Shipment methods', status: 'pending', errorMessage: '', fullError: null }
+});
 
 async function openMobileActions() {
   const actions = OrderActionValidator.getFooterActions(currentOrder.value, selectedItemSeqIds.value, flattenedScrollerItems.value.length > 0);
@@ -697,9 +722,7 @@ function handleDiscrepancyFilterChange(value: string) {
 }
 
 onIonViewWillEnter(async () => {
-  await orderStore.fetchOrderDetails(props.orderId)
-  await Promise.allSettled([utilStore.fetchStatusDesc(), utilStore.fetchCarriersDetail(), fetchOrderTimeline(), utilStore.fetchShipmentMethodTypeDesc()])
-  carrierMethods.value = shipmentMethodsByCarrier.value[currentOrder.value.carrierPartyId]
+  await fetchOrderDetails();  
 })
 
 onIonViewWillLeave(() => {
@@ -708,7 +731,59 @@ onIonViewWillLeave(() => {
   selectedDiscrepancyFilter.value = "ALL";
 })
 
+async function fetchOrderDetails() {
+  isLoading.value = true;
+  Object.keys(tasks.value).forEach(key => tasks.value[key].status = 'pending');
 
+  try {
+    await orderStore.fetchOrderDetails(props.orderId)
+    tasks.value.order.status = 'success';
+  } catch (e: any) {
+    tasks.value.order.status = 'error';
+    tasks.value.order.errorMessage = translate('Failed to fetch order details');
+    tasks.value.order.fullError = e;
+  }
+
+  await Promise.allSettled([
+    utilStore.fetchStatusDesc()
+      .then(() => tasks.value.metadata.status = 'success')
+      .catch((e) => {
+        tasks.value.metadata.status = 'error';
+        tasks.value.metadata.errorMessage = translate('Failed to load status metadata');
+        tasks.value.metadata.fullError = e;
+      }),
+    utilStore.fetchStatusDesc()
+      .then(() => tasks.value.carriers.status = 'success')
+      .catch((e) => {
+        tasks.value.carriers.status = 'error';
+        tasks.value.carriers.errorMessage = translate('Failed to retrieve carrier information');
+        tasks.value.carriers.fullError = e;
+      }),
+    fetchOrderTimeline()
+      .then(() => tasks.value.timeline.status = 'success')
+      .catch((e) => {
+        tasks.value.timeline.status = 'error';
+        tasks.value.timeline.errorMessage = translate('Failed to load order timeline');
+        tasks.value.timeline.fullError = e;
+      }),
+    utilStore.fetchStatusDesc()
+      .then(() => tasks.value.methods.status = 'success')
+      .catch((e) => {
+        tasks.value.methods.status = 'error';
+        tasks.value.methods.errorMessage = translate('Failed to fetch shipment methods');
+        tasks.value.methods.fullError = e;
+      })
+  ])
+
+  carrierMethods.value = shipmentMethodsByCarrier.value[currentOrder.value.carrierPartyId]
+
+  const hasError = Object.values(tasks.value).some((task: any) => task.status === 'error');
+  if (!hasError) {
+    setTimeout(() => {
+      isLoading.value = false;
+    }, 500);
+  }
+}
 
 async function changeOrderStatus(updatedStatusId: string) {
   if(updatedStatusId === "ORDER_APPROVED") {
@@ -873,7 +948,14 @@ async function openOrderItemDetailActionsPopover(event: any, item: any){
   await popover.present();
 }
 
+function reloadPage() {
+  fetchOrderDetails();
+}
 
+function goBack() {
+  isLoading.value = false;
+  router.back();
+}
 
 function formatDateTime(date: any) {
   return DateTime.fromMillis(date).toLocaleString({ hour: "numeric", minute: "2-digit", day: "numeric", month: "short", year: "numeric", hourCycle: "h12" })
