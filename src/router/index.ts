@@ -2,7 +2,7 @@ import { createRouter, createWebHistory } from "@ionic/vue-router";
 import { RouteRecordRaw } from "vue-router";
 import Tabs from "@/views/Tabs.vue"
 import { commonUtil, translate } from "@common";
-import { useAuth } from "@common/composables/auth";
+import { useAuth } from "@common/composables/useAuth";
 import OrderDetail from "@/views/OrderDetail.vue";
 import CreateOrder from "@/views/CreateOrder.vue";
 import BulkUpload from "@/views/BulkUpload.vue";

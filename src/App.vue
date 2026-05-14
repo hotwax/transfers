@@ -9,7 +9,7 @@ import { computed, onBeforeMount, onMounted, onUnmounted, ref } from "vue";
 import { IonApp, IonRouterOutlet, loadingController } from "@ionic/vue";
 import { emitter, logger, translate } from "@common"
 import { Settings } from 'luxon'
-import { useAuth } from "@common/composables/auth";
+import { useAuth } from "@common/composables/useAuth";
 import { useUserStore } from "@/store/user";
 import { useProductStore } from "@/store/productStore";
 
