@@ -117,7 +117,7 @@ const utilStore = useUtilStore();
 const userStore = useUserStore();
 
 const orderName = ref("");
-const isFetchingOrders = ref(false);
+const isFetchingOrders = computed(() => orderStore.isFetching);
 const query = computed(() => orderStore.getQuery)
 const ordersList = computed(() => orderStore.getOrders)
 const getStatusDesc = computed(() => utilStore.getStatusDesc)
@@ -131,18 +131,12 @@ const isAnyFilterApplied = computed(() => {
 })
 
 onIonViewWillEnter(async () => {
-  orderStore.updateOrdersList({ orders: [], ordersCount: 0 })
-  isFetchingOrders.value = true;
   await Promise.allSettled([orderStore.findTransferOrders({ pageSize: import.meta.env.VITE_VIEW_SIZE, pageIndex: 0 }), utilStore.fetchStatusDesc(), utilStore.fetchCarriersDetail(), utilStore.fetchShipmentMethodTypeDesc()])
-  isFetchingOrders.value = false;
 })
 
 async function updateAppliedFilters(value: string | boolean, filterName: string ) {
-  isFetchingOrders.value = true
   if(filterName === "sort") value = query.value.sort === 'orderDate desc' ? 'orderDate asc' : 'orderDate desc'
-  orderStore.updateOrdersList({ orders: [], ordersCount: 0 })
   await orderStore.updateAppliedFilters({ value, filterName })
-  isFetchingOrders.value = false
 }
 
 async function loadMoreOrders(event: any) {
@@ -272,7 +266,7 @@ ion-accordion {
   }
 
   .find .search, .find main {
-    padding-block-start: var(--spacer-xl);
+    padding-block-start: var(--spacer-sm);
   }
 
   .find main {

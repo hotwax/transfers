@@ -99,7 +99,6 @@ onMounted(async () => {
 })
 
 async function updateAppliedFilters(value: string | boolean, filterName: string) {
-  orderStore.updateOrdersList({ orders: [], ordersCount: 0 })
   await orderStore.updateAppliedFilters({ value, filterName })
 }
 </script>
