@@ -116,7 +116,7 @@
           <div class="item-search">
             <ion-item>
               <ion-icon slot="start" :icon="listOutline"/>
-              <ion-input data-testid="create-order-add-product-input" :label="translate('Add product')" label-placement="floating" :clear-input="true" v-model="queryString" :placeholder="translate('Searching on SKU')" @keyup.enter="addProductToCount()" />
+              <ion-input data-testid="create-order-add-product-input" :label="translate('Add product')" label-placement="floating" :clear-input="true" v-model="queryString" :placeholder="productSearchPlaceholder" @keyup.enter="addProductToCount()" />
             </ion-item>
             <ion-item lines="none" v-if="isSearchingProduct">
               <ion-spinner color="secondary" name="crescent"></ion-spinner>
@@ -160,8 +160,8 @@
                   <Image :src="getProduct(item.productId)?.mainImageUrl" />
                 </ion-thumbnail>
                 <ion-label>
-                  {{ getProductIdentificationValue(productIdentificationStore.getProductIdentificationPref.primaryId, getProduct(item.productId)) || getProduct(item.productId).productName }}
-                  <p>{{ getProductIdentificationValue(productIdentificationStore.getProductIdentificationPref.secondaryId, getProduct(item.productId)) }}</p>
+                  {{ getProductIdentificationValue(productIdentificationStore.getProductIdentificationPref?.primaryId, getProduct(item.productId)) || getProduct(item.productId).productName }}
+                  <p>{{ getProductIdentificationValue(productIdentificationStore.getProductIdentificationPref?.secondaryId, getProduct(item.productId)) }}</p>
                 </ion-label>
               </ion-item>
               <div class="tablet">
@@ -200,7 +200,7 @@
 import { IonBackButton, IonButton, IonCard, IonCardHeader, IonCardTitle, IonCheckbox, IonChip, IonContent, IonDatetime, IonFab, IonFabButton, IonHeader, IonIcon, IonInput, IonItem, IonLabel, IonModal, IonPage, IonSelect, IonSelectOption, IonSpinner, IonThumbnail, IonTitle, IonToolbar, onIonViewDidEnter, alertController, modalController, popoverController } from '@ionic/vue';
 import { addCircleOutline, checkmarkCircle, checkmarkDoneOutline, ellipsisVerticalOutline, informationCircleOutline, listOutline, sendOutline, storefrontOutline, downloadOutline } from 'ionicons/icons';
 import { getProductIdentificationValue, translate, useProductIdentificationStore, useUserStore } from '@hotwax/dxp-components'
-import { computed, ref, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { getDateWithOrdinalSuffix, showToast } from '@/utils';
 import logger from '@/logger';
 import { useStore } from 'vuex';
@@ -212,7 +212,7 @@ import { UtilService } from '@/services/UtilService';
 import { OrderService } from '@/services/OrderService';
 import router from '@/router';
 import { DateTime } from 'luxon';
-import { hasError } from "@/adapter";
+import { fetchGoodIdentificationTypes, hasError } from "@/adapter";
 import emitter from '@/event-bus';
 import { hasPermission } from '@/authorization';
 
@@ -615,8 +615,23 @@ async function findProduct() {
 
   isSearchingProduct.value = true;
   try {
+    const primaryId = productIdentificationStore.getProductIdentificationPref?.primaryId;
+    let filterString = '';
+
+    if (primaryId === 'SKU') {
+      filterString = `sku: *${queryString.value}*`;
+    } else if (primaryId === 'UPCA') {
+      filterString = `upc: *${queryString.value}*`;
+    } else if (primaryId) {
+      filterString = `goodIdentifications: (${primaryId}/*${queryString.value}*)`;
+    }
+
+    if (!filterString) {
+      throw new Error('Primary ID is missing or invalid');
+    }
+
     const resp = await ProductService.fetchProducts({
-      "filters": ['isVirtual: false', `sku: *${queryString.value}*`],
+      "filters": ['isVirtual: false', filterString],
       "viewSize": 1
     })
     if (!hasError(resp) && resp.data.response?.docs?.length) {
@@ -630,6 +645,65 @@ async function findProduct() {
     logger.error("Product not found", err)
   }
   isSearchingProduct.value = false
+}
+
+const productSearchPlaceholder = ref('');
+
+async function computeProductSearchPlaceholder() {
+  const currentEcomStoreId = useUserStore().getCurrentEComStore?.productStoreId;
+
+  if (!productIdentificationStore.getProductIdentificationPref?.primaryId) {
+    try {
+      await productIdentificationStore.getIdentificationPref(currentEcomStoreId);
+    } catch (e) {
+      console.warn('Failed to load product identification pref', e);
+    }
+  }
+
+  let options = productIdentificationStore.getProductIdentificationOptions;
+  if (!options || !options.length) {
+    options = await prepareProductIdentifierOptions();
+  }
+
+  const primaryId = productIdentificationStore.getProductIdentificationPref?.primaryId;
+  const match = (options || []).find((o: any) => o.goodIdentificationTypeId === primaryId) || null;
+
+  const label = match?.description || match?.label || primaryId;
+  productSearchPlaceholder.value = translate('Searching on ' + label);
+}
+
+onMounted(async () => {
+  await computeProductSearchPlaceholder();
+});
+
+async function prepareProductIdentifierOptions() {
+  const productIdentificationOptions = [
+    { goodIdentificationTypeId: "productId", description: "Product ID" },
+    { goodIdentificationTypeId: "groupId", description: "Group ID" },
+    { goodIdentificationTypeId: "groupName", description: "Group Name" },
+    { goodIdentificationTypeId: "internalName", description: "Internal Name" },
+    { goodIdentificationTypeId: "parentProductName", description: "Parent Product Name" },
+    { goodIdentificationTypeId: "primaryProductCategoryName", description: "Primary Product Category Name" },
+    { goodIdentificationTypeId: "title", description: "Title" }
+  ]
+  
+  const fetchedGoodIdentificationTypes = await fetchGoodIdentificationTypes("HC_GOOD_ID_TYPE");
+  const fetchedGoodIdentificationOptions = fetchedGoodIdentificationTypes || []
+
+  // Combine and deduplicate by goodIdentificationTypeId
+  const combinedOptions = [...productIdentificationOptions, ...fetchedGoodIdentificationOptions];
+  const uniqueOptionsMap = new Map();
+  combinedOptions.forEach(option => {
+    if (option.goodIdentificationTypeId) {
+      uniqueOptionsMap.set(option.goodIdentificationTypeId, option);
+    }
+  });
+
+  return Array.from(uniqueOptionsMap.values()).sort((a, b) => {
+    const descriptionA = (a.description || a.label || '').toLowerCase();
+    const descriptionB = (b.description || b.label || '').toLowerCase();
+    return descriptionA.localeCompare(descriptionB);
+  });
 }
 
 async function fetchStock(productId: string) {
