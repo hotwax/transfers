@@ -1,5 +1,5 @@
 export type OrderItemActionId = 'EDIT' | 'REMOVE' | 'FULFILL' | 'RECEIVE' | 'CLOSE_FULFILLMENT' | 'APPROVE' | 'CANCEL';
-export type OrderFooterActionId = 'ADD_ITEMS' | 'CANCEL' | 'CLOSE_FULFILLMENT' | 'BULK_RECEIVE' | 'APPROVE';
+export type OrderFooterActionId = 'ADD_ITEMS' | 'CANCEL' | 'CLOSE_FULFILLMENT' | 'BULK_RECEIVE' | 'BULK_FULFILL' | 'APPROVE';
 
 export interface ActionValidationResult {
   allowed: boolean;
@@ -76,6 +76,26 @@ export const OrderActionValidator = {
         if (!hasPendingFulfillmentItems) {
           return { allowed: false, reason: 'No items are currently pending fulfillment.' };
         }
+
+        return { allowed: true };
+      }
+
+      case 'BULK_FULFILL': {
+        if (order.statusFlowId !== 'TO_Fulfill_Only' && order.statusFlowId !== 'TO_Fulfill_And_Receive') {
+          return { allowed: false, reason: 'Bulk Fulfill is only applicable for fulfillment flows.' };
+        }
+        if (order.statusId !== 'ORDER_APPROVED') return { allowed: false, reason: 'Order must be Approved.' };
+        if (!hasVisibleItems) return { allowed: false, reason: 'No items.' };
+
+        if (selectedItemSeqIds.size > 0) {
+          const selectedItems = (order.items || []).filter((item: any) => selectedItemSeqIds.has(item.orderItemSeqId));
+          const anyFulfillable = selectedItems.some((item: any) => this.validateItemAction(order, item, 'FULFILL').allowed);
+          if (!anyFulfillable) return { allowed: false, reason: 'None of the selected items can be fulfilled.' };
+          return { allowed: true };
+        }
+
+        const hasFulfillableItems = (order.items || []).some((item: any) => this.validateItemAction(order, item, 'FULFILL').allowed);
+        if (!hasFulfillableItems) return { allowed: false, reason: 'No items are currently eligible for fulfillment.' };
 
         return { allowed: true };
       }
@@ -196,6 +216,15 @@ export const OrderActionValidator = {
         color: 'warning',
         icon: 'warningOutline',
         validation: this.validateFooterAction(order, 'CLOSE_FULFILLMENT', selectedItemSeqIds, hasVisibleItems)
+      });
+    }
+
+    if (flow === 'TO_Fulfill_Only' || flow === 'TO_Fulfill_And_Receive') {
+      actions.push({
+        id: 'BULK_FULFILL',
+        label: 'Bulk Fulfill',
+        icon: 'playOutline',
+        validation: this.validateFooterAction(order, 'BULK_FULFILL', selectedItemSeqIds, hasVisibleItems)
       });
     }
 

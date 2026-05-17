@@ -1,0 +1,23 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "vue-cli serve",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "serve"],
+      "port": 8080
+    },
+    {
+      "name": "vue-cli build",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "build"],
+      "port": 0
+    },
+    {
+      "name": "playwright tests",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "test:playwright"],
+      "port": 0
+    }
+  ]
+}

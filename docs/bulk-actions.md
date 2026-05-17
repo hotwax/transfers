@@ -4,13 +4,15 @@
 This feature allows administrators and warehouse operators to perform high-volume actions on Transfer Orders (TOs) directly from the application. Instead of managing items individually, users can select multiple items across different orders (or within the same order) to fulfill or receive them in bulk.
 
 ## Business Use Case
-In busy warehouse environments, operators often handle dozens of transfer orders daily. Validating each item individually is time-consuming. Bulk actions streamline the "Pick-Pack-Ship" (Fulfillment) and "Receive" workflows.
+In busy warehouse environments, operators often handle dozens of transfer orders daily. Validating each item individually is time-consuming. Bulk actions streamline transfer fulfillment and receiving workflows.
 
 ## Validation Rules
 Bulk actions are governed by the `OrderActionValidator`. An action is only available if both the Order and the Item are in a valid state.
 
 ### 1. Bulk Fulfillment
 Allows items to be marked as fulfilled (shipped). 
+
+Detailed API and implementation spec: [Bulk Fulfillment from Transfer Order Detail](./bulk-fulfillment.md).
 
 | Entity | Status Requirements |
 | :--- | :--- |
@@ -25,9 +27,12 @@ Allows items to be marked as fulfilled (shipped).
 In order to bulk fulfill items in a transfer order, they need to go through the following system actions:
 - Create shipment
 - Approve shipment
-- Pack shipment
 - Add tracking details
 - Ship shipment
+
+If an unshipped transfer shipment already exists for the order, bulk fulfillment should show that open shipment first so an admin can resume shipping or cancel the hanging shipment instead of creating another one.
+
+If that open shipment has more quantity booked than the order still has pending fulfillment, the shipment should be cancellation-only and should not be shippable.
 
 ### 2. Bulk Receipt
 Allows items to be marked as received.

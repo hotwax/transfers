@@ -94,9 +94,9 @@
                 <h2>{{ translate("Timeline") }}</h2>
               </ion-item>
               <ion-item v-for="(event, index) in orderTimeline" :key="index" :button="!!event.eventType" @click="viewEventDetails(event)">
-                <ion-icon 
-                  slot="start" 
-                  :icon="event.eventType === 'SHIPMENT' ? sendOutline : (event.eventType === 'RECEIPT' ? downloadOutline : ticketOutline)" 
+                <ion-icon
+                  slot="start"
+                  :icon="event.eventType === 'SHIPMENT' ? sendOutline : (event.eventType === 'RECEIPT' ? downloadOutline : ticketOutline)"
                   :color="event.eventType ? 'primary' : 'medium'"
                 />
                 <ion-label>
@@ -104,6 +104,19 @@
                   {{ event.statusDesc || (event.statusId ? getStatusDesc(event.statusId) : '') }}
                 </ion-label>
                 <ion-note slot="end">{{ event.statusDatetime ? formatDateTime(event.statusDatetime) : '-' }}</ion-note>
+              </ion-item>
+              <ion-item v-if="openShipmentsSummary.count > 0" data-testid="order-timeline-open-shipments" button @click="openBulkFulfillModal()">
+                <ion-icon slot="start" :icon="warningOutline" color="warning" />
+                <ion-label class="ion-text-wrap">
+                  <p class="overline">{{ openShipmentsSummary.count === 1 ? translate("Open shipment") : translate("Open shipments") }}</p>
+                  <template v-if="openShipmentsSummary.count === 1">
+                    {{ openShipmentsSummary.firstShipmentId }} · {{ openShipmentsSummary.items }} {{ translate("items") }} · {{ openShipmentsSummary.units }} {{ translate("units") }}
+                  </template>
+                  <template v-else>
+                    {{ openShipmentsSummary.count }} {{ translate("shipments") }} · {{ openShipmentsSummary.items }} {{ translate("items") }} · {{ openShipmentsSummary.units }} {{ translate("units") }}
+                  </template>
+                  <p>{{ openShipmentsSummary.count === 1 ? translate("Needs tracking or shipping") : translate("Needs review") }}</p>
+                </ion-label>
               </ion-item>
             </ion-list>
           </div>
@@ -302,6 +315,7 @@ import { useStore } from "vuex";
 import logger from "@/logger";
 import { OrderService } from "@/services/OrderService";
 import BulkReceiveModal from "@/components/BulkReceiveModal.vue";
+import BulkFulfillModal from "@/components/BulkFulfillModal.vue";
 import { hasError, STATUSCOLOR } from "@/adapter";
 import { DateTime } from "luxon";
 import { showToast } from "@/utils";
@@ -397,6 +411,9 @@ async function handleFooterAction(action: OrderFooterAction) {
     case 'BULK_RECEIVE':
       openBulkReceiveModal('RECEIVE');
       break;
+    case 'BULK_FULFILL':
+      openBulkFulfillModal();
+      break;
     case 'CLOSE_FULFILLMENT':
       openCloseFulfillmentModal();
       break;
@@ -429,26 +446,19 @@ function getIcon(iconName: string) {
 
 async function openBulkReceiveModal(actionType: string) {
   let selectedItems = currentOrder.value.items.filter((item: any) => selectedItemSeqIds.value.has(item.orderItemSeqId));
-  
-  // If no items are selected, default to all eligible items for the action
+
   if (selectedItems.length === 0) {
-    selectedItems = currentOrder.value.items.filter((item: any) => 
-      actionType === 'RECEIVE' 
-        ? OrderActionValidator.validateItemAction(currentOrder.value, item, 'RECEIVE').allowed
-        : OrderActionValidator.validateItemAction(currentOrder.value, item, 'FULFILL').allowed
+    selectedItems = currentOrder.value.items.filter((item: any) =>
+      OrderActionValidator.validateItemAction(currentOrder.value, item, 'RECEIVE').allowed
     );
   }
-
-  // Use originFacilityId for fulfillment (FULFILL) and orderFacilityId (destination) for receipt (RECEIVE)
-  const facilityId = actionType === 'FULFILL' ? currentOrder.value.facilityId : currentOrder.value.orderFacilityId;
 
   const bulkReceiveModal = await modalController.create({
     component: BulkReceiveModal,
     componentProps: {
       items: selectedItems,
-      actionType,
       orderId: currentOrder.value.orderId,
-      facilityId,
+      facilityId: currentOrder.value.orderFacilityId,
       order: currentOrder.value
     }
   });
@@ -461,6 +471,37 @@ async function openBulkReceiveModal(actionType: string) {
   });
 
   return bulkReceiveModal.present();
+}
+
+async function openBulkFulfillModal() {
+  let selectedItems = currentOrder.value.items.filter((item: any) => selectedItemSeqIds.value.has(item.orderItemSeqId));
+
+  if (selectedItems.length === 0) {
+    selectedItems = currentOrder.value.items.filter((item: any) =>
+      OrderActionValidator.validateItemAction(currentOrder.value, item, 'FULFILL').allowed
+    );
+  }
+
+  const bulkFulfillModal = await modalController.create({
+    component: BulkFulfillModal,
+    componentProps: {
+      items: selectedItems,
+      orderId: currentOrder.value.orderId,
+      facilityId: currentOrder.value.facilityId,
+      order: currentOrder.value
+    }
+  });
+
+  bulkFulfillModal.onDidDismiss().then(async (result) => {
+    if (result.data?.isCompleted) {
+      selectedItemSeqIds.value = new Set();
+      await store.dispatch("order/fetchOrderDetails", props.orderId);
+      fetchOrderTimeline();
+    }
+    fetchOpenShipmentsSummary();
+  });
+
+  return bulkFulfillModal.present();
 }
 
 async function openCloseFulfillmentModal() {
@@ -578,6 +619,30 @@ const flattenedScrollerItems = computed(() => {
 const { orderTimeline, fetchOrderTimeline } = useOrderTimeline(computed(() => props.orderId));
 const carrierMethods = ref([]) as any;
 const isUpdatingOrderStatus = ref(false);
+
+const openShipmentsSummary = ref({ count: 0, items: 0, units: 0, firstShipmentId: '' });
+async function fetchOpenShipmentsSummary() {
+  try {
+    const resp = await OrderService.fetchOpenTransferShipments(props.orderId);
+    const list = resp?.data?.shipments || resp?.data || [];
+    const open = (Array.isArray(list) ? list : []).filter((s: any) => s && s.statusId !== 'SHIPMENT_SHIPPED' && s.statusId !== 'SHIPMENT_CANCELLED');
+    let items = 0, units = 0;
+    open.forEach((s: any) => {
+      const its = (s.packages || []).flatMap((pkg: any) => pkg.items || []);
+      items += its.length;
+      units += its.reduce((sum: number, it: any) => sum + (Number(it.quantity) || 0), 0);
+    });
+    openShipmentsSummary.value = {
+      count: open.length,
+      items,
+      units,
+      firstShipmentId: open[0]?.shipmentId || ''
+    };
+  } catch (err) {
+    logger.error('Failed to load open shipments summary', err);
+    openShipmentsSummary.value = { count: 0, items: 0, units: 0, firstShipmentId: '' };
+  }
+}
 
 async function closeSelectedItems() {
   const alert = await alertController.create({
@@ -700,7 +765,7 @@ function handleDiscrepancyFilterChange(value: string) {
 
 onIonViewWillEnter(async () => {
   await store.dispatch("order/fetchOrderDetails", props.orderId)
-  await Promise.allSettled([store.dispatch('util/fetchStatusDesc'), store.dispatch("util/fetchCarriersDetail"), fetchOrderTimeline(), store.dispatch("util/fetchShipmentMethodTypeDesc")])
+  await Promise.allSettled([store.dispatch('util/fetchStatusDesc'), store.dispatch("util/fetchCarriersDetail"), fetchOrderTimeline(), fetchOpenShipmentsSummary(), store.dispatch("util/fetchShipmentMethodTypeDesc")])
   carrierMethods.value = shipmentMethodsByCarrier.value[currentOrder.value.carrierPartyId]
 })
 

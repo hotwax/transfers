@@ -321,10 +321,59 @@ const createTransferOrderShipment = async (payload: any): Promise<any> => {
 }
 
 const shipTransferOrderShipment = async (payload: any): Promise<any> => {
+  const { shipmentId, ...data } = payload;
   return api({
-    url: `poorti/transferShipments/${payload.shipmentId}/ship`,
+    url: `poorti/transferShipments/${shipmentId}/ship`,
     method: "post",
+    data
+  });
+}
+
+const fetchTransferShipmentDetail = async (params: any): Promise<any> => {
+  return api({
+    url: "poorti/transferShipments",
+    method: "get",
+    params
+  });
+}
+
+const fetchOpenTransferShipments = async (orderId: string): Promise<any> => {
+  return api({
+    url: "poorti/transferShipments",
+    method: "get",
+    params: { orderId }
+  });
+}
+
+const cancelTransferOrderShipment = async (shipmentId: string): Promise<any> => {
+  return api({
+    url: `poorti/shipments/${shipmentId}`,
+    method: "put",
+    data: { statusId: "SHIPMENT_CANCELLED" }
+  });
+}
+
+const fetchShippingRates = async (params: any): Promise<any> => {
+  return api({
+    url: "poorti/shippingRate/",
+    method: "get",
+    params
+  });
+}
+
+const updateRouteShipmentCarrierAndMethod = async (payload: any): Promise<any> => {
+  return api({
+    url: "/poorti/updateRouteShipmentCarrierAndMethod",
+    method: "put",
     data: payload
+  });
+}
+
+const retryShippingLabel = async (shipmentId: string): Promise<any> => {
+  return api({
+    url: "/poorti/shipments/retryShippingLabel",
+    method: "post",
+    data: { shipmentIds: [shipmentId] }
   });
 }
 
@@ -369,6 +418,12 @@ export const OrderService = {
   findTransferOrderItems,
   createTransferOrderShipment,
   shipTransferOrderShipment,
+  fetchTransferShipmentDetail,
+  fetchOpenTransferShipments,
+  cancelTransferOrderShipment,
+  fetchShippingRates,
+  updateRouteShipmentCarrierAndMethod,
+  retryShippingLabel,
   receiveTransferOrder,
   updateOrderItem,
   updateOrderItemShipGroup,
