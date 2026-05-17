@@ -1,9 +1,14 @@
-import { Plugins } from "@capacitor/core";
+import { Capacitor } from "@capacitor/core";
 import emitter from "@/event-bus";
 
-const { Network } = Plugins;
+const getNetwork = () => {
+  const network = Capacitor.Plugins?.Network;
+  if (!network) throw new Error("Capacitor Network plugin is unavailable.");
+  return network;
+}
 
 const register = async () => {
+  const Network = getNetwork();
   let networkStatus = await Network.getStatus();
   Network.addListener("networkStatusChange", (status: any) => {
     networkStatus = status;
@@ -17,6 +22,7 @@ const register = async () => {
 }
 
 const getNetworkStatus = async () => {
+  const Network = getNetwork();
   const networkStatus = await Network.getStatus();
   return networkStatus;
 }

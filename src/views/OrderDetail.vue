@@ -299,9 +299,9 @@
 </template>
 
 <script setup lang="ts">
-import { IonBackButton, IonBadge, IonButton, IonButtons, IonCard, IonCardContent, IonCardHeader, IonCardTitle, IonCheckbox, IonChip, IonContent, IonFooter, IonHeader, IonIcon, IonItem, IonLabel, IonList, IonNote, IonPage, IonSegment, IonSegmentButton, IonSelect, IonSelectOption, IonSpinner, IonThumbnail, IonTitle, IonToolbar, IonToast, onIonViewWillEnter, onIonViewWillLeave, actionSheetController, alertController, modalController, popoverController } from "@ionic/vue";
+import { IonBackButton, IonBadge, IonButton, IonButtons, IonCard, IonCardContent, IonCardHeader, IonCardTitle, IonCheckbox, IonChip, IonContent, IonFooter, IonHeader, IonIcon, IonItem, IonLabel, IonList, IonNote, IonPage, IonSelect, IonSelectOption, IonSpinner, IonThumbnail, IonTitle, IonToolbar, IonToast, onIonViewWillEnter, onIonViewWillLeave, actionSheetController, alertController, modalController, popoverController } from "@ionic/vue";
 import { getProductIdentificationValue, translate, useProductIdentificationStore } from '@hotwax/dxp-components';
-import { chevronDownOutline, checkmarkDoneOutline, playOutline, ellipsisVerticalOutline, ticketOutline, downloadOutline, sendOutline, shirtOutline, informationCircleOutline, closeCircleOutline, openOutline, warningOutline } from "ionicons/icons";
+import { checkmarkDoneOutline, playOutline, ellipsisVerticalOutline, ticketOutline, downloadOutline, sendOutline, shirtOutline, informationCircleOutline, closeCircleOutline, openOutline, warningOutline } from "ionicons/icons";
 import Image from "@/components/Image.vue";
 import OrderItemDetailActionsPopover from '@/components/OrderItemDetailActionsPopover.vue';
 import ShipmentDetailModal from '@/components/ShipmentDetailModal.vue';
@@ -310,7 +310,7 @@ import CloseFulfillmentModal from '@/components/CloseFulfillmentModal.vue';
 import AddProductModal from "@/components/AddProductModal.vue"
 import { useOrderQueue } from '@/composables/useProductQueue';
 import { useOrderTimeline } from '@/composables/useOrderTimeline';
-import { computed, ref, watch } from "vue";
+import { computed, ref } from "vue";
 import { useStore } from "vuex";
 import logger from "@/logger";
 import { OrderService } from "@/services/OrderService";
@@ -319,7 +319,6 @@ import BulkFulfillModal from "@/components/BulkFulfillModal.vue";
 import { hasError, STATUSCOLOR } from "@/adapter";
 import { DateTime } from "luxon";
 import { showToast } from "@/utils";
-import emitter from "@/event-bus";
 import { formatCurrency } from "@/utils";
 import { OrderActionValidator, OrderFooterAction } from "@/utils/OrderActionValidator";
 import ProgressBar from "@/components/ProgressBar.vue";
@@ -409,7 +408,7 @@ async function handleFooterAction(action: OrderFooterAction) {
       }
       break;
     case 'BULK_RECEIVE':
-      openBulkReceiveModal('RECEIVE');
+      openBulkReceiveModal();
       break;
     case 'BULK_FULFILL':
       openBulkFulfillModal();
@@ -444,7 +443,7 @@ function getIcon(iconName: string) {
   return icons[iconName];
 }
 
-async function openBulkReceiveModal(actionType: string) {
+async function openBulkReceiveModal() {
   let selectedItems = currentOrder.value.items.filter((item: any) => selectedItemSeqIds.value.has(item.orderItemSeqId));
 
   if (selectedItems.length === 0) {
@@ -527,12 +526,7 @@ async function openCloseFulfillmentModal() {
 const shipmentMethodsByCarrier = computed(() => store.getters["util/getShipmentMethodsByCarrier"])
 const getProduct = computed(() => store.getters["product/getProduct"])
 const getCarrierDesc = computed(() => store.getters["util/getCarrierDesc"])
-const getShipmentMethodDesc = computed(() => store.getters["util/getShipmentMethodDesc"])
 const facilities = computed(() => store.getters["util/getFacilitiesByProductStore"])
-// disable order status updates during product processing
-const isOrderStatusUpdateDisabled = computed(() => {
-  return isUpdatingOrderStatus.value || orderQueue.pendingProductIds.value.size > 0;
-});
 
 const isFetchingOrderDetail = computed(() => currentOrder.value?.isFetching ?? false);
 

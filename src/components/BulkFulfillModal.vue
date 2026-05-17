@@ -6,11 +6,6 @@
           <ion-icon :icon="closeOutline" slot="icon-only" />
         </ion-button>
       </ion-buttons>
-      <ion-buttons slot="start" v-if="step === 'SHIP' && canGoBackToChoose">
-        <ion-button data-testid="bulk-fulfill-back-btn" :disabled="isProcessing" @click="backToChoose">
-          <ion-icon :icon="arrowBackOutline" slot="icon-only" />
-        </ion-button>
-      </ion-buttons>
       <ion-title>{{ translate("Bulk Fulfill") }}</ion-title>
     </ion-toolbar>
     <ion-progress-bar data-testid="bulk-fulfill-step-progress" :value="stepProgress"></ion-progress-bar>
@@ -31,17 +26,17 @@
             :key="s.shipmentId"
             :data-testid="`bulk-fulfill-open-shipment-${s.shipmentId}`"
             button
+            detail
             @click="resumeShipment(s)">
             <ion-icon v-if="!s.canShip" slot="start" :icon="warningOutline" color="warning" />
             <ion-label class="ion-text-wrap">
-              <h3>{{ translate("Shipment") }} {{ s.shipmentId }}</h3>
+              {{ translate("Shipment") }} {{ s.shipmentId }}
               <p>{{ s.itemCount }} {{ translate("items") }} &nbsp;·&nbsp; {{ s.unitCount }} {{ translate("units") }}</p>
               <p v-if="s.carrierPartyId || s.shipmentMethodTypeId">
                 {{ s.carrierPartyId ? getCarrierDesc(s.carrierPartyId) : '' }}
                 <span v-if="s.carrierPartyId && s.shipmentMethodTypeId"> · </span>
                 {{ s.shipmentMethodTypeId ? methodDesc(s.carrierPartyId, s.shipmentMethodTypeId) : '' }}
               </p>
-              <ion-note v-if="s.createdDate">{{ translate("Created") }} {{ formatDate(s.createdDate) }}</ion-note>
               <template v-if="!s.canShip">
                 <p class="ion-text-wrap" :data-testid="`bulk-fulfill-open-shipment-${s.shipmentId}-overbooked`">
                   <ion-text color="warning">{{ translate("Cannot ship: shipment quantity exceeds pending fulfillment") }}</ion-text>
@@ -49,17 +44,11 @@
                 <p><ion-text color="medium">{{ translate("Cancel shipment to continue") }}</ion-text></p>
               </template>
             </ion-label>
+            <ion-note slot="end" v-if="s.createdDate">{{ translate("Created") }} {{ formatDate(s.createdDate) }}</ion-note>
           </ion-item>
         </ion-list>
 
         <div class="ion-padding">
-          <ion-button
-            data-testid="bulk-fulfill-start-new-btn"
-            :disabled="eligibleItems.length === 0 || isProcessing"
-            expand="block"
-            @click="startNew">
-            {{ translate("Start new shipment") }}
-          </ion-button>
           <ion-text v-if="eligibleItems.length === 0" color="medium">
             <p class="ion-text-center">{{ translate("No items are available to start a new shipment.") }}</p>
           </ion-text>
@@ -99,12 +88,6 @@
           </ion-label>
         </ion-item>
       </ion-list>
-
-      <div class="ion-padding">
-        <ion-button :disabled="eligibleItems.length === 0 || isProcessing" data-testid="bulk-fulfill-create-btn" expand="block" @click="createShipment">
-          {{ translate("Create shipment") }}
-        </ion-button>
-      </div>
     </div>
 
     <!-- STEP: Ship Shipment -->
@@ -114,7 +97,7 @@
           <ion-item lines="none" color="warning">
             <ion-icon :icon="warningOutline" slot="start" />
             <ion-label class="ion-text-wrap">
-              <h3>{{ translate("This shipment cannot be shipped") }}</h3>
+              {{ translate("This shipment cannot be shipped") }}
               <p>{{ translate("It contains more quantity than is currently pending fulfillment.") }}</p>
             </ion-label>
           </ion-item>
@@ -125,11 +108,6 @@
             </ion-label>
           </ion-item>
         </ion-list>
-        <div class="ion-padding">
-          <ion-button data-testid="bulk-fulfill-cancel-shipment-btn" :disabled="isProcessing" expand="block" color="danger" @click="cancelShipmentFromShipStep">
-            {{ translate("Cancel shipment") }}
-          </ion-button>
-        </div>
         <div v-if="processingMessage" class="ion-text-center ion-padding">
           <ion-label><p>{{ processingMessage }}</p></ion-label>
         </div>
@@ -152,22 +130,15 @@
         </div>
 
         <ion-list v-else-if="shippingRates.length">
-          <ion-item v-for="(rate, index) in shippingRates" :key="index">
-            <ion-label>
-              {{ formatCurrency(rate.shippingEstimateAmount, shipmentDetail?.currencyUom) }}
-              <p>{{ rateName(rate) }}</p>
-              <p v-if="rate.serviceDays">{{ translate("Service Days:") }} {{ rate.serviceDays }}</p>
-            </ion-label>
-            <ion-button
-              :data-testid="`bulk-fulfill-rate-btn-${index}`"
-              slot="end"
-              fill="outline"
-              :disabled="!!selectedCarrierService || isProcessing"
-              @click="generateLabelForRate(rate)">
-              <ion-spinner v-if="selectedCarrierService === rateKey(rate)" slot="start" name="crescent" />
-              {{ translate("Generate label") }}
-            </ion-button>
-          </ion-item>
+          <ion-radio-group data-testid="bulk-fulfill-rate-group" :value="selectedRateKey" @ionChange="selectedRateKey = $event.detail.value">
+            <ion-item v-for="(rate, index) in shippingRates" :key="index">
+              <ion-radio :data-testid="`bulk-fulfill-rate-radio-${index}`" :value="rateKey(rate)">
+                {{ formatCurrency(rate.shippingEstimateAmount, shipmentDetail?.currencyUom) }}
+                <p>{{ rateName(rate) }}</p>
+                <p v-if="rate.serviceDays">{{ translate("Service Days:") }} {{ rate.serviceDays }}</p>
+              </ion-radio>
+            </ion-item>
+          </ion-radio-group>
         </ion-list>
 
         <div v-else class="ion-text-center ion-padding">
@@ -191,23 +162,6 @@
         </ion-item>
       </ion-list>
 
-      <div class="ion-padding">
-        <ion-button
-          v-if="shipMode === 'TRACKING'"
-          data-testid="bulk-fulfill-ship-btn"
-          :disabled="isProcessing || !manual.trackingIdNumber.trim()"
-          expand="block"
-          @click="shipWithManualTracking">
-          {{ translate("Ship shipment") }}
-        </ion-button>
-        <ion-button data-testid="bulk-fulfill-ship-no-tracking-btn" :disabled="isProcessing" expand="block" fill="clear" @click="shipWithoutTracking">
-          {{ translate("Ship without tracking") }}
-        </ion-button>
-        <ion-button data-testid="bulk-fulfill-cancel-shipment-btn" :disabled="isProcessing" expand="block" fill="clear" color="danger" @click="cancelShipmentFromShipStep">
-          {{ translate("Cancel shipment") }}
-        </ion-button>
-      </div>
-
       <div v-if="processingMessage" class="ion-text-center ion-padding">
         <ion-label><p>{{ processingMessage }}</p></ion-label>
       </div>
@@ -217,8 +171,8 @@
     <!-- STEP: Result -->
     <div v-else-if="step === 'RESULT'">
       <div class="ion-text-center ion-padding">
-        <ion-icon v-if="resultOk" :icon="checkmarkCircleOutline" color="success" style="font-size: 64px;" />
-        <ion-icon v-else :icon="alertCircleOutline" color="danger" style="font-size: 64px;" />
+        <ion-icon v-if="resultOk" :icon="checkmarkCircleOutline" color="success" />
+        <ion-icon v-else :icon="alertCircleOutline" color="danger" />
 
         <p v-if="resultOk">{{ translate("Successfully fulfilled") }} <span data-testid="bulk-fulfill-success-count">{{ shippedItemCount }}</span> {{ translate("items.") }}</p>
         <template v-else>
@@ -226,27 +180,36 @@
           <p v-if="currentShipmentId">{{ translate("Shipment") }}: <strong>{{ currentShipmentId }}</strong></p>
         </template>
       </div>
-
-      <div class="ion-padding">
-        <template v-if="resultOk">
-          <ion-button data-testid="bulk-fulfill-done-btn" expand="block" @click="closeFinal(true)">
-            {{ translate("Done") }}
-          </ion-button>
-        </template>
-        <template v-else>
-          <ion-button v-if="canRetryShip" data-testid="bulk-fulfill-retry-btn" :disabled="isProcessing" expand="block" @click="retryShipping">
-            {{ translate("Retry shipping") }}
-          </ion-button>
-          <ion-button data-testid="bulk-fulfill-back-to-ship-btn" :disabled="isProcessing" expand="block" fill="outline" @click="step = 'SHIP'">
-            {{ translate("Back to shipping details") }}
-          </ion-button>
-          <ion-button data-testid="bulk-fulfill-cancel-shipment-result-btn" :disabled="isProcessing" expand="block" fill="clear" color="danger" @click="cancelShipmentFromShipStep">
-            {{ translate("Cancel shipment") }}
-          </ion-button>
-        </template>
-      </div>
     </div>
   </ion-content>
+
+  <ion-footer>
+    <ion-toolbar>
+      <ion-buttons slot="start">
+        <ion-button v-if="showFooterBack" data-testid="bulk-fulfill-back-btn" :disabled="isProcessing" @click="handleFooterBack">
+          {{ translate("Back") }}
+        </ion-button>
+        <ion-button v-if="showFooterCancel" data-testid="bulk-fulfill-cancel-btn" :disabled="isProcessing" color="medium" @click="requestClose">
+          {{ translate("Cancel") }}
+        </ion-button>
+        <ion-button v-if="showFooterCancelShipment" data-testid="bulk-fulfill-cancel-shipment-btn" :disabled="isProcessing" color="danger" @click="cancelShipmentFromShipStep">
+          {{ translate("Cancel shipment") }}
+        </ion-button>
+      </ion-buttons>
+
+      <ion-buttons slot="end">
+        <ion-button
+          v-if="showFooterPrimary"
+          data-testid="bulk-fulfill-primary-btn"
+          color="primary"
+          :disabled="footerPrimaryDisabled"
+          @click="handleFooterPrimary">
+          <ion-spinner v-if="isProcessing" slot="start" name="crescent" />
+          {{ footerPrimaryLabel }}
+        </ion-button>
+      </ion-buttons>
+    </ion-toolbar>
+  </ion-footer>
 </template>
 
 <script setup lang="ts">
@@ -254,6 +217,7 @@ import {
   IonButton,
   IonButtons,
   IonContent,
+  IonFooter,
   IonHeader,
   IonIcon,
   IonInput,
@@ -262,6 +226,8 @@ import {
   IonList,
   IonNote,
   IonProgressBar,
+  IonRadio,
+  IonRadioGroup,
   IonSegment,
   IonSegmentButton,
   IonSelect,
@@ -274,7 +240,7 @@ import {
   modalController
 } from "@ionic/vue";
 import { computed, onMounted, reactive, ref } from "vue";
-import { alertCircleOutline, arrowBackOutline, checkmarkCircleOutline, closeOutline, informationCircleOutline, warningOutline } from "ionicons/icons";
+import { alertCircleOutline, checkmarkCircleOutline, closeOutline, informationCircleOutline, warningOutline } from "ionicons/icons";
 import { translate } from "@hotwax/dxp-components";
 import { useStore } from "vuex";
 import { OrderService } from "@/services/OrderService";
@@ -308,6 +274,7 @@ const shipmentDetail = ref<any>(null);
 const shippingRates = ref<any[]>([]);
 const isLoadingRates = ref(false);
 const selectedCarrierService = ref('');
+const selectedRateKey = ref('');
 
 const resultOk = ref(false);
 const resultMessage = ref('');
@@ -361,6 +328,47 @@ const canShipCurrent = computed(() => {
 });
 
 const overbookedDiffs = computed(() => currentShipmentNormalized.value?.overbookedItems || []);
+
+const selectedRate = computed(() =>
+  shippingRates.value.find((rate: any) => rateKey(rate) === selectedRateKey.value)
+);
+
+const showFooterBack = computed(() =>
+  (step.value === 'CONFIRM' && initialHadOpenShipments.value) ||
+  (step.value === 'SHIP' && canGoBackToChoose.value) ||
+  (step.value === 'RESULT' && !resultOk.value && !!currentShipmentId.value)
+);
+
+const showFooterCancel = computed(() =>
+  step.value !== 'RESULT' && !currentShipmentId.value && !showFooterBack.value
+);
+
+const showFooterCancelShipment = computed(() =>
+  !!currentShipmentId.value && !(step.value === 'RESULT' && resultOk.value)
+);
+
+const showFooterPrimary = computed(() =>
+  step.value !== 'SHIP' || canShipCurrent.value
+);
+
+const footerPrimaryLabel = computed(() => {
+  if (step.value === 'CHOOSE') return translate("Start new shipment");
+  if (step.value === 'CONFIRM') return translate("Create shipment");
+  if (step.value === 'SHIP') return translate("Ship");
+  if (resultOk.value) return translate("Done");
+  if (canRetryShip.value) return translate("Retry shipping");
+  if (!currentShipmentId.value) return translate("Close");
+  return translate("Back to shipping details");
+});
+
+const footerPrimaryDisabled = computed(() => {
+  if (isProcessing.value) return true;
+  if (step.value === 'CHOOSE') return eligibleItems.value.length === 0 || isLoadingOpen.value;
+  if (step.value === 'CONFIRM') return eligibleItems.value.length === 0;
+  // SHIP step: button is always enabled so the user can ship with whatever
+  // they've entered (or nothing). RESULT inherits the default false.
+  return false;
+});
 
 function productLabel(productId?: string) {
   if (!productId) return '';
@@ -530,9 +538,50 @@ function backToChoose() {
   createdShipmentId.value = '';
   shipmentDetail.value = null;
   shippingRates.value = [];
+  selectedRateKey.value = '';
   lastShipPayload.value = null;
   lastShipKind.value = '';
   step.value = 'CHOOSE';
+}
+
+function handleFooterBack() {
+  if (step.value === 'CONFIRM') {
+    step.value = 'CHOOSE';
+  } else if (step.value === 'SHIP') {
+    backToChoose();
+  } else if (step.value === 'RESULT') {
+    step.value = 'SHIP';
+  }
+}
+
+async function handleFooterPrimary() {
+  if (step.value === 'CHOOSE') {
+    startNew();
+  } else if (step.value === 'CONFIRM') {
+    await createShipment();
+  } else if (step.value === 'SHIP') {
+    await shipCurrent();
+  } else if (resultOk.value) {
+    closeFinal(true);
+  } else if (canRetryShip.value) {
+    await retryShipping();
+  } else if (!currentShipmentId.value) {
+    closeFinal(false);
+  } else {
+    step.value = 'SHIP';
+  }
+}
+
+async function shipCurrent() {
+  if (shipMode.value === 'LABEL' && selectedRate.value) {
+    await generateLabelForRate(selectedRate.value);
+    return;
+  }
+  if (shipMode.value === 'TRACKING' && manual.trackingIdNumber.trim()) {
+    await shipWithManualTracking();
+    return;
+  }
+  await shipWithoutTracking();
 }
 
 async function createShipment() {
@@ -589,9 +638,11 @@ async function loadShipmentAndRates(shipmentId: string) {
     ]);
     shipmentDetail.value = detailResp?.data?.shipments?.[0] || detailResp?.data || null;
     shippingRates.value = ratesResp?.data?.shippingRates || [];
+    selectedRateKey.value = shippingRates.value.length === 1 ? rateKey(shippingRates.value[0]) : '';
   } catch (err) {
     logger.error('Failed to load shipping rates', err);
     shippingRates.value = [];
+    selectedRateKey.value = '';
   } finally {
     isLoadingRates.value = false;
   }
@@ -719,6 +770,7 @@ function finishWithShipFailure(err: any) {
 
 async function cancelShipmentFromShipStep() {
   if (!currentShipmentId.value) return;
+  let confirmed = false;
   const alert = await alertController.create({
     header: translate('Cancel shipment'),
     message: translate('This will cancel shipment @id and return inventory.').replace('@id', currentShipmentId.value),
@@ -727,11 +779,15 @@ async function cancelShipmentFromShipStep() {
       {
         text: translate('Cancel shipment'),
         role: 'destructive',
-        handler: async () => { await doCancelShipment(); }
+        handler: () => { confirmed = true; }
       }
     ]
   });
   await alert.present();
+  await alert.onDidDismiss();
+  if (confirmed) {
+    await doCancelShipment();
+  }
 }
 
 async function doCancelShipment() {
@@ -781,31 +837,24 @@ async function requestClose() {
     return;
   }
 
+  let choice: '' | 'CANCEL' | 'LEAVE' = '';
   const alert = await alertController.create({
     header: translate('Shipment in progress'),
     message: translate('Shipment @id was created but not shipped. What would you like to do?').replace('@id', currentShipmentId.value),
     buttons: [
-      {
-        text: translate('Return to shipping'),
-        role: 'cancel'
-      },
-      {
-        text: translate('Cancel shipment and exit'),
-        role: 'destructive',
-        handler: async () => {
-          await doCancelShipment();
-          modalController.dismiss({ isCompleted: true, cancelled: true });
-        }
-      },
-      {
-        text: translate('Leave without cancelling'),
-        handler: () => {
-          modalController.dismiss({ isCompleted: false, openShipmentLeft: currentShipmentId.value });
-        }
-      }
+      { text: translate('Return to shipping'), role: 'cancel' },
+      { text: translate('Cancel shipment and exit'), role: 'destructive', handler: () => { choice = 'CANCEL'; } },
+      { text: translate('Leave without cancelling'), handler: () => { choice = 'LEAVE'; } }
     ]
   });
   await alert.present();
+  await alert.onDidDismiss();
+  if (choice === 'CANCEL') {
+    await doCancelShipment();
+    modalController.dismiss({ isCompleted: true, cancelled: true });
+  } else if (choice === 'LEAVE') {
+    modalController.dismiss({ isCompleted: false, openShipmentLeft: currentShipmentId.value });
+  }
 }
 
 function closeFinal(completed: boolean) {
