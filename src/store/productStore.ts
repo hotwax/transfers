@@ -86,7 +86,7 @@ export const useProductStore = defineStore('productStore', {
 
       try {
         const resp = await api({
-          url: `/oms/productStores/${productStoreId}/facilities`,
+          url: `/admin/productStores/${productStoreId}/facilities`,
           method: "get",
           params: {
             productStoreId,
@@ -114,7 +114,7 @@ export const useProductStore = defineStore('productStore', {
     },
     async fetchProductStoreDetails(payload: any): Promise<any> {
       return api({
-        url: `/oms/productStores/${payload.productStoreId}`,
+        url: `/admin/productStores/${payload.productStoreId}`,
         method: "GET"
       });
     },
@@ -171,7 +171,7 @@ export const useProductStore = defineStore('productStore', {
         }
 
         const resp = await api({
-          url: `/oms/productStores`,
+          url: `/admin/productStores`,
           method: "GET",
           params: payload
         });
