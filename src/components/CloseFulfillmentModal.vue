@@ -27,8 +27,8 @@
             <Image :src="getProduct(item.productId)?.mainImageUrl" />
           </ion-thumbnail>
           <ion-label>
-            <h2>{{ getProductIdentificationValue(productIdentificationStore.getProductIdentificationPref.primaryId, getProduct(item.productId)) || getProduct(item.productId)?.productName }}</h2>
-            <p>{{ getProductIdentificationValue(productIdentificationStore.getProductIdentificationPref.secondaryId, getProduct(item.productId)) }}</p>
+            <h2>{{ commonUtil.getProductIdentificationValue(useProductStore().getProductIdentificationPref.primaryId, getProduct(item.productId)) || getProduct(item.productId)?.productName }}</h2>
+            <p>{{ commonUtil.getProductIdentificationValue(useProductStore().getProductIdentificationPref.secondaryId, getProduct(item.productId)) }}</p>
             <p>
               <ion-text>{{ translate("Fulfilled qty") }}: {{ item.totalIssuedQuantity || 0 }}</ion-text>
               &nbsp;|&nbsp;
@@ -109,22 +109,20 @@ import {
 } from '@ionic/vue';
 import { arrowBackOutline, checkmarkCircleOutline } from 'ionicons/icons';
 import { computed, ref } from 'vue';
-import { useStore } from 'vuex';
-import { getProductIdentificationValue, translate, useProductIdentificationStore } from '@hotwax/dxp-components';
-import { OrderService } from '@/services/OrderService';
-import { showToast } from '@/utils';
-import { hasError } from '@/adapter';
+import { commonUtil, translate } from "@common";
 import Image from '@/components/Image.vue';
 import { OrderActionValidator } from '@/utils/OrderActionValidator';
-import logger from '@/logger';
+import { logger } from "@common";
+import { useOrderStore } from "@/store/order";
+import { useProductStore as useProduct } from "@/store/product";
+import { useProductStore } from "@/store/productStore";
 
 const props = defineProps<{ order: any; selectedItemSeqIds?: Set<string> }>();
 
 const PREVIEW_LIMIT = 10;
 
-const store = useStore();
-const productIdentificationStore = useProductIdentificationStore();
-const getProduct = computed(() => store.getters['product/getProduct']);
+const orderStore = useOrderStore();
+const getProduct = computed(() => useProduct().getProduct);
 const isProcessing = ref(false);
 const isCompleted = ref(false);
 const completedItemsCount = ref(0);
@@ -181,11 +179,11 @@ async function runCloseFulfillment() {
   for (let i = 0; i < allItems.length; i += PAGE_SIZE) {
     const chunk = allItems.slice(i, i + PAGE_SIZE);
     try {
-      const resp = await OrderService.closeFulfillment({
+      const resp = await orderStore.closeFulfillment({
         orderId: props.order.orderId,
         items: chunk
       });
-      if (!hasError(resp)) {
+      if (!commonUtil.hasError(resp)) {
         successCount.value += chunk.length;
       } else {
         errorCount.value += chunk.length;

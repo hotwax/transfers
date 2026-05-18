@@ -12,13 +12,13 @@
       </ion-select>
     </ion-item>
     <ion-item lines="none">
-      <ion-select data-testid="transfer-filter-origin-select" :label="translate('Origin')" interface="popover" :value="query.facilityId" @ionChange="updateAppliedFilters($event['detail'].value, 'facilityId')">
+      <ion-select data-testid="transfer-filter-origin-select" :label="translate('Origin')" interface="popover" :value="query.originFacilityId" @ionChange="updateAppliedFilters($event['detail'].value, 'originFacilityId')">
         <ion-select-option value="">{{ translate("All") }}</ion-select-option>
         <ion-select-option v-for="facility in facilities" :key="facility.facilityId" :value="facility.facilityId">{{ facility.facilityName ? facility.facilityName : facility.facilityId }}</ion-select-option>
       </ion-select>
     </ion-item>
     <ion-item lines="none">
-      <ion-select data-testid="transfer-filter-destination-select" :label="translate('Destination')" interface="popover" :value="query.orderFacilityId" @ionChange="updateAppliedFilters($event['detail'].value, 'orderFacilityId')">
+      <ion-select data-testid="transfer-filter-destination-select" :label="translate('Destination')" interface="popover" :value="query.destinationFacilityId" @ionChange="updateAppliedFilters($event['detail'].value, 'destinationFacilityId')">
         <ion-select-option value="">{{ translate("All") }}</ion-select-option>
         <ion-select-option v-for="facility in facilities" :key="facility.facilityId" :value="facility.facilityId">{{ facility.facilityName ? facility.facilityName : facility.facilityId }}</ion-select-option>
       </ion-select>
@@ -58,20 +58,18 @@
 
 <script setup lang="ts">
 import { IonItem, IonLabel, IonList, IonSelect, IonSelectOption } from '@ionic/vue';
-import { translate, useUserStore } from '@hotwax/dxp-components'
-import { useStore } from 'vuex';
+import { translate } from '@common'
 import { computed, onMounted, ref } from "vue";
-import { hasError } from "@/adapter";
-import { UtilService } from '@/services/UtilService';
-import logger from '@/logger';
+import { useOrderStore } from "@/store/order";
+import { useUtilStore } from "@/store/util";
+import { useProductStore } from "@/store/productStore";
+import { useUserStore } from "@/store/user";
 
-const props = defineProps(['groupByConfig']);
-
-const store = useStore();
 const userStore = useUserStore();
+const orderStore = useOrderStore();
+const utilStore = useUtilStore();
+const productStore = useProductStore();
 
-const productStores = ref({}) as any;
-const facilities = ref([]) as any;
 const orderStatusIds = ["ORDER_APPROVED", "ORDER_CANCELLED", "ORDER_COMPLETED", "ORDER_CREATED"];
 const statusFlows = [
   {
@@ -88,45 +86,19 @@ const statusFlows = [
   }
 ]
 
-const query = computed(() => store.getters["order/getQuery"])
-const getStatusDesc = computed(() => store.getters["util/getStatusDesc"])
-const shipmentMethods = computed(() => store.getters["util/getShipmentMethods"])
-const carriersList = computed(() => store.getters["util/getCarriers"])
+const query = computed(() => orderStore.getQuery)
+const getStatusDesc = computed(() => utilStore.getStatusDesc)
+const shipmentMethods = computed(() => utilStore.getShipmentMethods)
+const carriersList = computed(() => utilStore.getCarriers)
+const facilities = computed(() => productStore.getAllFacilities)
+const productStores = computed(() => productStore.getAllProductStores)
 
 onMounted(async () => {
-  await fetchFacilities();
-  productStores.value = await userStore.getEComStores();
+  await productStore.fetchAllFacilities();
+  await useProductStore().fetchAllProductStores();
 })
 
-async function fetchFacilities() {
-  let pageIndex = 0, resp
-  try {
-    do {
-      resp = await UtilService.fetchFacilities({
-        facilityTypeId: "VIRTUAL_FACILITY",
-        facilityTypeId_not: "Y",
-        parentTypeId: "VIRTUAL_FACILITY",
-        parentTypeId_not: "Y",
-        pageSize: 100,
-        pageIndex
-      });
-
-      if (!hasError(resp)) {
-        if (resp.data.length) {
-          facilities.value = facilities.value.concat(resp.data);
-        }
-      } else {
-        throw resp.data;
-      }
-      pageIndex++;
-    } while (resp.data.length >= 100);
-  } catch (error) {
-    logger.error(error);
-  }
-}
-
 async function updateAppliedFilters(value: string | boolean, filterName: string) {
-  await store.dispatch('order/updateOrdersList', { orders: [], ordersCount: 0 })
-  await store.dispatch('order/updateAppliedFilters', { value, filterName, groupByConfig: props.groupByConfig })
+  await orderStore.updateAppliedFilters({ value, filterName })
 }
 </script>

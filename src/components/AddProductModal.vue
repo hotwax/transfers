@@ -19,8 +19,8 @@
             <Image :src="product.mainImageUrl" />
           </ion-thumbnail>
           <ion-label>
-            <h2>{{ getProductIdentificationValue(productIdentificationStore.getProductIdentificationPref.primaryId, product) || getProduct(product.productId).productName }}</h2>
-            <p>{{ getProductIdentificationValue(productIdentificationStore.getProductIdentificationPref.secondaryId, product) }}</p>
+            <h2>{{ commonUtil.getProductIdentificationValue(useProductStore().getProductIdentificationPref.primaryId, product) || getProduct(product.productId).productName }}</h2>
+            <p>{{ commonUtil.getProductIdentificationValue(useProductStore().getProductIdentificationPref.secondaryId, product) }}</p>
           </ion-label>
           <ion-icon v-if="isProductInOrder(product.productId)" color="success" :icon="checkmarkCircle" data-testid="add-product-in-order-${product.productId}" />
           <ion-button v-else data-testid="add-product-btn-${product.productId}" fill="outline" @click="addItemToOrder(product)" :disabled="pendingProductIds.has(product.productId)">
@@ -62,21 +62,18 @@ import {
   IonToolbar,
   modalController,
 } from "@ionic/vue";
-import { computed, onUnmounted, ref, defineProps } from "vue";
+import { computed, onUnmounted, ref } from "vue";
 import { closeOutline, checkmarkCircle } from "ionicons/icons";
-import store from "@/store";
-import { getProductIdentificationValue, translate, useProductIdentificationStore } from "@hotwax/dxp-components";
 import Image from "@/components/Image.vue"
-import logger from "@/logger";
-import { ProductService } from "@/services/ProductService";
-import { hasError } from "@/adapter";
+import { commonUtil, logger, translate, useSolrSearch } from "@common";
+import { useOrderStore } from "@/store/order";
+import { useProductStore } from "@/store/productStore";
+import { useProductStore as useProduct } from "@/store/product";
 
 const props = defineProps(["addProductToQueue", "pendingProductIds", "isProductInOrder", "onProductAdded"])
 
-const productIdentificationStore = useProductIdentificationStore();
-
-const getProduct = computed(() => (id: any) => store.getters["product/getProduct"](id))
-const currentOrder = computed(() => store.getters["order/getCurrent"])
+const getProduct = computed(() => useProduct().getProduct)
+const currentOrder = computed(() => useOrderStore().getCurrent)
 
 let queryString = ref('')
 const isSearching = ref(false);
@@ -98,18 +95,20 @@ async function handleSearch() {
 }
 
 async function getProducts( vSize?: any, vIndex?: any) {
-  const viewSize = vSize ? vSize : process.env.VUE_APP_VIEW_SIZE;
+  const viewSize = vSize ? vSize : import.meta.env.VITE_VIEW_SIZE;
   const viewIndex = vIndex ? vIndex : 0;
 
   try {
-    const resp = await ProductService.fetchProducts({
-      "filters": ['isVirtual: false', 'isVariant: true'],
-      keyword: queryString.value.trim(),
-      viewSize,
-      viewIndex
-    })
+    const payload = {} as any
+    payload.filters["isVirtual"] = { value: "false" };
+    payload.filters["isVariant"] = { value: "true" };
+    payload.keyword = queryString.value.trim();
+    payload.viewSize = viewSize;
+    payload.viewIndex = viewIndex;
 
-    if(!hasError(resp) && resp.data.response?.docs?.length) {
+    const resp = await useSolrSearch().searchProducts(payload)
+
+    if(resp?.products?.length) {
       const productsList = resp.data.response.docs
       if(viewIndex) {
         products.value = products.value.concat(productsList);
@@ -117,7 +116,7 @@ async function getProducts( vSize?: any, vIndex?: any) {
         products.value = productsList;
         total.value = resp.data.response.numFound;
       }
-      store.dispatch("product/addProductToCachedMultiple", { products: productsList })
+      useProduct().addProductToCachedMultiple({ products: productsList })
     } else {
       products.value = viewIndex ? products.value : [];
     }
@@ -133,7 +132,7 @@ function isScrollable() {
 async function loadMoreProducts(event: any) {
   getProducts(
     undefined,
-    Math.ceil(products.value.length / Number(process.env.VUE_APP_VIEW_SIZE)).toString()
+    Math.ceil(products.value.length / Number(import.meta.env.VITE_VIEW_SIZE)).toString()
   ).then(() => {
     event.target.complete();
   })
