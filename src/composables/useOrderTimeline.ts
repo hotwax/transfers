@@ -172,23 +172,13 @@ export function useOrderTimeline(orderId: Ref<string>) {
     let timeline = [] as any[];
     try {
       const resp = await orderStore.fetchOrderStatusHistory({
-        inputFields: {
-          orderId: orderId.value,
-        },
-        entityName: 'OrderStatus',
-        viewSize: '250',
-        sortBy: 'statusDatetime ASC',
-        fieldList: ['statusId', 'statusDatetime', 'orderItemSeqId', 'statusUserLogin'],
+        orderId: orderId.value,
+        pageSize: '250'
       });
-      if (!commonUtil.hasError(resp)) {
-        timeline = resp.data.docs || [];
-        
-        // Filter: include all order-level statuses (no orderItemSeqId) 
-        // AND item-level statuses only if they are cancelled
-        timeline = timeline.filter((status: any) => !status.orderItemSeqId || status.statusId === 'ITEM_CANCELLED');
-      } else {
-        throw resp.data;
-      }
+      timeline = resp.data || [];
+      // Filter: include all order-level statuses (no orderItemSeqId) 
+      // AND item-level statuses only if they are cancelled
+      timeline = timeline.filter((status: any) => !status.orderItemSeqId || status.statusId === 'ITEM_CANCELLED');
     } catch (error: any) {
       logger.error('Failed to fetch order timeline', error);
     } finally {

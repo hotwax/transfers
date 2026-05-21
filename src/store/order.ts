@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { api, commonUtil, cookieHelper } from "@common";
+import { api, commonUtil } from "@common";
 import { logger } from "@common";
 import { useProductStore as useProduct } from "@/store/product";
 import { useProductStore } from "@/store/productStore";
@@ -57,9 +57,8 @@ export const useOrderStore = defineStore("order", {
     async fetchOrderStatusHistory(params: any): Promise<any> {
       const userStore = useUserStore();
       return api({
-        url: "performFind",
+        url: `oms/orders/${params.orderId}/status`,
         method: "get",
-        baseURL: commonUtil.getOmsURL(),
         params
       });
     },
@@ -257,158 +256,6 @@ export const useOrderStore = defineStore("order", {
         logger.error("error", error);
         return Promise.reject(new Error(error));
       }
-    },
-    async fetchOrderShipments(orderId: string) {
-      let shipments = [] as any[];
-
-      try {
-        const userStore = useUserStore();
-        const resp = await api({
-          url: "performFind",
-          method: "get",
-          baseURL: commonUtil.getOmsURL(),
-          params: {
-            entityName: "Shipment",
-            inputFields: {
-              primaryOrderId: orderId,
-              statusId: "SHIPMENT_CANCELLED",
-              statusId_op: "notEqual"
-            },
-            fieldList: ["shipmentId", "shipmentTypeId", "statusId", "carrierPartyId", "shipmentMethodTypeId"],
-            viewSize: 200,
-            distinct: "Y"
-          }
-        });
-
-        if (!commonUtil.hasError(resp)) {
-          shipments = resp.data.docs;
-          const shipmentIds = shipments.map((shipment: any) => shipment.shipmentId);
-          const [shipmentItems, shipmentRoutes, shipmentStatuses] = await Promise.allSettled([
-            (async () => {
-              let viewIndex = 0;
-              let items = [] as any[];
-              let shipmentResp;
-              try {
-                do {
-                  shipmentResp = await api({
-                    url: "performFind",
-                    baseURL: commonUtil.getOmsURL(),
-                    method: "get",
-                    params: {
-                      entityName: "ShipmentItemDetail",
-                      inputFields: { shipmentId: shipmentIds, shipmentId_op: "in" },
-                      fieldList: ["shipmentId", "shipmentItemSeqId", "productId", "quantity", "orderItemSeqId"],
-                      viewIndex,
-                      viewSize: 250,
-                      distinct: "Y"
-                    }
-                  }) as any;
-                  if (!commonUtil.hasError(shipmentResp) && shipmentResp.data.docs?.length) {
-                    items = items.concat(shipmentResp.data.docs);
-                    viewIndex++;
-                  } else {
-                    throw shipmentResp.data;
-                  }
-                } while (shipmentResp.data.docs.length >= 250);
-              } catch (error) {
-                logger.error(error);
-              }
-              return items;
-            })(),
-            (async () => {
-              try {
-                const trackingResp = await api({
-                  url: "performFind",
-                  method: "get",
-                  baseURL: commonUtil.getOmsURL(),
-                  params: {
-                    entityName: "ShipmentAndRouteSegment",
-                    inputFields: {
-                      shipmentId: shipmentIds,
-                      shipmentId_op: "in",
-                      carrierServiceStatusId: "SHRSCS_VOIDED",
-                      carrierServiceStatusId_op: "notEqual"
-                    },
-                    fieldList: ["shipmentId", "trackingIdNumber"],
-                    viewSize: 250,
-                    distinct: "Y"
-                  }
-                }) as any;
-                if (!commonUtil.hasError(trackingResp) && trackingResp.data.docs?.length) return trackingResp.data.docs;
-                throw trackingResp.data;
-              } catch (error) {
-                logger.error(error);
-                return [];
-              }
-            })(),
-            (async () => {
-              const statuses = {} as any;
-              try {
-                const statusesResp = await api({
-                  url: "performFind",
-                  method: "get",
-                  baseURL: commonUtil.getOmsURL(),
-                  params: {
-                    entityName: "ShipmentStatus",
-                    inputFields: {
-                      shipmentId: shipmentIds,
-                      shipmentId_op: "in",
-                      statusId: ["SHIPMENT_SHIPPED", "PURCH_SHIP_SHIPPED"]
-                    },
-                    fieldList: ["shipmentId", "statusId", "statusDate"],
-                    viewSize: 250,
-                    distinct: "Y"
-                  }
-                }) as any;
-                if (!commonUtil.hasError(statusesResp) && statusesResp.data.docs?.length) {
-                  statusesResp.data.docs.forEach((status: any) => {
-                    statuses[status.shipmentId] = status.statusDate;
-                  });
-                } else {
-                  throw statusesResp.data;
-                }
-              } catch (error) {
-                logger.error(error);
-              }
-              return statuses;
-            })()
-          ]) as any;
-
-          const productIds = [...new Set(shipmentItems.value.map((item: any) => item.productId))] as string[];
-          const batchSize = 250;
-          const productIdBatches = [] as string[][];
-          while (productIds.length) {
-            productIdBatches.push(productIds.splice(0, batchSize));
-          }
-          const product = useProduct();
-          Promise.allSettled(productIdBatches.map((batch) => product.fetchProducts({ productIds: batch })));
-
-          shipments.forEach((shipment: any) => {
-            const items = [] as any[];
-            if (shipmentItems.status === "fulfilled" && shipmentItems.value?.length) {
-              shipmentItems.value.forEach((item: any) => {
-                if (item.shipmentId === shipment.shipmentId) items.push(item);
-              });
-            }
-            shipment.items = items;
-
-            if (shipmentRoutes.status === "fulfilled" && shipmentRoutes.value?.length) {
-              const trackingInfo = shipmentRoutes.value.find((shipmentRoute: any) => shipmentRoute.shipmentId === shipment.shipmentId);
-              if (trackingInfo) shipment.trackingCode = trackingInfo?.trackingIdNumber;
-            }
-
-            if (shipmentStatuses.status === "fulfilled" && shipmentStatuses.value[shipment.shipmentId]) {
-              shipment.shippedDate = shipmentStatuses.value[shipment.shipmentId];
-            }
-          });
-        } else {
-          throw resp.data;
-        }
-      } catch (error) {
-        logger.error(error);
-      }
-
-      this.current = { ...this.current, shipments };
     },
     updateCurrent(payload: any) {
       this.current = payload;
