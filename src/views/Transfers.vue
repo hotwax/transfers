@@ -2,7 +2,7 @@
   <ion-page>
     <Filters v-if="isMobile" menu-id="transfers-filter" content-id="filter-content"/>
 
-    <ion-header :translucent="true">
+    <ion-header>
       <ion-toolbar>
         <ion-title>{{ translate("Transfer orders") }}</ion-title>
         <ion-buttons slot="end">
@@ -56,7 +56,7 @@
               </ion-button>
             </template>
           </div>
-          <template v-if="ordersList?.length">
+          <template v-else-if="ordersList?.length">
             <div class="list-item order" :data-testid="`orders-row-${order.orderId}`" v-for="(order, index) in ordersList" :key="index" @click="router.push(`/order-detail/${order.orderId}`)">
               <ion-item lines="none">
                 <ion-label>
@@ -120,7 +120,6 @@ const orderName = ref("");
 const isFetchingOrders = computed(() => orderStore.isFetching);
 const query = computed(() => orderStore.getQuery)
 const ordersList = computed(() => orderStore.getOrders)
-const getStatusDesc = computed(() => utilStore.getStatusDesc)
 const isScrollable = computed(() => orderStore.isScrollable)
 
 const isMobile = useMobile();
