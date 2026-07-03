@@ -1,13 +1,14 @@
 <template>
   <ion-app data-testid="app-root">
     <ion-router-outlet data-testid="app-router-outlet" />
+    <FastTravel current-app="transfers" />
   </ion-app>
 </template>
 
 <script setup lang="ts">
 import { computed, onBeforeMount, onMounted, onUnmounted, ref } from "vue";
 import { IonApp, IonRouterOutlet, loadingController } from "@ionic/vue";
-import { emitter, logger, translate } from "@common"
+import { emitter, FastTravel, logger, translate } from "@common"
 import { Settings } from 'luxon'
 import { useAuth } from "@common/composables/useAuth";
 import { useUserStore } from "@/store/user";
