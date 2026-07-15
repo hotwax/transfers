@@ -1,6 +1,6 @@
 Transfers App
 # Prerequisite
-Ionic CLI - If you don't have the ionic CLI installed refer [official documentation](https://ionicframework.com/docs/intro/cli) for the installation instructions.
+- [accxui](https://github.com/hotwax/accxui) workspace `v1.1.1` or higher - Job Manager is developed and built from within an accxui workspace, not standalone. Refer to accxui's README for workspace setup.
 
 
 # Build Notes (Users)
