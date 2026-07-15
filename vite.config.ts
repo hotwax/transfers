@@ -14,6 +14,7 @@ export default defineConfig(({ mode }) => {
       vue(),
       legacy()
     ],
+    dedupe: ['vue', 'pinia', 'vue-router'],
     define: {
       'import.meta.env.VITE_APP_VERSION_INFO': JSON.stringify(JSON.stringify(versionInfoUtil.getVersionInfo(pkg.version)))
     },
