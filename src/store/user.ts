@@ -89,6 +89,8 @@ export const useUserStore = defineStore("user", {
         if (this.current.timeZone) {
           Settings.defaultZone = this.current.timeZone;
         }
+
+        this.oms = cookieHelper().get("oms") || '';
       } catch (error: any) {
         commonUtil.showToast(translate("Failed to fetch user profile information"));
         console.error("error", error);
