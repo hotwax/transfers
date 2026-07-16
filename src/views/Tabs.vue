@@ -7,7 +7,7 @@
           <ion-icon :icon="businessOutline" />
           <ion-label data-testid="tabs-transfers-btn">{{ translate("Transfers") }}</ion-label>
         </ion-tab-button>
-        <ion-tab-button v-if="userStore.hasPermission('APP_TFNR_DISCREPANCY_REPORT')" tab="discrepancies" href="/tabs/discrepancies">
+        <ion-tab-button v-if="userStore.hasPermission('TRANSFERS_DISCREPANCY_VIEW')" tab="discrepancies" href="/tabs/discrepancies">
           <ion-icon :icon="alertCircleOutline" />
           <ion-label data-testid="tabs-discrepancies-btn">{{ translate("Discrepancies") }}</ion-label>
         </ion-tab-button>
