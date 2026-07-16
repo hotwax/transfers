@@ -46,7 +46,7 @@ const routes: Array<RouteRecordRaw> = [
         name: "Discrepancies",
         component: () => import("@/views/Discrepancies.vue"),
         meta: {
-          permissionId: "APP_TFNR_DISCREPANCY_REPORT"
+          permissionId: "TRANSFERS_DISCREPANCY_VIEW"
         }
       },
       {
@@ -69,7 +69,7 @@ const routes: Array<RouteRecordRaw> = [
     component: BulkUpload,
     beforeEnter: authGuard,
     meta: {
-      permissionId: "APP_TFNR_BULK_UPLOAD"
+      permissionId: "TRANSFERS_BULK_CREATE"
     }
   },
   {

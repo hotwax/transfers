@@ -4,7 +4,7 @@
       <ion-toolbar>
         <ion-back-button data-testid="create-order-back-btn" slot="start" :default-href="`/tabs/transfers`" />
         <ion-title>{{ translate("Create transfer order") }}</ion-title>
-        <ion-buttons slot="end" v-if="userStore.hasPermission('APP_TFNR_BULK_UPLOAD')">
+        <ion-buttons slot="end" v-if="userStore.hasPermission('TRANSFERS_BULK_CREATE')">
           <ion-button data-testid="create-order-bulk-upload-btn" @click="router.push('/bulk-upload')">{{ translate("Bulk upload") }}</ion-button>
         </ion-buttons>
       </ion-toolbar>
