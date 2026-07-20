@@ -617,6 +617,7 @@ async function findProduct() {
     const resp = await useSolrSearch().searchProducts({
       "filters": {
         "isVirtual": { value: "false" },
+        "isVariant": { value: "true" },
         "sku": { value: `*${queryString.value}*` }
       },
       "viewSize": 1

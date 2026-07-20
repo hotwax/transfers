@@ -99,7 +99,7 @@ async function getProducts( vSize?: any, vIndex?: any) {
   const viewIndex = vIndex ? vIndex : 0;
 
   try {
-    const payload = {} as any
+    const payload = { filters: {} } as any
     payload.filters["isVirtual"] = { value: "false" };
     payload.filters["isVariant"] = { value: "true" };
     payload.keyword = queryString.value.trim();
@@ -109,12 +109,12 @@ async function getProducts( vSize?: any, vIndex?: any) {
     const resp = await useSolrSearch().searchProducts(payload)
 
     if(resp?.products?.length) {
-      const productsList = resp.data.response.docs
+      const productsList = resp?.products
       if(viewIndex) {
         products.value = products.value.concat(productsList);
       } else {
         products.value = productsList;
-        total.value = resp.data.response.numFound;
+        total.value = resp?.total;
       }
       useProduct().addProductToCachedMultiple({ products: productsList })
     } else {
