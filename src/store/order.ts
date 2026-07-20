@@ -137,7 +137,7 @@ export const useOrderStore = defineStore("order", {
       if(!params.pageIndex || params.pageIndex == 0) this.isFetching = true
 
       const payload = {
-        orderByField: this.query.sort,
+        orderBy: this.query.sort,
         pageSize: params.pageSize,
         pageIndex: params.pageIndex,
         fieldsToSelect: "orderId,orderName,facilityId,orderFacilityId,orderStatusId,orderStatusDesc,orderDate,orderExternalId"
