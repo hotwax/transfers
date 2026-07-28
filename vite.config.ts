@@ -9,7 +9,10 @@ import pkg from './package.json'
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
+  const appBuild = env.VITE_APP_BUILD
   return {
+    // A version build (VITE_APP_BUILD=vX.Y.Z) is self-contained under /vX.Y.Z/; an unset build is the root bootstrap.
+    base: appBuild ? `/${appBuild}/` : '/',
     plugins: [
       vue(),
       legacy()
@@ -26,6 +29,7 @@ export default defineConfig(({ mode }) => {
       },
     },
     build: {
+      outDir: appBuild ? `dist/${appBuild}` : 'dist',
       target: 'es2015',
       terserOptions: {
         compress: {

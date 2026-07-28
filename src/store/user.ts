@@ -16,6 +16,9 @@ interface UserState {
   }
   timeZones: any[]
   oms: any
+  // The app version this deployment is pinned to. undefined = not resolved yet, "" = no version
+  // configured, "vX.Y.Z" = pinned. Resolved from the OMS by useAuth().fetchAppVersion() on Login.
+  appVersion: string | undefined
 }
 
 export const useUserStore = defineStore("user", {
@@ -27,10 +30,12 @@ export const useUserStore = defineStore("user", {
       registration: null
     },
     timeZones: [],
-    oms: ""
+    oms: "",
+    appVersion: undefined
   }),
   getters: {
     getTimeZones: (state) => state.timeZones,
+    getAppVersion: (state) => state.appVersion,
     getCurrentTimeZone: (state) => state.current.timeZone,
     getUserPermissions(state: UserState) {
       return state.permissions
@@ -187,6 +192,8 @@ export const useUserStore = defineStore("user", {
       useOrderStore().$reset();
       useProduct().$reset();
       useProductStore().$reset();
+      // appVersion is preserved across this reset by useAuth().logout() (it's deployment config, not
+      // session state), so a plain $reset() is fine here.
       this.$reset();
       useUtilStore().$reset();
     }
