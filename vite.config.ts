@@ -9,9 +9,9 @@ import pkg from './package.json'
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
-  const appBuild = env.VITE_APP_BUILD
+  const appBuild = JSON.parse(env.VITE_APP_VERSION_CONFIG).buildVersion
   return {
-    // A version build (VITE_APP_BUILD=vX.Y.Z) is self-contained under /vX.Y.Z/; an unset build is the root bootstrap.
+    // A version build (buildVersion vX.Y.Z in VITE_APP_VERSION_CONFIG) is self-contained under /vX.Y.Z/; an empty buildVersion is the root bootstrap.
     base: appBuild ? `/${appBuild}/` : '/',
     plugins: [
       vue(),
