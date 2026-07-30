@@ -11,7 +11,7 @@ import emitter from "@/event-bus"
 import { Settings } from 'luxon'
 import store from "./store";
 import { initialise, resetConfig } from '@/adapter'
-import { translate, useProductIdentificationStore, useUserStore } from "@hotwax/dxp-components";
+import { translate, useProductIdentificationStore, useUserStore, getAppLoginUrl, useAuthStore } from "@hotwax/dxp-components";
 import logger from '@/logger';
 
 const userProfile = computed(() => store.getters["user/getUserProfile"])
@@ -38,10 +38,13 @@ initialise({
 })
 
 async function unauthorised() {
+  const authStore = useAuthStore();
+  const isEmbedded = authStore.isEmbedded;
+  const appLoginUrl = getAppLoginUrl();
   // Mark the user as unauthorised, this will help in not making the logout api call in actions
   store.dispatch("user/logout", { isUserUnauthorised: true });
   const redirectUrl = window.location.origin + '/login';
-  window.location.href = `${process.env.VUE_APP_LOGIN_URL}?redirectUrl=${redirectUrl}`;
+  window.location.href = isEmbedded ? appLoginUrl : `${appLoginUrl}?redirectUrl=${redirectUrl}`;
 }
 
 async function presentLoader(options = { message: "Click the backdrop to dismiss.", backdropDismiss: false }) {

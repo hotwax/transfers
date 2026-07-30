@@ -73,7 +73,7 @@ import { computed } from "vue";
 import { useStore } from "vuex";
 import Image from "@/components/Image.vue";
 import { openOutline } from "ionicons/icons";
-import { goToOms, translate, useProductIdentificationStore } from "@hotwax/dxp-components";
+import { goToOms, translate, useProductIdentificationStore, useAuthStore, getAppLoginUrl } from "@hotwax/dxp-components";
 import { Actions, hasPermission } from '@/authorization'
 import logger from "@/logger";
 import TimeZoneSwitcher from "@/components/TimeZoneSwitcher.vue"
@@ -89,7 +89,7 @@ function logout() {
     // if not having redirection url then redirect the user to launchpad
     if(!redirectionUrl) {
       const redirectUrl = window.location.origin + '/login'
-      window.location.href = `${process.env.VUE_APP_LOGIN_URL}?isLoggedOut=true&redirectUrl=${redirectUrl}`
+      window.location.href = `${getAppLoginUrl()}?isLoggedOut=true&redirectUrl=${redirectUrl}`
     }
   })
 }
@@ -106,7 +106,7 @@ async function updateProductStore(selectedProductStore: any) {
 }
 
 function goToLaunchpad() {
-  window.location.href = `${process.env.VUE_APP_LOGIN_URL}`
+  window.location.href = getAppLoginUrl()
 }
 </script>
 
