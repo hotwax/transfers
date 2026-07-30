@@ -3,9 +3,44 @@ import path from 'path';
 
 // Load env variables from .env
 require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
+const { getAllClients } = require("../config/clients");
 
-// Read base URL from env or default to dev server
-const baseURL = process.env.BASE_URL || process.env.PLAYWRIGHT_BASE_URL || 'https://transfers-dev.hotwax.io';
+/**
+ * Dynamically generate projects for each client found in environment
+ */
+const generateProjects = () => {
+  const projects = [];
+  let clients = getAllClients();
+
+  // If a specific CLIENT is requested, filter the projects (supports comma-separated list)
+  if (process.env.CLIENT) {
+    const targets = process.env.CLIENT.toLowerCase().split(",").map((s: string) => s.trim());
+    clients = clients.filter((c: any) => targets.includes(c.clientId.toLowerCase()));
+  }
+
+  for (const config of clients) {
+    const clientId = config.clientId;
+
+    // 1. Setup Auth
+    projects.push({
+      name: `setup-${clientId}`,
+      testMatch: /.*auth\.setup\.ts/,
+    });
+
+    // 2. Normal Test Execution
+    projects.push({
+      name: `chromium-${clientId}`,
+      use: {
+        ...devices["Desktop Chrome"],
+        storageState: `playwright/.auth/${clientId}.user.json`,
+        baseURL: config.baseUrl,
+      },
+      dependencies: [`setup-${clientId}`],
+    });
+  }
+
+  return projects;
+};
 
 export default defineConfig({
   testDir: './tests',
@@ -15,27 +50,15 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: 2,
   workers: process.env.CI ? 1 : undefined,
-  reporter: [['list'], ['html', { outputFolder: 'playwright/playwright-report' }]],
-  globalSetup: require.resolve('./global-setup'),
+  reporter: [['list'], ['html', { outputFolder: 'playwright-report' }]],
   use: {
-    baseURL,
     headless: true,
-    storageState: 'playwright/.auth/storageState.json',
     viewport: { width: 1280, height: 800 },
     ignoreHTTPSErrors: true,
     video: 'retain-on-failure',
     screenshot: 'only-on-failure',
     trace: 'on-first-retry'
   },
-  projects: [
-    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
-    //{ name: 'firefox', use: { ...devices['Desktop Firefox'] } }
-  ],
-  outputDir: 'playwright/test-results',
-  // webServer: {
-  //   command: 'npm run serve',
-  //   url: baseURL,
-  //   reuseExistingServer: true,
-  //   timeout: 120_000
-  // }
+  projects: generateProjects(),
+  outputDir: 'test-results',
 });
