@@ -25,6 +25,7 @@ export const useProductStore = defineStore('productStore', {
     facilities: [] as any[],
     productStores: [] as any[],
     facilityAddresses: {} as any,
+    userFacilities: {} as any
   }),
 
   getters: {
@@ -37,6 +38,7 @@ export const useProductStore = defineStore('productStore', {
     getBarcodeIdentifierPref: (state) => state.settings.barcodeIdentifier.barcodeIdentifierPref,
     getProductIdentificationOptions: (state) => state.settings.productIdentifier.productIdentificationOptions,
     getCurrentSampleProduct: (state) => state.settings.productIdentifier.currentSampleProduct,
+    getUserFacilities: (state) => state.userFacilities
   },
 
   actions: {
@@ -383,6 +385,68 @@ export const useProductStore = defineStore('productStore', {
         this.settings.productIdentifier.currentSampleProduct = this.settings.productIdentifier.sampleProducts[randomIndex]
       } else {
         this.settings.productIdentifier.currentSampleProduct = null
+      }
+    },
+    async fetchUserFacilities() {
+      const userStore = useUserStore();
+      const partyId = userStore.getUserProfile?.partyId;
+      const isAdminUser = userStore.hasPermission("COMMON_ADMIN");
+
+      let facilityIds: Array<string> = [];
+
+      try {
+        // 1. Fetch party-associated facilities for regular users
+        if (partyId && !isAdminUser) {
+          let partyResp: any;
+          try {
+            partyResp = await api({
+              url: `admin/user/${partyId}/facilities`,
+              method: "GET",
+              params: { pageSize: 500 }
+            } as any);
+          } catch (error) {
+            logger.error(error);
+          }
+
+          // Filter out expired associations
+          const activePartyFacilities = partyResp.data.filter((facility: any) => !facility.thruDate);
+          facilityIds = activePartyFacilities.map((facility: any) => facility.facilityId);
+
+          if (!facilityIds.length) {
+            logger.error("User is not associated with any facility.");
+          }
+        }
+
+        // 4. Fetch the final details for resolved facilities
+        let finalFilters: any = {};
+        if (facilityIds.length) {
+          finalFilters = {
+            facilityId: facilityIds.join(","),
+            facilityId_op: "in",
+            pageSize: facilityIds.length
+          };
+          let finalResp: any;
+          try {
+            finalResp = await api({
+              url: "oms/facilities",
+              method: "GET",
+              params: {
+                pageSize: 500,
+                facilityTypeId: "VIRTUAL_FACILITY",
+                facilityTypeId_not: "Y",
+                parentTypeId: "VIRTUAL_FACILITY",
+                parentTypeId_not: "Y",
+                ...finalFilters
+              }
+            });
+          } catch (error) {
+            logger.error(error);
+          }
+  
+          this.userFacilities = finalResp.data;
+        }
+      } catch (error: any) {
+        logger.error(error);
       }
     },
   },

@@ -575,7 +575,7 @@ async function openOrderItemActionsPopover(event: any, selectedItem: any, isBulk
 async function openSelectFacilityModal(facilityType: any) {
   const addressModal = await modalController.create({
     component: SelectFacilityModal,
-    componentProps: { selectedFacilityId: currentOrder.value[facilityType], facilities: facilities.value }
+    componentProps: { selectedFacilityId: currentOrder.value[facilityType], facilities: !userStore.hasPermission('COMMON_ADMIN') && facilityType === "destinationFacilityId" ? productStore.getUserFacilities : facilities.value }
   })
 
   addressModal.onDidDismiss().then(async(result: any) => {

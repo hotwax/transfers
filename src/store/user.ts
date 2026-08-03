@@ -181,6 +181,7 @@ export const useUserStore = defineStore("user", {
         await this.fetchUserProfile();
         await this.fetchPermissions();
         await productStore.fetchAllProductStores();
+        await productStore.fetchUserFacilities()
         await productStore.fetchProductStorePreference();
         await productStore.fetchProductStoreFacilities(productStore.getCurrentProductStore.productStoreId);
         await productStore.fetchProductStoreSettings(productStore.getCurrentProductStore.productStoreId);
