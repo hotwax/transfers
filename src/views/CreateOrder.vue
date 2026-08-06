@@ -4,7 +4,7 @@
       <ion-toolbar>
         <ion-back-button data-testid="create-order-back-btn" slot="start" :default-href="`/tabs/transfers`" />
         <ion-title>{{ translate("Create transfer order") }}</ion-title>
-        <ion-buttons slot="end" v-if="userStore.hasPermission('TRANSFERS_BULK_CREATE')">
+        <ion-buttons slot="end" v-if="userStore.hasPermission(Actions.APP_BULK_UPLOAD)">
           <ion-button data-testid="create-order-bulk-upload-btn" @click="router.push('/bulk-upload')">{{ translate("Bulk upload") }}</ion-button>
         </ion-buttons>
       </ion-toolbar>
@@ -212,6 +212,7 @@ import { useProductStore as useProduct } from "@/store/product";
 import { useProductStore } from "@/store/productStore";
 import { useUserStore as useAppUserStore } from "@/store/user";
 import { useUtilStore } from "@/store/util";
+import Actions from "@/authorization/actions";
 
 const orderStore = useOrderStore();
 const product = useProduct();
