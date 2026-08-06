@@ -22,7 +22,7 @@
             </ion-card-header>
           </ion-item>
           <ion-button data-testid="settings-logout-btn" color="danger" @click="logout()">{{ translate("Logout") }}</ion-button>
-          <ion-button data-testid="settings-go-launchpad-btn" :standalone-hidden="!userStore.hasPermission('COMMON_ADMIN')" fill="outline" @click="goToLaunchpad()">
+          <ion-button data-testid="settings-go-launchpad-btn" :standalone-hidden="!userStore.hasPermission(Actions.APP_PWA_STANDALONE_ACCESS)" fill="outline" @click="goToLaunchpad()">
             {{ translate("Go to Launchpad") }}
             <ion-icon slot="end" :icon="openOutline" />
           </ion-button>
@@ -66,6 +66,7 @@ import DxpOmsInstanceNavigator from "@/components/DxpOmsInstanceNavigator.vue";
 import DxpTimeZoneSwitcher from "@/components/DxpTimeZoneSwitcher.vue";
 import { logger, translate } from "@common";
 import { useAuth } from "@common/composables/useAuth";
+import Actions from "@/authorization/actions";
 
 
 

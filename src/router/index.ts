@@ -8,6 +8,7 @@ import CreateOrder from "@/views/CreateOrder.vue";
 import BulkUpload from "@/views/BulkUpload.vue";
 import Login from "@common/components/Login.vue";
 import { useUserStore } from "@/store/user";
+import Actions from "@/authorization/actions";
 declare module 'vue-router' {
   interface RouteMeta {
     permissionId?: string;
@@ -46,7 +47,7 @@ const routes: Array<RouteRecordRaw> = [
         name: "Discrepancies",
         component: () => import("@/views/Discrepancies.vue"),
         meta: {
-          permissionId: "TRANSFERS_DISCREPANCY_VIEW"
+          permissionId: Actions.APP_DISCREPANCY_REPORT
         }
       },
       {
@@ -69,7 +70,7 @@ const routes: Array<RouteRecordRaw> = [
     component: BulkUpload,
     beforeEnter: authGuard,
     meta: {
-      permissionId: "TRANSFERS_BULK_CREATE"
+      permissionId: Actions.APP_BULK_UPLOAD
     }
   },
   {
