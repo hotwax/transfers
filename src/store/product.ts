@@ -47,6 +47,13 @@ export const useProductStore = defineStore("product", {
 
       return resp;
     },
+    async fetchBarcodeIdentificationDesc(params: any): Promise<any> {
+      return api({
+        url: `/oms/goodIdentificationTypes`,
+        method: "get",
+        params
+      });
+    },
     addProductToCached(payload: any) {
       this.cached[payload.productId] = payload;
     },
