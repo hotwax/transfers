@@ -348,14 +348,23 @@ async function addProductToCount() {
 }
 
 async function productStoreUpdated() {
+  // Reset selected facilities
+  currentOrder.value.originFacilityId = "";
+  currentOrder.value.destinationFacilityId = "";
 
-  const isFacilityUpdated = currentOrder.value.originFacilityId !== facilities.value[0]?.facilityId
-  if(isFacilityUpdated) {
-    currentOrder.value.originFacilityId = "";
-    currentOrder.value.destinationFacilityId = "";
-    if(currentOrder.value.items.length) refetchAllItemsStock()
+  // Refresh facilities for the newly selected Product Store
+  if (currentOrder.value.productStoreId) {
+    await productStore.fetchProductStoreFacilities(currentOrder.value.productStoreId);
   }
+
+  // Refetch stock if items already exist
+  if (currentOrder.value.items.length) {
+    refetchAllItemsStock();
+  }
+
+  // Refresh carrier and shipment methods
   await utilStore.fetchStoreCarrierAndMethods(currentOrder.value.productStoreId);
+
   if(Object.keys(shipmentMethodsByCarrier.value)?.length) {
     currentOrder.value.carrierPartyId = Object.keys(shipmentMethodsByCarrier.value)[0]
     selectUpdatedMethod()
