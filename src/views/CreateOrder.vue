@@ -353,9 +353,7 @@ async function productStoreUpdated() {
   currentOrder.value.destinationFacilityId = "";
 
   // Refresh facilities for the newly selected Product Store
-  if (currentOrder.value.productStoreId) {
-    await productStore.fetchProductStoreFacilities(currentOrder.value.productStoreId);
-  }
+  await productStore.fetchProductStoreFacilities(currentOrder.value.productStoreId);
 
   // Refetch stock if items already exist
   if (currentOrder.value.items.length) {
