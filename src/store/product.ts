@@ -32,7 +32,11 @@ export const useProductStore = defineStore("product", {
       let resp;
       try {
         resp = await useSolrSearch().searchProducts({
-          filters: { "productId": { value: `(${productIdFilter})` } },
+          filters: {
+            "productId": { value: `(${productIdFilter})` },
+            "isVirtual": { value: "false" },
+            "isVariant": { value: "true" }
+          },
           viewSize
         });
 

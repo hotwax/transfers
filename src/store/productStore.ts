@@ -364,6 +364,10 @@ export const useProductStore = defineStore('productStore', {
     async fetchProducts() {
       try {
         const resp = await useSolrSearch().searchProducts({
+          filters: {
+            "isVirtual": { value: "false" },
+            "isVariant": { value: "true" }
+          },
           viewSize: 10
         })
 
