@@ -116,7 +116,7 @@
           <div class="item-search">
             <ion-item>
               <ion-icon slot="start" :icon="listOutline"/>
-              <ion-input data-testid="create-order-add-product-input" :label="translate('Add product')" label-placement="floating" :clear-input="true" v-model="queryString" :placeholder="translate('Searching on SKU')" @keyup.enter="addProductToCount()" />
+              <ion-input data-testid="create-order-add-product-input" :label="translate('Add product')" label-placement="floating" :clear-input="true" v-model="queryString" :placeholder="productSearchPlaceholder" @keyup.enter="addProductToCount()" />
             </ion-item>
             <ion-item lines="none" v-if="isSearchingProduct">
               <ion-spinner color="secondary" name="crescent"></ion-spinner>
@@ -273,6 +273,15 @@ const getProduct = computed(() => product.getProduct)
 const shipmentMethodsByCarrier = computed(() => utilStore.getShipmentMethodsByCarrier)
 const getCarrierDesc = computed(() => utilStore.getCarrierDesc)
 const facilities = computed(() => productStore.getProductStoreFacilities)
+
+const productSearchPlaceholder = computed(() => {
+  const primaryId = productStore.getProductIdentificationPref?.primaryId;
+  const options = productStore.getProductIdentificationOptions || [];
+  const description = options.find((option: any) => option.goodIdentificationTypeId === primaryId)?.description;
+
+  return translate(`Searching on ${description || primaryId}`);
+});
+
 // Implemented watcher to display the search spinner correctly. Mainly the watcher is needed to not make the findProduct call always and to create the debounce effect.
 // Previously we were using the `debounce` property of ion-input but it was updating the searchedString and making other related effects after the debounce effect thus the spinner is also displayed after the debounce
 // effect is completed.
@@ -300,6 +309,7 @@ watch(queryString, (value) => {
 onIonViewDidEnter(async () => {
   emitter.emit("presentLoader")
   stores.value = useProductStore().productStores
+  productStore.prepareProductIdentifierOptions();
   const currentProductStoreId = (useProductStore().getCurrentProductStore as any)?.productStoreId || "";
   currentOrder.value.productStoreId = currentProductStoreId
   await Promise.allSettled([utilStore.fetchStoreCarrierAndMethods(currentProductStoreId), utilStore.fetchCarriersDetail()])
@@ -616,10 +626,10 @@ async function findProduct() {
   isSearchingProduct.value = true;
   try {
     const resp = await useSolrSearch().searchProducts({
+      "keyword": queryString.value.trim(),
       "filters": {
         "isVirtual": { value: "false" },
-        "isVariant": { value: "true" },
-        "sku": { value: `*${queryString.value}*` }
+        "isVariant": { value: "true" }
       },
       "viewSize": 1
     })
