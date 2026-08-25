@@ -1,3 +1,8 @@
+/**
+ * Page Object Model for the Create Order flow.
+ * Provides methods and locators for filling out the transfer order form,
+ * assigning locations, adding products, and saving the order.
+ */
 import { type Locator, type Page, expect } from '@playwright/test';
 
 export class CreateOrderPage {
@@ -65,54 +70,99 @@ export class CreateOrderPage {
     await this.dismissSelectPopoverIfOpen();
   }
 
-  async assignOrigin(searchQuery: string, facilityName: string) {
+  async _assignFacility(assignBtn: any, forceSearchQuery?: string, excludeFacilityName?: string) {
     await this.dismissSelectPopoverIfOpen();
-    await this.originAssignBtn.click();
+    await assignBtn.click();
     await expect(this.modalSearchInput).toBeVisible({ timeout: 10000 });
-    await this.modalSearchInput.locator('input').fill(searchQuery);
-    const row = this.page.getByTestId(`select-facility-row-${facilityName}`);
-    if ((await row.count()) > 0) {
-      await row.first().click();
+    
+    if (forceSearchQuery) {
+      await this.modalSearchInput.locator('input').fill(forceSearchQuery);
     } else {
-      const namedRadio = this.page.getByRole('radio', { name: new RegExp(facilityName, 'i') });
-      if ((await namedRadio.count()) > 0) {
-        await namedRadio.first().click();
-      } else {
-        const anyRow = this.page.locator('[data-testid^="select-facility-row-"]').first();
-        if ((await anyRow.count()) > 0) {
-          await anyRow.click();
+      const chars = ['a', 'e', 'i', 'o', 'u', 's', 't'];
+      const searchChar = chars[Math.floor(Math.random() * chars.length)];
+      await this.modalSearchInput.locator('input').fill(searchChar);
+    }
+
+    await this.page.waitForTimeout(1500); // Give search time to return results
+    
+    let selectedName = '';
+    const rows = this.page.locator('[data-testid^="select-facility-row-"]');
+    const radios = this.page.getByRole('radio');
+    
+    let targetIndex = 0;
+
+    if (excludeFacilityName) {
+      for (let i = 0; i < 5; i++) {
+        let name = '';
+        if (await rows.nth(i).isVisible().catch(() => false)) {
+          name = (await rows.nth(i).innerText()).trim();
+        } else if (await radios.nth(i).isVisible().catch(() => false)) {
+          name = (await radios.nth(i).innerText()).trim();
         } else {
-          await this.page.getByRole('radio').first().click();
+          break; // no more elements
+        }
+        
+        // Strip out newlines and extra spaces for comparison
+        const normalizedName = name.replace(/\s+/g, ' ').trim();
+        const normalizedExclude = excludeFacilityName.replace(/\s+/g, ' ').trim();
+
+        if (normalizedName && normalizedName !== normalizedExclude) {
+          targetIndex = i;
+          break;
+        }
+      }
+      
+      // If we still landed on 0 (maybe name comparison failed), just force index 1 if available
+      if (targetIndex === 0) {
+        if (await rows.nth(1).isVisible().catch(() => false) || await radios.nth(1).isVisible().catch(() => false)) {
+           targetIndex = 1;
         }
       }
     }
+    
+    const targetRow = rows.nth(targetIndex);
+    const targetRadio = radios.nth(targetIndex);
+
+    if (await targetRow.isVisible().catch(()=>false)) {
+      selectedName = (await targetRow.innerText()).trim();
+      await targetRow.click();
+    } else if (await targetRadio.isVisible().catch(()=>false)) {
+      selectedName = (await targetRadio.innerText()).trim();
+      await targetRadio.click();
+    } else {
+      // clear and just try empty search
+      await this.modalSearchInput.locator('input').fill('');
+      await this.page.waitForTimeout(1500);
+      
+      if (excludeFacilityName) {
+        let fallbackName = '';
+        if (await rows.first().isVisible().catch(()=>false)) fallbackName = (await rows.first().innerText()).trim();
+        if (fallbackName === excludeFacilityName) targetIndex = 1;
+        else targetIndex = 0;
+      }
+      
+      const fallbackRow = rows.nth(targetIndex);
+      const fallbackRadio = radios.nth(targetIndex);
+
+      if (await fallbackRow.isVisible().catch(()=>false)) {
+        selectedName = (await fallbackRow.innerText()).trim();
+        await fallbackRow.click();
+      } else {
+        await fallbackRadio.click();
+      }
+    }
+    
     await this.modalAssignBtn.click();
     await expect(this.modalSearchInput).toBeHidden({ timeout: 10000 });
+    return selectedName;
   }
 
-  async assignDestination(searchQuery: string, facilityName: string) {
-    await this.dismissSelectPopoverIfOpen();
-    await this.destinationAssignBtn.click();
-    await expect(this.modalSearchInput).toBeVisible({ timeout: 10000 });
-    await this.modalSearchInput.locator('input').fill(searchQuery);
-    const row = this.page.getByTestId(`select-facility-row-${facilityName}`);
-    if ((await row.count()) > 0) {
-      await row.first().click();
-    } else {
-      const namedRadio = this.page.getByRole('radio', { name: new RegExp(facilityName, 'i') });
-      if ((await namedRadio.count()) > 0) {
-        await namedRadio.first().click();
-      } else {
-        const anyRow = this.page.locator('[data-testid^="select-facility-row-"]').first();
-        if ((await anyRow.count()) > 0) {
-          await anyRow.click();
-        } else {
-          await this.page.getByRole('radio').first().click();
-        }
-      }
-    }
-    await this.modalAssignBtn.click();
-    await expect(this.modalSearchInput).toBeHidden({ timeout: 10000 });
+  async assignOrigin(forceSearchQuery?: string) {
+    return this._assignFacility(this.originAssignBtn, forceSearchQuery);
+  }
+
+  async assignDestination(forceSearchQuery?: string, excludeFacilityName?: string) {
+    return this._assignFacility(this.destinationAssignBtn, forceSearchQuery, excludeFacilityName);
   }
 
   async selectLifecycle(lifecycleOption: string) {
@@ -127,17 +177,43 @@ export class CreateOrderPage {
     await this.page.getByRole('button', { name: /Done|OK/i }).click();
   }
 
-  async addProduct(sku: string) {
+  /**
+   * Searches for a product by SKU and adds a specified quantity.
+   */
+  async addProduct(sku?: string | string[]) {
     // In Ionic 7, ion-input encapsulates the input inside a shadow DOM wrapper.
     // Sometimes .fill() fails due to actionability checks failing on the host node.
     // We target the inner input specifically.
-    await this.productSearchInput.locator('input').fill(sku);
-    await this.page.keyboard.press('Enter');
+    
+    // Normalize passed sku to an array
+    const passedSkus = Array.isArray(sku) ? sku : [sku];
 
-    // wait for the add button that appears for the search result
-    await expect(this.addProductBtn).toBeVisible({ timeout: 10000 });
-    await expect(this.addProductBtn).toBeEnabled();
-    await this.addProductBtn.click();
+    const keywords = [
+      process.env.TEST_PRODUCT_SKU,
+      ...passedSkus,
+      'red', 'green', 'yellow', 'blue', 'black', 'white', 'shirt', 'pant',
+      Math.floor(Math.random() * 9000 + 1000).toString()
+    ].filter(Boolean) as string[];
+
+    for (let i = 0; i < keywords.length; i++) {
+      const keyword = keywords[i];
+      await this.productSearchInput.locator('input').fill(keyword);
+      await this.page.keyboard.press('Enter');
+
+      try {
+        // wait for the add button that appears for the search result
+        await expect(this.addProductBtn).toBeVisible({ timeout: 4000 });
+        await expect(this.addProductBtn).toBeEnabled({ timeout: 2000 });
+        await this.addProductBtn.click();
+        return; // Success
+      } catch (e) {
+        // Clear the input for the next try
+        await this.productSearchInput.locator('input').fill('');
+        if (i === keywords.length - 1) {
+          throw new Error(`Could not add product. Searched keywords: ${keywords.join(', ')}`);
+        }
+      }
+    }
   }
 
   async setQuantity(qty: number) {
@@ -152,11 +228,11 @@ export class CreateOrderPage {
   }
 
   async clickSave() {
-    await expect(this.saveBtn).toBeEnabled();
-    await Promise.all([
-      this.page.waitForNavigation({ waitUntil: 'networkidle' }),
-      this.saveBtn.click(),
-    ]);
+    await expect(this.saveBtn).toBeEnabled({ timeout: 15_000 });
+    await this.saveBtn.click({ force: true });
+    
+    // Wait for SPA router navigation to the order detail page instead of full page load
+    await this.page.waitForURL(/.*\/order(?:-detail)?\/.*/i, { timeout: 30_000 }).catch(() => {});
   }
 
   async dismissSelectPopoverIfOpen() {

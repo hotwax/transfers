@@ -1,9 +1,11 @@
+
 import { defineConfig, devices } from '@playwright/test';
 import path from 'path';
+import dotenv from 'dotenv';
+import { getAllClients } from "../config/clients";
 
 // Load env variables from .env
-require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
-const { getAllClients } = require("../config/clients");
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 /**
  * Dynamically generate projects for each client found in environment

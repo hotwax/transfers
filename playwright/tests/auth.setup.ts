@@ -1,156 +1,199 @@
+/**
+ * auth.setup.ts
+ * Global setup script for Playwright. Authenticates with Launchpad and saves the storage state
+ * so tests don't have to log in repeatedly.
+ */
 import { test as setup, expect } from "@playwright/test";
 import fs from "fs";
 import path from "path";
-const { getClientConfig } = require("../config/clients");
+const { getClientConfig } = require("../../config/clients");
+const { TabsPage } = require('../pages/TabsPage');
 
 /**
- * Perform login using the OMS backend (webtools) first, then navigate to Launchpad / Transfers
+ * Perform login via Launchpad and navigate to the Transfers App
  */
-async function performLogin(page, config) {
-  const { clientId, username, password } = config;
+async function performLogin(page, context, config) {
+  // Mock the appVersions API to prevent the 404 error on UAT from crashing the Login UI
+  await page.route('**/appVersions**', route => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({})
+  }));
 
+  const { clientId, username, password, oms } = config;
+  
   if (!username || !password) {
     throw new Error(`Credentials missing for ${clientId}. Provide username/password in CLIENTS JSON or env.`);
   }
 
-  const webtoolsUrl = `https://${clientId}.hotwax.io/webtools/control/main`;
+  console.log(`\nStarting Launchpad login flow for Transfers (${clientId})...`);
+  
+  const launchpadUrl = process.env.VUE_APP_LOGIN_URL || process.env.LAUNCHPAD_URL || 'https://launchpad.hotwax.io/login';
+  console.log(`Navigating to ${launchpadUrl}`);
+  
+  await page.goto(launchpadUrl);
+  await page.waitForLoadState('networkidle');
+  await page.waitForTimeout(2000); // Give Vue time to settle
 
-  const fillAndSubmitLoginForm = async () => {
-    const userField = page.locator('input[name="USERNAME"], input[placeholder*="Username"], td.label:has-text("User Name") + td input').first();
-    await expect(userField).toBeVisible({ timeout: 10000 });
-    await userField.fill(username);
+  // Fill OMS
+  console.log(`Launchpad OMS screen detected. Filling OMS...`);
+  const omsInput = page.locator('ion-input, input[type="text"]').first();
+  const omsUrl = oms || `https://${clientId}.hotwax.io`;
+  
+  await omsInput.click();
+  await page.keyboard.type(omsUrl, { delay: 50 });
+  await page.waitForTimeout(1000); // Wait for Vue to detect input and enable the NEXT button
+  
+  const nextBtn = page.locator('ion-button:has-text("NEXT"), button:has-text("NEXT")').first();
+  await nextBtn.click({ force: true }).catch(() => {});
+  await page.waitForTimeout(2000);
 
-    const passField = page.locator('input[type="password"][name="PASSWORD"], input[placeholder*="Password"]').first();
-    await passField.fill(password);
-
-    const submitBtn = page.locator('input[type="submit"][value="Login"], button:has-text("Login")').first();
-    await submitBtn.click();
-    await page.waitForLoadState('domcontentloaded');
-  };
-
-  const isLoginFormVisible = async () => {
-    return page.locator('input[name="USERNAME"], input[placeholder*="Username"], input[type="password"]').first().isVisible().catch(() => false);
-  };
-
-  console.log(`\nStarting login flow for ${clientId}...`);
-  await page.goto(webtoolsUrl);
-  await page.waitForLoadState('domcontentloaded');
-
-  // PRE-CHECK: If already logged in, skip
-  if (!(await isLoginFormVisible())) {
-    const currentUrl = page.url();
-    if (!currentUrl.includes('login') && !currentUrl.includes('checkLogin')) {
-      console.log(` Already logged in to ${clientId}. Skipping flow.`);
-      await page.goto(`https://${clientId}.hotwax.io/commerce/control/main`);
-      await page.waitForLoadState('networkidle');
-    }
+  // Fill credentials
+  const userField = page.locator('input[name="username"], input[name="USERNAME"], ion-input[name="username"] input, input[placeholder*="sername"]').first();
+  await expect(userField).toBeVisible({ timeout: 15000 });
+  
+  console.log(`Filling credentials for ${clientId}...`);
+  await userField.click();
+  await page.keyboard.type(username, { delay: 50 });
+  
+  const passField = page.locator('input[name="password"], input[type="password"]').first();
+  await passField.click();
+  await page.keyboard.type(password, { delay: 50 });
+  await passField.press('Enter');
+  
+  await page.waitForTimeout(1000);
+  const loginBtn = page.locator('ion-button:has-text("Login"), button:has-text("Login"), ion-button:has-text("LOGIN"), button:has-text("LOGIN")').first();
+  if (await loginBtn.isVisible().catch(() => false)) {
+      await loginBtn.click({ force: true }).catch(() => {});
   }
-
-  // 1. Click Login trigger when the current page is not already the login form.
-  if (!(await isLoginFormVisible())) {
-    const loginTrigger = page.locator('a:has-text("Login"), button:has-text("Login")').first();
-    await loginTrigger.click().catch(() => {});
-    await page.waitForLoadState('domcontentloaded');
-  }
-
-  // 2. Fill credentials (support both classic and modern login pages)
-  if (await isLoginFormVisible()) {
-    await fillAndSubmitLoginForm();
-  }
-
-  // 4. Navigate to Commerce (Prefer single sign-on link click to transfer session via externalLoginKey)
-  const commerceLink = page.locator('a:has-text("Hotwax Commerce"), a:has-text("Commerce")').first();
-  if (await commerceLink.isVisible().catch(() => false)) {
-    console.log('   Clicking "Hotwax Commerce" link to transfer session...');
-    await commerceLink.click();
-    await page.waitForLoadState('networkidle');
-  } else {
-    console.log('   "Hotwax Commerce" link not found. Direct navigating to Commerce...');
-    await page.goto(`https://${clientId}.hotwax.io/commerce/control/main`);
-    await page.waitForLoadState('networkidle');
-  }
-
-  if (await isLoginFormVisible()) {
-    console.log(`Commerce login required for ${clientId}. Submitting credentials again...`);
-    await fillAndSubmitLoginForm();
-    const retryCommerceLink = page.locator('a:has-text("Hotwax Commerce"), a:has-text("Commerce")').first();
-    if (await retryCommerceLink.isVisible().catch(() => false)) {
-      await retryCommerceLink.click();
-    } else {
-      await page.goto(`https://${clientId}.hotwax.io/commerce/control/main`);
-    }
-    await page.waitForLoadState('networkidle');
-  }
-
-  // Hard wait for session stabilization
+  
+  // Wait for Launchpad Home Dashboard
+  await page.waitForURL(/.*\/home.*/i, { timeout: 15000 });
+  console.log(`Successfully logged into Launchpad for ${clientId}`);
   await page.waitForTimeout(3000);
 
-  // Now we are in Commerce. Execute the Go To Launchpad flow exactly as OMS project does.
-  console.log('Step 1: Revealing side menu...');
-  await page.evaluate(() => {
-    const sidebar = document.querySelector('.side-menu');
-    if (sidebar) {
-      sidebar.classList.remove('hidden-xs');
-      sidebar.style.display = 'block';
-    }
-  });
-
-  const sideMenu = page.locator('.side-menu').first();
-  await sideMenu.hover();
-  await page.waitForTimeout(1500);
-
-  console.log('Step 2: Clicking "Go to Launchpad" and capturing new tab...');
-  const launchpadLink = page.locator('.side-menu').getByText('Go to Launchpad').first();
-  await expect(launchpadLink).toBeVisible({ timeout: 15000 });
-
-  const context = page.context();
-  const [launchpadPage] = await Promise.all([
-    context.waitForEvent('page'),
-    launchpadLink.click(),
-  ]);
-
-  console.log('Step 3: Verifying Launchpad URL and client environment...');
-  await launchpadPage.waitForLoadState('networkidle');
-  await expect(launchpadPage).toHaveURL(/launchpad.hotwax.io\/home/);
-  await expect(launchpadPage.locator('body')).toContainText(clientId);
-
-  console.log('Finding and clicking the Transfers App button...');
-  const transfersBtn = launchpadPage.locator('[data-testid*="-button-transfers"]').first();
+  // Click the Transfers app card
+  const transfersCard = page.locator('ion-card').filter({ hasText: 'Transfers' }).first();
   
-  if (await transfersBtn.isVisible({ timeout: 10000 }).catch(() => false)) {
-    await transfersBtn.click();
-  } else {
-    console.log('Transfers app button not found, navigating directly to Transfers URL...');
-    await launchpadPage.goto(config.baseUrl);
+  try {
+    // Some launchpads have many apps; scroll to ensure the card is in the DOM/visible
+    await page.mouse.wheel(0, 1000);
+    await page.waitForTimeout(1000);
+    await page.mouse.wheel(0, 1000);
+    await page.waitForTimeout(1000);
+
+    // Wait for it to be attached to the DOM first
+    await transfersCard.waitFor({ state: 'attached', timeout: 5000 });
+    await transfersCard.scrollIntoViewIfNeeded();
+    await expect(transfersCard).toBeVisible({ timeout: 5000 });
+    console.log('Clicking Transfers App card...');
+    await transfersCard.click();
+  } catch (e) {
+    console.log('Transfers card not found in Launchpad. Navigating directly to Transfers App...');
+    const appUrl = config.baseUrl || process.env.TRANSFERS_URL;
+    await page.goto(appUrl);
   }
 
-  // Wait for the URL to contain transfers or wait for network idle to ensure redirection is complete
-  await launchpadPage.waitForLoadState("networkidle").catch(() => {});
-  await launchpadPage.waitForTimeout(5000);
+  // Wait for the tab (Transfers app) to load
+  await page.waitForLoadState('networkidle');
+  await page.waitForTimeout(5000); // Give ionic time to settle and fetch store info
 
-  // If ionic login form still appears, fill it
-  const ionicUserField = launchpadPage.locator('input[name="username"]').first();
-  if (await ionicUserField.isVisible().catch(() => false)) {
-    console.log(`Ionic login form detected on Transfers, filling credentials again...`);
-    await ionicUserField.fill(config.username);
-    await launchpadPage.locator('input[name="password"]').first().fill(config.password);
-    const loginBtn = launchpadPage.locator('ion-button:has-text("Login"), button:has-text("Login")').first();
-    await loginBtn.click();
-    await launchpadPage.waitForLoadState("networkidle").catch(() => {});
-    await launchpadPage.waitForTimeout(5000); // Give extra time for tokens to be saved in LocalStorage
+  // Verify landing on Transfers App
+  try {
+    await Promise.any([
+      page.waitForURL(/.*\/transfers.*/i, { timeout: 15000 }),
+      page.waitForSelector('ion-menu', { state: 'visible', timeout: 15000 })
+    ]);
+  } catch (e) {
+      throw new Error(`Failed to land on Transfers App. URL: ${page.url()}`);
   }
 
-  console.log(`Successfully logged into Transfers for ${clientId}`);
+  console.log(`Successfully landed on Transfers App for ${clientId}`);
+  
+  // Ensure a product store is selected in Settings
+  const tabsPage = new TabsPage(page);
+  
+  console.log('Navigating to Settings to check Product Store...');
+  await tabsPage.goToSettings();
+  await page.waitForTimeout(3000);
+
+  const storeSelector = page.locator('ion-select').filter({ hasText: /Select store/i }).first();
+  await expect(storeSelector).toBeVisible({ timeout: 15_000 });
+  
+  const selectedStore = await storeSelector.evaluate((el: any) => el.value);
+  if (!selectedStore) {
+    console.log(`No product store selected. Selecting first available store...`);
+    await storeSelector.click();
+    
+    // Wait for the action sheet or alert options
+    const firstOption = page.getByRole('radio').first();
+    await expect(firstOption).toBeVisible({ timeout: 5000 });
+    await firstOption.click();
+    
+    // Check if there is an OK/Done button and click it
+    const okBtn = page.getByRole('button', { name: /OK|Done|Save/i }).first();
+    try {
+      await okBtn.waitFor({ state: 'visible', timeout: 2000 });
+      await okBtn.click();
+    } catch (e) {
+      // No OK button found within 2s, assume it's a popover that auto-closes
+    }
+    await page.waitForTimeout(2000); // Give it time to save via API
+  }
+
+  console.log('Ensuring Product Identifier Primary is set to SKU...');
+  try {
+    const productIdentifierCard = page.getByTestId('settings-product-identifier').first();
+    if (await productIdentifierCard.isVisible({ timeout: 5000 })) {
+      // Find the ion-item containing 'Primary' and its ion-select
+      const primaryItem = productIdentifierCard.locator('ion-item').filter({ hasText: 'Primary' }).first();
+      const primarySelect = primaryItem.locator('ion-select').first();
+      
+      const currentPrimary = await primarySelect.evaluate((el: any) => el.value);
+      if (currentPrimary !== 'sku') {
+        console.log(`Current primary identifier is '${currentPrimary}'. Changing to 'sku'...`);
+        await primarySelect.click();
+        
+        // Wait for the action sheet or alert options
+        const skuOption = page.getByRole('radio', { name: /SKU/i }).first();
+        await expect(skuOption).toBeVisible({ timeout: 5000 });
+        await skuOption.click();
+        
+        // Check if there is an OK/Done button and click it
+        const okBtn = page.getByRole('button', { name: /OK|Done|Save/i }).first();
+        try {
+          await okBtn.waitFor({ state: 'visible', timeout: 2000 });
+          await okBtn.click();
+        } catch (e) {
+          // No OK button found within 2s, assume it's a popover that auto-closes
+        }
+        await page.waitForTimeout(2000); // Give it time to save via API
+      } else {
+        console.log('Primary Product Identifier is already set to SKU.');
+      }
+    } else {
+      console.log('Product Identifier settings not found or visible, skipping...');
+    }
+  } catch (e) {
+    console.log(`Failed to set Product Identifier: ${e.message}`);
+  }
+
+  // Navigate back to the main app (Transfers tab)
+  console.log('Navigating back to Transfers...');
+  await tabsPage.goToTransfers();
+  await page.waitForTimeout(3000);
+
+  return page;
 }
 
-setup("authenticate and save storage state", async ({ page }, testInfo) => {
+setup("authenticate and save storage state", async ({ page, context }, testInfo) => {
   const projectName = testInfo.project.name;
   const clientId = projectName.replace("setup-", "");
   
   const config = getClientConfig(clientId);
   const authFilePath = path.resolve(__dirname, `../.auth/${clientId}.user.json`);
 
-  await performLogin(page, config);
+  await performLogin(page, context, config);
 
   fs.mkdirSync(path.dirname(authFilePath), { recursive: true });
   await page.context().storageState({ path: authFilePath });

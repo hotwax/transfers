@@ -1,6 +1,8 @@
-require("dotenv").config();
-const fs = require("fs");
-const path = require("path");
+import dotenv from "dotenv";
+import fs from "fs";
+import path from "path";
+
+dotenv.config();
 
 function getClientsEnvString() {
   // Read .env manually because dotenv truncates multiline strings without double quotes
@@ -21,46 +23,27 @@ function getClientsEnvString() {
 
 /**
  * Dynamic Client Manager for Fulfillment
- *
- * This module discovers and configures clients from environment variables.
- * Automatically generates HotWax Fulfillment URLs based on the Client ID, or reads overrides.
  */
 
-/**
- * Constructs a standard HotWax Fulfillment URL if not explicitly provided
- */
-const resolveUrl = (clientId, customUrl) => {
+const resolveUrl = (clientId: any, customUrl?: any) => {
   if (customUrl) return customUrl;
 
   if (clientId.endsWith("-uat")) {
-    return "https://fulfillment-uat.hotwax.io";
+    return "https://transfers-uat.hotwax.io";
   }
 
-  return `https://${clientId}.hotwax.io/open`;
+  return `https://transfers.hotwax.io`;
 };
 
-/**
- * Retrieves a configuration for a single client
- */
-const getClientConfig = (clientId) => {
+const getClientConfig = (clientId: any) => {
   if (!clientId) throw new Error("clientId is required.");
 
-  let config = { clientId };
+  let config: any = { clientId };
 
   // Tier 1: Global CLI Overrides (Highest Priority)
-  const baseUrl = process.env.URL;
-  const username = process.env.USERNAME;
-  const password = process.env.PASSWORD;
-
-  // If ANY of these are provided via CLI/Flat Env, use them and fill gaps from JSON
-  if (baseUrl || username || password) {
-    config = {
-      ...config,
-      baseUrl: resolveUrl(clientId, baseUrl),
-      username: username,
-      password: password,
-    };
-  }
+  const baseUrl = process.env.URL || process.env.PLAYWRIGHT_BASE_URL;
+  const username = process.env.USERNAME || process.env.TEST_USERNAME || process.env.VUE_APP_PLAYWRIGHT_USERNAME;
+  const password = process.env.PASSWORD || process.env.TEST_PASSWORD || process.env.VUE_APP_PLAYWRIGHT_PASSWORD;
 
   // Tier 3: Fallback to Structured JSON for missing fields
   const clientsStr = getClientsEnvString();
@@ -74,15 +57,16 @@ const getClientConfig = (clientId) => {
       const clientsMap = JSON.parse(rawJson);
       const clientData = clientsMap[clientId] || {};
 
-      return {
-        clientId,
-        username: config.username || clientData.username,
-        password: config.password || clientData.password,
+      config = {
+        ...config,
+        ...clientData,
+        username: username || clientData.username,
+        password: password || clientData.password,
         url: clientData.url || clientData.baseUrl,
         oms: clientData.oms,
-        baseUrl: config.baseUrl || resolveUrl(clientId, clientData.url || clientData.baseUrl)
+        baseUrl: resolveUrl(clientId, baseUrl || clientData.url || clientData.baseUrl)
       };
-    } catch (e) {
+    } catch (e: any) {
       console.error(
         `[CONFIG ERROR] Failed to parse CLIENTS JSON for ${clientId}: ${e.message}`
       );
@@ -91,17 +75,14 @@ const getClientConfig = (clientId) => {
 
   // Ensure we at least have a resolved URL if nothing was found in JSON
   if (!config.baseUrl) {
-    config.baseUrl = resolveUrl(clientId);
+    config.baseUrl = resolveUrl(clientId, baseUrl);
   }
 
   return config;
 };
 
-/**
- * Discovers all configured clients
- */
 const getAllClients = () => {
-  const discoveredIds = new Set();
+  const discoveredIds = new Set<string>();
 
   const clientsStr = getClientsEnvString();
   if (clientsStr) {
@@ -125,7 +106,7 @@ const getAllClients = () => {
   return Array.from(discoveredIds).map((id) => getClientConfig(id));
 };
 
-module.exports = {
+export {
   getClientConfig,
   getAllClients,
 };
