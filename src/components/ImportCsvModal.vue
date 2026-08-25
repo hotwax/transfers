@@ -41,10 +41,10 @@
   
 <script setup lang="ts">
 import { IonButton, IonButtons, IonContent, IonFab, IonFabButton, IonHeader, IonIcon, IonItem, IonList, IonListHeader, IonSelect, IonSelectOption, IonTitle, IonToolbar,modalController } from "@ionic/vue";
-import { defineProps, onMounted, ref } from "vue";
+import { onMounted, ref } from "vue";
 import { closeOutline, saveOutline } from "ionicons/icons";
-import { translate, useProductIdentificationStore } from "@hotwax/dxp-components";
-import { showToast } from "@/utils";
+import { commonUtil, translate } from "@common";
+import { useProductStore } from "@/store/productStore";
 
 const props = defineProps(["fileColumns", "content", "countId"])
 const productIdentifications = ref([]) as any;
@@ -54,8 +54,8 @@ const selectedIdentifierColumn = ref('')
 const selectedQuantityColumn = ref('')
 
 onMounted(async () => {
-  await useProductIdentificationStore().prepareProductIdentifierOptions();
-  productIdentifications.value = useProductIdentificationStore()?.getGoodIdentificationOptions ? useProductIdentificationStore().getGoodIdentificationOptions : []
+  await useProductStore().prepareProductIdentifierOptions();
+  productIdentifications.value = useProductStore().getBarcodeIdentifierPref
 })
 
 function closeModal(identifierData = {}) {
@@ -64,11 +64,11 @@ function closeModal(identifierData = {}) {
 
 function saveImportData() {
   if (!selectedIdentifier.value) {
-    return showToast(translate("Please select a Product identifier"));
+    return commonUtil.showToast(translate("Please select a Product identifier"), { position: 'top' });
   }
 
   if (!selectedIdentifierColumn.value) {
-    return showToast(translate("Please select the index for the product identifier column"));
+    return commonUtil.showToast(translate("Please select the index for the product identifier column"), { position: 'top' });
   }
 
   const idType = selectedIdentifier.value;

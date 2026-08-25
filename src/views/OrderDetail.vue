@@ -7,7 +7,14 @@
       </ion-toolbar>
     </ion-header>
     <ion-content>
-      <main data-testid="order-detail-loading" v-if="isFetchingOrderDetail">
+      <StreamingLoader 
+        :tasks="tasks" 
+        :is-open="isLoading" 
+        @dismiss="isLoading = false"
+        @reload="reloadPage"
+        @go-back="goBack"
+      />
+      <main data-testid="order-detail-loading" v-if="isFetchingOrderDetail && !currentOrder.orderId">
         <div class="empty-state">
           <ProgressBar :total-items="currentOrder.totalItems || 0" :loaded-items="currentOrder.loadedItems || 0" v-if="currentOrder.isFetching" />
           <template v-else>
@@ -215,9 +222,9 @@
                         <template v-if="!item.hasHeader">
                           <p class="overline">{{ orderParentProductInfoById[item.parentProductId]?.parentProductName }}</p>
                         </template>
-                        {{ getProductIdentificationValue(productIdentificationStore.getProductIdentificationPref.primaryId, getProduct(item.productId)) || getProduct(item.productId).productName }}
-                        <p>{{ getProductIdentificationValue(productIdentificationStore.getProductIdentificationPref.secondaryId, getProduct(item.productId)) }}</p>
-                        <p v-if="item.unitPrice">{{ formatCurrency(item.unitPrice, currentOrder?.currencyUom) }}</p>
+                        {{ commonUtil.getProductIdentificationValue(useProductStore().getProductIdentificationPref.primaryId, getProduct(item.productId)) || getProduct(item.productId).productName }}
+                        <p>{{ commonUtil.getProductIdentificationValue(useProductStore().getProductIdentificationPref.secondaryId, getProduct(item.productId)) }}</p>
+                        <p v-if="item.unitPrice">{{ commonUtil.formatCurrency(item.unitPrice, currentOrder?.currencyUom) }}</p>
                       </ion-label>
                     </ion-item>
                   </div>
@@ -241,7 +248,7 @@
                     </ion-chip>
                   </div>
                   <div class="outcome"> 
-                    <ion-badge :color="(STATUSCOLOR as any)[item.statusId] || 'medium'">{{ getStatusDesc(item.statusId) }}</ion-badge>
+                    <ion-badge :color="commonUtil.getStatusColor(item.statusId)">{{ getStatusDesc(item.statusId) }}</ion-badge>
                     <ion-badge color="warning" v-if="isUnderShipped(item)" :title="translate('Under shipped')">{{ translate("Under shipped") }}</ion-badge>
                     <ion-badge color="danger" v-if="isUnderReceived(item)" :title="translate('Under received')">{{ translate("Under received") }}</ion-badge>
                     <ion-badge color="primary" v-if="isOverReceived(item)" :title="translate('Over received')">{{ translate("Over received") }}</ion-badge>
@@ -287,7 +294,6 @@
 
 <script setup lang="ts">
 import { IonBackButton, IonBadge, IonButton, IonButtons, IonCard, IonCardContent, IonCardHeader, IonCardTitle, IonCheckbox, IonChip, IonContent, IonFooter, IonHeader, IonIcon, IonItem, IonLabel, IonList, IonNote, IonPage, IonSegment, IonSegmentButton, IonSelect, IonSelectOption, IonSpinner, IonThumbnail, IonTitle, IonToolbar, IonToast, onIonViewWillEnter, onIonViewWillLeave, actionSheetController, alertController, modalController, popoverController } from "@ionic/vue";
-import { getProductIdentificationValue, translate, useProductIdentificationStore } from '@hotwax/dxp-components';
 import { chevronDownOutline, checkmarkDoneOutline, playOutline, ellipsisVerticalOutline, ticketOutline, downloadOutline, sendOutline, shirtOutline, informationCircleOutline, closeCircleOutline, openOutline, warningOutline } from "ionicons/icons";
 import Image from "@/components/Image.vue";
 import OrderItemDetailActionsPopover from '@/components/OrderItemDetailActionsPopover.vue';
@@ -298,20 +304,38 @@ import AddProductModal from "@/components/AddProductModal.vue"
 import { useOrderQueue } from '@/composables/useProductQueue';
 import { useOrderTimeline } from '@/composables/useOrderTimeline';
 import { computed, ref, watch } from "vue";
-import { useStore } from "vuex";
-import logger from "@/logger";
-import { OrderService } from "@/services/OrderService";
+import { commonUtil, logger, translate } from "@common";
 import BulkReceiveModal from "@/components/BulkReceiveModal.vue";
-import { hasError, STATUSCOLOR } from "@/adapter";
 import { DateTime } from "luxon";
-import { showToast } from "@/utils";
-import emitter from "@/event-bus";
-import { formatCurrency } from "@/utils";
+// Merged emitter into @common import above
 import { OrderActionValidator, OrderFooterAction } from "@/utils/OrderActionValidator";
 import ProgressBar from "@/components/ProgressBar.vue";
 import { DynamicScroller, DynamicScrollerItem } from 'vue-virtual-scroller';
+import { useOrderStore } from "@/store/order";
+import { useProductStore as useProduct } from "@/store/product";
+import { useProductStore } from "@/store/productStore";
+import { useUtilStore } from "@/store/util";
+import StreamingLoader from "@/components/StreamingLoader.vue";
+import router from "@/router";
 
-const store = useStore();
+const orderStore = useOrderStore();
+const utilStore = useUtilStore();
+const isLoading = ref(false);
+
+interface Task {
+  label: string;
+  status: 'pending' | 'success' | 'error';
+  errorMessage: string;
+  fullError: any;
+}
+
+const tasks = ref<Record<string, Task>>({
+  order: { label: 'Order details', status: 'pending', errorMessage: '', fullError: null },
+  metadata: { label: 'Status metadata', status: 'pending', errorMessage: '', fullError: null },
+  carriers: { label: 'Carrier information', status: 'pending', errorMessage: '', fullError: null },
+  timeline: { label: 'Order timeline', status: 'pending', errorMessage: '', fullError: null },
+  methods: { label: 'Shipment methods', status: 'pending', errorMessage: '', fullError: null }
+});
 
 async function openMobileActions() {
   const actions = OrderActionValidator.getFooterActions(currentOrder.value, selectedItemSeqIds.value, flattenedScrollerItems.value.length > 0);
@@ -342,12 +366,11 @@ async function openMobileActions() {
 
   await actionSheet.present();
 }
-const productIdentificationStore = useProductIdentificationStore();
 const orderQueue = useOrderQueue();
 const props = defineProps(["orderId"]);
 
-const currentOrder = computed(() => store.getters["order/getCurrent"])
-const getStatusDesc = computed(() => store.getters["util/getStatusDesc"])
+const currentOrder = computed(() => orderStore.getCurrent)
+const getStatusDesc = computed(() => utilStore.getStatusDesc)
 const selectedItemSeqIds = ref(new Set<string>())
 
 const isAllSelected = computed(() => {
@@ -456,7 +479,7 @@ async function openBulkReceiveModal(actionType: string) {
   bulkReceiveModal.onDidDismiss().then((result) => {
     if (result.data?.isCompleted) {
       selectedItemSeqIds.value = new Set();
-      store.dispatch("order/fetchOrderDetails", props.orderId);
+      orderStore.fetchOrderDetails(props.orderId);
     }
   });
 
@@ -475,7 +498,7 @@ async function openCloseFulfillmentModal() {
   modal.onDidDismiss().then(async (result) => {
     if (result.data?.isCompleted) {
       await Promise.all([
-        store.dispatch("order/fetchOrderDetails", props.orderId),
+        orderStore.fetchOrderDetails(props.orderId),
         fetchOrderTimeline()
       ]);
     }
@@ -483,11 +506,11 @@ async function openCloseFulfillmentModal() {
 
   return modal.present();
 }
-const shipmentMethodsByCarrier = computed(() => store.getters["util/getShipmentMethodsByCarrier"])
-const getProduct = computed(() => store.getters["product/getProduct"])
-const getCarrierDesc = computed(() => store.getters["util/getCarrierDesc"])
-const getShipmentMethodDesc = computed(() => store.getters["util/getShipmentMethodDesc"])
-const facilities = computed(() => store.getters["util/getFacilitiesByProductStore"])
+const shipmentMethodsByCarrier = computed(() => utilStore.getShipmentMethodsByCarrier)
+const getProduct = computed(() => useProduct().getProduct)
+const getCarrierDesc = computed(() => utilStore.getCarrierDesc)
+const getShipmentMethodDesc = computed(() => utilStore.getShipmentMethodDesc)
+const facilities = computed(() => useProductStore().getProductStoreFacilities)
 // disable order status updates during product processing
 const isOrderStatusUpdateDisabled = computed(() => {
   return isUpdatingOrderStatus.value || orderQueue.pendingProductIds.value.size > 0;
@@ -590,16 +613,16 @@ async function closeSelectedItems() {
       text: translate("Confirm"),
       handler: async () => {
         try {
-          const resp = await OrderService.closeFulfillment({
+          const resp = await orderStore.closeFulfillment({
             orderId: currentOrder.value.orderId,
             items: Array.from(selectedItemSeqIds.value).map(id => ({ orderItemSeqId: id }))
           })
 
-          if (!hasError(resp)) {
-            showToast(translate("Items cancelled successfully."));
+          if (!commonUtil.hasError(resp)) {
+            commonUtil.showToast(translate("Items cancelled successfully."), { position: 'top' });
             selectedItemSeqIds.value = new Set();
             await Promise.all([
-              store.dispatch("order/fetchOrderDetails", props.orderId),
+              orderStore.fetchOrderDetails(props.orderId),
               fetchOrderTimeline()
             ]);
           } else {
@@ -607,7 +630,7 @@ async function closeSelectedItems() {
           }
         } catch (error) {
           logger.error(error);
-          showToast(translate("Failed to cancel items."));
+          commonUtil.showToast(translate("Failed to cancel items."), { position: 'top' });
         }
       }
     }]
@@ -699,9 +722,7 @@ function handleDiscrepancyFilterChange(value: string) {
 }
 
 onIonViewWillEnter(async () => {
-  await store.dispatch("order/fetchOrderDetails", props.orderId)
-  await Promise.allSettled([store.dispatch('util/fetchStatusDesc'), store.dispatch("util/fetchCarriersDetail"), fetchOrderTimeline(), store.dispatch("util/fetchShipmentMethodTypeDesc")])
-  carrierMethods.value = shipmentMethodsByCarrier.value[currentOrder.value.carrierPartyId]
+  await fetchOrderDetails();  
 })
 
 onIonViewWillLeave(() => {
@@ -710,7 +731,59 @@ onIonViewWillLeave(() => {
   selectedDiscrepancyFilter.value = "ALL";
 })
 
+async function fetchOrderDetails() {
+  isLoading.value = true;
+  Object.keys(tasks.value).forEach(key => tasks.value[key].status = 'pending');
 
+  try {
+    await orderStore.fetchOrderDetails(props.orderId)
+    tasks.value.order.status = 'success';
+  } catch (e: any) {
+    tasks.value.order.status = 'error';
+    tasks.value.order.errorMessage = translate('Failed to fetch order details');
+    tasks.value.order.fullError = e;
+  }
+
+  await Promise.allSettled([
+    utilStore.fetchStatusDesc()
+      .then(() => tasks.value.metadata.status = 'success')
+      .catch((e) => {
+        tasks.value.metadata.status = 'error';
+        tasks.value.metadata.errorMessage = translate('Failed to load status metadata');
+        tasks.value.metadata.fullError = e;
+      }),
+    utilStore.fetchCarriersDetail()
+      .then(() => tasks.value.carriers.status = 'success')
+      .catch((e) => {
+        tasks.value.carriers.status = 'error';
+        tasks.value.carriers.errorMessage = translate('Failed to retrieve carrier information');
+        tasks.value.carriers.fullError = e;
+      }),
+    fetchOrderTimeline()
+      .then(() => tasks.value.timeline.status = 'success')
+      .catch((e) => {
+        tasks.value.timeline.status = 'error';
+        tasks.value.timeline.errorMessage = translate('Failed to load order timeline');
+        tasks.value.timeline.fullError = e;
+      }),
+    utilStore.fetchShipmentMethodTypeDesc()
+      .then(() => tasks.value.methods.status = 'success')
+      .catch((e) => {
+        tasks.value.methods.status = 'error';
+        tasks.value.methods.errorMessage = translate('Failed to fetch shipment methods');
+        tasks.value.methods.fullError = e;
+      })
+  ])
+
+  carrierMethods.value = shipmentMethodsByCarrier.value[currentOrder.value.carrierPartyId]
+
+  const hasError = Object.values(tasks.value).some((task: any) => task.status === 'error');
+  if (!hasError) {
+    setTimeout(() => {
+      isLoading.value = false;
+    }, 500);
+  }
+}
 
 async function changeOrderStatus(updatedStatusId: string) {
   if(updatedStatusId === "ORDER_APPROVED") {
@@ -741,19 +814,19 @@ async function updateOrderStatus(updatedStatusId: string) {
   try {
     if (updatedStatusId === "ORDER_APPROVED") {
       if (currentOrder.value.statusFlowId === "TO_Receive_Only") {
-        resp = await OrderService.approveWarehouseFulfillOrder({ orderId: currentOrder.value.orderId })
+        resp = await orderStore.approveWarehouseFulfillOrder({ orderId: currentOrder.value.orderId })
       } else {
-        resp = await OrderService.approveOrder({ orderId: currentOrder.value.orderId })
+        resp = await orderStore.approveOrder({ orderId: currentOrder.value.orderId })
       }
     }
     if (updatedStatusId === "ORDER_CANCELLED") {
-      resp = await OrderService.cancelOrder({ orderId: currentOrder.value.orderId })
+      resp = await orderStore.cancelOrder({ orderId: currentOrder.value.orderId })
     }
 
-    if (!hasError(resp)) {
-      showToast(translate("Order status updated successfully."))
+    if (!commonUtil.hasError(resp)) {
+      commonUtil.showToast(translate("Order status updated successfully."), { position: 'top' })
       await Promise.all([
-        store.dispatch("order/fetchOrderDetails", props.orderId),
+        orderStore.fetchOrderDetails(props.orderId),
         fetchOrderTimeline()
       ]);
     } else {
@@ -763,7 +836,7 @@ async function updateOrderStatus(updatedStatusId: string) {
     logger.error(error)
     // Show the actual error message from API response
     const errorMessage = error?.response?.data?.errors || translate("Failed to update order status.");
-    showToast(errorMessage)
+    commonUtil.showToast(errorMessage, { position: 'top' })
   } finally {
     isUpdatingOrderStatus.value = false;
   }
@@ -799,18 +872,18 @@ async function updateCarrierAndShipmentMethod(event: any, carrierPartyId: any, s
   const isShipmentMethodUpdated = shipmentMethodTypeId ? true : false
   shipmentMethodTypeId = shipmentMethodTypeId ? shipmentMethodTypeId : carrierMethods.value?.[0]?.shipmentMethodTypeId
   try {
-    const resp = await OrderService.updateOrderItemShipGroup({
+    const resp = await orderStore.updateOrderItemShipGroup({
       orderId: currentOrder.value.orderId,
       shipGroupSeqId: currentOrder.value.shipGroupSeqId,
       shipmentMethodTypeId : shipmentMethodTypeId ? shipmentMethodTypeId : "",
       carrierPartyId
     })
 
-    if(!hasError(resp)) {
+    if(!commonUtil.hasError(resp)) {
       const order = JSON.parse(JSON.stringify(currentOrder.value));
       order.carrierPartyId = carrierPartyId
       order.shipmentMethodTypeId = shipmentMethodTypeId;
-      store.dispatch("order/updateCurrent", order)
+      orderStore.updateCurrent(order)
     } else {
       throw resp.data;
     }
@@ -866,7 +939,7 @@ async function openOrderItemDetailActionsPopover(event: any, item: any){
   popover.onDidDismiss().then(async (result) => {
     if(result.data?.isItemUpdated) {
       await Promise.all([
-        store.dispatch("order/fetchOrderDetails", props.orderId),
+        orderStore.fetchOrderDetails(props.orderId),
         fetchOrderTimeline()
       ]);
     }
@@ -875,7 +948,14 @@ async function openOrderItemDetailActionsPopover(event: any, item: any){
   await popover.present();
 }
 
+function reloadPage() {
+  fetchOrderDetails();
+}
 
+function goBack() {
+  isLoading.value = false;
+  router.back();
+}
 
 function formatDateTime(date: any) {
   return DateTime.fromMillis(date).toLocaleString({ hour: "numeric", minute: "2-digit", day: "numeric", month: "short", year: "numeric", hourCycle: "h12" })

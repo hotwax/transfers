@@ -1,14 +1,14 @@
 import { createRouter, createWebHistory } from "@ionic/vue-router";
 import { RouteRecordRaw } from "vue-router";
-import store from "@/store"
 import Tabs from "@/views/Tabs.vue"
-import { DxpLogin, translate, useAuthStore, getAppLoginUrl } from "@hotwax/dxp-components";
-import { loader } from '@/user-utils';
+import { commonUtil, translate } from "@common";
+import { useAuth } from "@common/composables/useAuth";
 import OrderDetail from "@/views/OrderDetail.vue";
 import CreateOrder from "@/views/CreateOrder.vue";
 import BulkUpload from "@/views/BulkUpload.vue";
-import { hasPermission } from "@/authorization";
-import { showToast } from "@/utils";
+import Login from "@common/components/Login.vue";
+import { useUserStore } from "@/store/user";
+import Actions from "@/authorization/actions";
 declare module 'vue-router' {
   interface RouteMeta {
     permissionId?: string;
@@ -16,23 +16,12 @@ declare module 'vue-router' {
 }
 
 const authGuard = async (to: any, from: any, next: any) => {
-  const authStore = useAuthStore()
-  if (!authStore.isAuthenticated || !store.getters['user/isAuthenticated']) {
-    await loader.present('Authenticating')
-    // TODO use authenticate() when support is there
-    const redirectUrl = window.location.origin + '/login'
-    window.location.href = authStore.isEmbedded ? getAppLoginUrl() : `${getAppLoginUrl()}?redirectUrl=${redirectUrl}`
-    loader.dismiss()
+  const { isAuthenticated } = useAuth()
+  if (!isAuthenticated.value) {
+    to.fullPath != "/" && localStorage.setItem("requestedPagePath", to.fullPath)
+    next('/login')
   }
   next()
-};
-
-const loginGuard = (to: any, from: any, next: any) => {
-  const authStore = useAuthStore()
-  if (authStore.isAuthenticated && !to.query?.token && !to.query?.oms) {
-    next('/')
-  }
-  next();
 };
 
 const routes: Array<RouteRecordRaw> = [
@@ -58,7 +47,7 @@ const routes: Array<RouteRecordRaw> = [
         name: "Discrepancies",
         component: () => import("@/views/Discrepancies.vue"),
         meta: {
-          permissionId: "APP_DISCREPANCY_REPORT"
+          permissionId: Actions.APP_DISCREPANCY_REPORT
         }
       },
       {
@@ -81,7 +70,7 @@ const routes: Array<RouteRecordRaw> = [
     component: BulkUpload,
     beforeEnter: authGuard,
     meta: {
-      permissionId: "APP_BULK_UPLOAD"
+      permissionId: Actions.APP_BULK_UPLOAD
     }
   },
   {
@@ -94,22 +83,26 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: "/login",
     name: "Login",
-    component: DxpLogin,
-    beforeEnter: loginGuard
+    component: Login
   },
 ]
 
 const router = createRouter({
-  history: createWebHistory(process.env.BASE_URL),
+  history: createWebHistory(import.meta.env.BASE_URL),
   routes
 })
 
 router.beforeEach((to, from) => {
-  if (to.meta.permissionId && !hasPermission(to.meta.permissionId)) {
+  // Enforce the canonical version URL on every navigation (no-op until the version is resolved, or if
+  // already canonical). Redirect cancels this navigation. Logic lives in useAuth so it's shared.
+  if (useAuth().checkAppVersionRedirect()) return false;
+
+  const userStore = useUserStore()
+  if (to.meta.permissionId && !userStore.hasPermission(to.meta.permissionId)) {
     let redirectToPath = from.path;
     // If the user has navigated from Login page or if it is page load, redirect user to settings page without showing any toast
     if (redirectToPath == "/login" || redirectToPath == "/") redirectToPath = "tabs/settings";
-    else showToast(translate('You do not have permission to access this page'));
+    else commonUtil.showToast(translate('You do not have permission to access this page'), { position: 'top' });
     return {
       path: redirectToPath,
     }

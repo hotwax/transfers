@@ -48,7 +48,7 @@
 
 <script setup lang="ts">
 import { IonContent, IonHeader, IonItem, IonLabel, IonList, IonMenu, IonSelect, IonSelectOption, IonTitle, IonToolbar } from "@ionic/vue";
-import { translate } from "@hotwax/dxp-components";
+import { translate } from "@common";
 
 defineProps({
   selectedTab: String,
