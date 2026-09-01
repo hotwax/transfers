@@ -68,7 +68,7 @@ const getClientConfig = (clientId: any) => {
       };
     } catch (e: any) {
       console.error(
-        `[CONFIG ERROR] Failed to parse CLIENTS JSON for ${clientId}: ${e.message}`
+        `Configuration [CLIENTS, Client: ${clientId}] - Failed to parse in getClientConfig: ${e.message}`
       );
     }
   }
@@ -94,7 +94,7 @@ const getAllClients = () => {
         );
       }
     } catch (e) {
-      console.error("[CONFIG ERROR] Failed to parse CLIENTS in getAllClients", e);
+      console.error("Configuration [CLIENTS] - Failed to parse in getAllClients", e);
     }
   }
 
