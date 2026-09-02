@@ -1,6 +1,6 @@
-const fetch = require('node-fetch');
-const fs = require('fs');
-const path = require('path');
+import fetch from 'node-fetch';
+import fs from 'fs';
+import path from 'path';
 
 // Configure via environment variables:
 // - SEED_API_URL: seeding endpoint URL

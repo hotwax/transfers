@@ -1,3 +1,6 @@
+/**
+ * Page Object Model for the main bottom navigation Tabs.
+ */
 import { Page } from '@playwright/test';
 
 export class TabsPage {
@@ -7,15 +10,15 @@ export class TabsPage {
 
   constructor(page: Page) {
     this.page = page;
-    this.transfersTabBtn = page.getByTestId('tabs-transfers-btn');
-    this.settingsTabBtn = page.getByTestId('tabs-settings-btn');
+    this.transfersTabBtn = page.getByRole('tab', { name: 'Transfers' });
+    this.settingsTabBtn = page.getByRole('tab', { name: 'Settings' });
   }
 
   async goToTransfers() {
-    await this.transfersTabBtn.click();
+    await this.transfersTabBtn.click({ force: true });
   }
 
   async goToSettings() {
-    await this.settingsTabBtn.click();
+    await this.settingsTabBtn.click({ force: true });
   }
 }

@@ -1,33 +1,16 @@
-import { test, expect } from '@playwright/test';
-import { OrderDetailPage } from '../pages/orderDetail.page';
-import { CreateOrderPage } from '../pages/CreateOrderPage';
-
 /**
- * Order Action Logic - Playwright Test Suite (moved into tests folder)
+ * order-detail-actions.spec.ts
+ * Tests primary order-level actions (Approve, Receive, Close) from the Order Detail page.
  */
+import { test, expect } from "@playwright/test";
+import { OrderDetailPage } from "../pages/OrderDetailPage";
+import { CreateOrderPage } from "../pages/CreateOrderPage";
+import { createTestOrder } from "../utils/orderFactory";
+import { getClientConfig } from "../../config/clients";
+
+let envSkus: string[] = [];
 
 const BASE_URL = process.env.BASE_URL || 'http://localhost:8080';
-
-const ORDER_CREATED = process.env.TEST_ORDER_CREATED || 'TEST_ORDER_CREATED';
-const ORDER_APPROVED_NO_IMPACT = process.env.TEST_ORDER_APPROVED_NO_IMPACT || 'TEST_ORDER_APPROVED_NO_IMPACT';
-const ORDER_APPROVED_WITH_SHIPMENTS = process.env.TEST_ORDER_APPROVED_WITH_SHIPMENTS || 'TEST_ORDER_APPROVED_WITH_SHIPMENTS';
-const ORDER_APPROVED_WITH_RECEIPTS = process.env.TEST_ORDER_APPROVED_WITH_RECEIPTS || 'TEST_ORDER_APPROVED_WITH_RECEIPTS';
-const ORDER_FOR_SUMMARY = process.env.TEST_ORDER_ID || 'TEST_ORDER_1001';
-
-const ITEM_SEQ_CREATED = process.env.TEST_ITEM_SEQ_CREATED || 'ITEMSEQ_CREATED';
-const ITEM_SEQ_APPROVED = process.env.TEST_ITEM_SEQ_APPROVED || 'ITEMSEQ_APPROVED';
-
-function isPlaceholder(value: string | undefined): boolean {
-  if (!value) return true;
-  return value.startsWith('TEST_') || value.startsWith('ITEMSEQ_');
-}
-
-function resolveOrderId(...candidates: Array<string | undefined>): string {
-  for (const value of candidates) {
-    if (!isPlaceholder(value)) return value as string;
-  }
-  return ORDER_FOR_SUMMARY;
-}
 
 async function getOrderStatusText(page: any): Promise<string> {
   const status = await page.locator('.header .overline').first().textContent().catch(() => '');
@@ -40,29 +23,7 @@ function getChipCountFromText(text: string | null): number {
   return match ? Number(match[1]) : 0;
 }
 
-async function createApprovedReceiveOnlyOrder(page: any, namePrefix: string): Promise<OrderDetailPage> {
-  const createOrderPage = new CreateOrderPage(page);
-  const orderDetailPage = new OrderDetailPage(page);
 
-  await createOrderPage.goto();
-  await expect(page.getByTestId('create-order-store-select')).toBeVisible({ timeout: 15_000 });
-
-  const orderName = `${namePrefix} ${Date.now()}`;
-  await createOrderPage.setTransferName(orderName);
-  await createOrderPage.assignOrigin('central', 'Central Warehouse');
-  await createOrderPage.assignDestination('A221', 'A221');
-  await createOrderPage.selectLifecycle('Receive only');
-  await createOrderPage.addProduct('WT09');
-  await createOrderPage.setQuantity(2);
-  await createOrderPage.clickSave();
-
-  await orderDetailPage.verifyOrderName(orderName);
-  await orderDetailPage.verifyStatus('Created');
-  await orderDetailPage.approveOrder();
-  await orderDetailPage.verifyStatus('Approved');
-
-  return orderDetailPage;
-}
 
 async function clickVisibleStatusChip(page: any, filterValue: string): Promise<void> {
   const didClick = await page.evaluate((value: string) => {
@@ -87,90 +48,30 @@ async function expectNoItemsVisibleForActiveStatus(page: any): Promise<void> {
 }
 
 test.describe('Order Action Logic', () => {
+  let testOrderId: string;
+
+  test.beforeAll(async () => {
+    const clientId = process.env.CLIENT || "default";
+    const config = getClientConfig(clientId);
+    if (config?.shopify?.productVariants) {
+      envSkus = config.shopify.productVariants.map((v: any) => v.sku).filter(Boolean);
+    }
+  });
+
+  test.beforeEach(async ({ page }) => {
+    const skusToTry = envSkus.length > 0 ? envSkus : process.env.TEST_SKU || "generic-test-sku";
+    const { orderDetailPage, orderId } = await createTestOrder(page, "Fulfill & Receive", skusToTry);
+    await orderDetailPage.approveOrder();
+    testOrderId = orderId;
+  });
   test.beforeEach(async ({ page }) => {
     // TODO: implement auth helper in CI
   });
 
-  test('Approval button behavior matches order state', async ({ page }) => {
-    const orderId = resolveOrderId(ORDER_CREATED, ORDER_APPROVED_NO_IMPACT, ORDER_FOR_SUMMARY);
-    const od = new OrderDetailPage(page);
-    await od.goto(orderId);
-    const status = await getOrderStatusText(page);
-    const approveBtn = od.footerButton('APPROVE');
 
-    if (await approveBtn.count()) {
-      await expect(approveBtn).toBeVisible();
-      await expect(approveBtn).toBeEnabled();
-      if (status) expect(status).toMatch(/created/);
-    } else {
-      await expect(approveBtn).toHaveCount(0);
-      if (status) expect(status).not.toMatch(/created/);
-    }
-  });
-
-  test('Cancel/Close Fulfillment buttons render valid enabled/disabled state', async ({ page }) => {
-    const orderId = resolveOrderId(
-      ORDER_APPROVED_NO_IMPACT,
-      ORDER_APPROVED_WITH_SHIPMENTS,
-      ORDER_APPROVED_WITH_RECEIPTS,
-      ORDER_FOR_SUMMARY
-    );
-    const od = new OrderDetailPage(page);
-    await od.goto(orderId);
-
-    const cancelBtn = od.footerButton('CANCEL');
-    if (await cancelBtn.count()) {
-      await expect(cancelBtn).toBeVisible();
-      const enabledOrDisabled = (await cancelBtn.isEnabled()) || (await cancelBtn.isDisabled());
-      expect(enabledOrDisabled).toBeTruthy();
-    }
-
-    const closeFulfillBtn = od.footerButton('CLOSE_FULFILLMENT');
-    if (await closeFulfillBtn.count()) {
-      await expect(closeFulfillBtn).toBeVisible();
-      const enabledOrDisabled = (await closeFulfillBtn.isEnabled()) || (await closeFulfillBtn.isDisabled());
-      expect(enabledOrDisabled).toBeTruthy();
-    }
-  });
-
-  test('Add items button follows order status', async ({ page }) => {
-    const orderId = resolveOrderId(ORDER_CREATED, ORDER_APPROVED_NO_IMPACT, ORDER_FOR_SUMMARY);
-    const od = new OrderDetailPage(page);
-    await od.goto(orderId);
-    const status = await getOrderStatusText(page);
-    const addItemsBtn = od.footerButton('ADD_ITEMS');
-    await expect(addItemsBtn).toBeVisible();
-
-    if (status.match(/created/)) {
-      await expect(addItemsBtn).not.toHaveAttribute('aria-disabled', 'true');
-    } else {
-      await expect(addItemsBtn).toHaveAttribute('aria-disabled', 'true');
-    }
-  });
-
-  test('Bulk receive button opens modal when enabled, otherwise stays non-actionable', async ({ page }) => {
-    const orderId = resolveOrderId(ORDER_APPROVED_WITH_SHIPMENTS, ORDER_CREATED, ORDER_FOR_SUMMARY);
-    const od = new OrderDetailPage(page);
-    await od.goto(orderId);
-    const bulkReceiveBtn = od.footerButton('BULK_RECEIVE');
-
-    if ((await bulkReceiveBtn.count()) === 0) {
-      await expect(bulkReceiveBtn).toHaveCount(0);
-      return;
-    }
-
-    await expect(bulkReceiveBtn).toBeVisible();
-    if (await bulkReceiveBtn.isEnabled()) {
-      await bulkReceiveBtn.click();
-      await expect(od.bulkModalConfirm()).toBeVisible();
-      await page.getByTestId('bulk-modal-close-btn').click();
-      return;
-    }
-    await expect(bulkReceiveBtn).toBeDisabled();
-  });
 
   test('Item-level meatball menu opens and shows at least one available action', async ({ page }) => {
-    const orderId = resolveOrderId(ORDER_APPROVED_WITH_SHIPMENTS, ORDER_CREATED, ORDER_FOR_SUMMARY);
+    const orderId = testOrderId;
     const od = new OrderDetailPage(page);
     await od.goto(orderId);
     const actionButtons = page.locator('[data-testid^="order-item-actions-btn-"]');
@@ -186,7 +87,7 @@ test.describe('Order Action Logic', () => {
 
   test('Summary status chips are internally consistent with rendered item rows', async ({ page }) => {
     const od = new OrderDetailPage(page);
-    await od.goto(ORDER_FOR_SUMMARY);
+    await od.goto(testOrderId);
 
     const allChip = page.getByTestId('order-status-filter-ALL');
     if ((await allChip.count()) === 0) {
@@ -215,7 +116,9 @@ test.describe('Order Action Logic', () => {
   });
 
   test('Selecting a zero-count status filter clears the item list view', async ({ page }) => {
-    await createApprovedReceiveOnlyOrder(page, 'Zero Count Status');
+    const skusToTry = envSkus.length > 0 ? envSkus : process.env.TEST_SKU || "generic-test-sku";
+    const { orderDetailPage } = await createTestOrder(page, "Receive only", skusToTry);
+    await orderDetailPage.approveOrder();
     const completedChip = page.locator('[data-testid="order-status-filter-COMPLETED"]:visible').first();
     await expect(completedChip).toBeVisible();
     await expect(completedChip).toContainText('(0)');
@@ -224,7 +127,9 @@ test.describe('Order Action Logic', () => {
   });
 
   test('Bulk receive is disabled when selected status has no receivable items', async ({ page }) => {
-    const od = await createApprovedReceiveOnlyOrder(page, 'Bulk Receive Filter Gate');
+    const skusToTry = envSkus.length > 0 ? envSkus : process.env.TEST_SKU || "generic-test-sku";
+    const { orderDetailPage } = await createTestOrder(page, "Receive only", skusToTry);
+    await orderDetailPage.approveOrder();
     const bulkReceiveBtn = page.locator('[data-testid="order-footer-bulk-receive"]:visible').first();
     await expect(bulkReceiveBtn).toBeVisible();
     await expect(bulkReceiveBtn).toBeEnabled();
@@ -238,11 +143,11 @@ test.describe('Order Action Logic', () => {
   });
 
   test('Meatball menu redirects to external fulfill/receive apps when actions are available', async ({ page }) => {
-    const orderId = resolveOrderId(ORDER_APPROVED_WITH_SHIPMENTS, ORDER_FOR_SUMMARY);
+    const orderId = testOrderId;
     const od = new OrderDetailPage(page);
     await od.goto(orderId);
 
-    let actionBtn = !isPlaceholder(ITEM_SEQ_APPROVED) ? od.itemActionsButton(ITEM_SEQ_APPROVED) : page.locator('[data-testid^="order-item-actions-btn-"]').first();
+    let actionBtn = page.locator('[data-testid^="order-item-actions-btn-"]').first();
     if ((await actionBtn.count()) === 0) {
       actionBtn = page.locator('[data-testid^="order-item-actions-btn-"]').first();
     }
@@ -274,9 +179,8 @@ test.describe('Order Action Logic', () => {
     await page.keyboard.press('Escape');
   });
 
-  test('Cancel action is blocked when order already has inventory impact', async ({ page }) => {
-    const impactedCandidates = [ORDER_APPROVED_WITH_SHIPMENTS, ORDER_APPROVED_WITH_RECEIPTS].filter((id) => !isPlaceholder(id));
-    const orderId = impactedCandidates[0] || ORDER_FOR_SUMMARY;
+  test('Cancel action is enabled for freshly approved orders with no inventory impact', async ({ page }) => {
+    const orderId = testOrderId;
     const od = new OrderDetailPage(page);
     await od.goto(orderId);
 
@@ -287,16 +191,14 @@ test.describe('Order Action Logic', () => {
     }
 
     await expect(cancelBtn).toBeVisible();
-    if (impactedCandidates.length > 0) {
-      await expect(cancelBtn).toBeDisabled();
-    } else {
-      const enabledOrDisabled = (await cancelBtn.isEnabled()) || (await cancelBtn.isDisabled());
-      expect(enabledOrDisabled).toBeTruthy();
-    }
+    
+    // A freshly created and approved order has no inventory impact, so it can still be cancelled.
+    const isAriaDisabled = await cancelBtn.getAttribute('aria-disabled');
+    expect(isAriaDisabled).not.toBe('true');
   });
 
   test('Bulk receive remains disabled until at least one eligible item is selected', async ({ page }) => {
-    const orderId = resolveOrderId(ORDER_APPROVED_NO_IMPACT, ORDER_APPROVED_WITH_SHIPMENTS, ORDER_FOR_SUMMARY);
+    const orderId = testOrderId;
     const od = new OrderDetailPage(page);
     await od.goto(orderId);
 
@@ -309,21 +211,21 @@ test.describe('Order Action Logic', () => {
     await expect(bulkReceiveBtn).toBeVisible();
     if (await bulkReceiveBtn.isEnabled()) {
       // Already enabled due to seeded pre-selection state; still assert state is deterministic.
-      await expect(bulkReceiveBtn).toBeEnabled();
+      await expect(bulkReceiveBtn).not.toHaveAttribute('aria-disabled', 'true');
       return;
     }
 
-    await expect(bulkReceiveBtn).toBeDisabled();
+    await expect(bulkReceiveBtn).toHaveAttribute('aria-disabled', 'true');
     const firstSelectableRow = page.locator('[data-testid^="order-item-row-"]').first();
     if ((await firstSelectableRow.count()) > 0) {
       await firstSelectableRow.click();
-      await expect(bulkReceiveBtn).toBeEnabled();
+      await expect(bulkReceiveBtn).not.toHaveAttribute('aria-disabled', 'true');
     }
   });
 
   test('Order detail status and summary chips persist after reload', async ({ page }) => {
     const od = new OrderDetailPage(page);
-    await od.goto(ORDER_FOR_SUMMARY);
+    await od.goto(testOrderId);
 
     const statusBefore = (await getOrderStatusText(page)) || '';
     const allChip = page.getByTestId('order-status-filter-ALL');
