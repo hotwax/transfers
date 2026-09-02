@@ -47,7 +47,7 @@ import {
   modalController,
 } from '@ionic/vue';
 import { closeOutline, sendOutline } from 'ionicons/icons';
-import { computed, onMounted, ref } from 'vue';
+import { computed, ref } from 'vue';
 import { translate } from '@common';
 import { useInventoryTransferStore } from '@/store/inventoryTransfer';
 import { useProductStore } from '@/store/productStore';
@@ -73,8 +73,6 @@ const validationMessage = computed(() => {
   if (sameFacility.value) return translate('Source and destination must be different.');
   return '';
 });
-
-onMounted(() => productStore.fetchAllFacilities());
 
 async function submit() {
   if (!canSubmit.value) return;
