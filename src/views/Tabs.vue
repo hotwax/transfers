@@ -7,6 +7,10 @@
           <ion-icon :icon="businessOutline" />
           <ion-label data-testid="tabs-transfers-btn">{{ translate("Transfers") }}</ion-label>
         </ion-tab-button>
+        <ion-tab-button v-if="userStore.hasPermission(Actions.APP_INVENTORY_TRANSFER_VIEW)" tab="inventory-transfers" href="/tabs/inventory-transfers">
+          <ion-icon :icon="swapHorizontalOutline" />
+          <ion-label>{{ translate("Inventory transfers") }}</ion-label>
+        </ion-tab-button>
         <ion-tab-button v-if="userStore.hasPermission(Actions.APP_DISCREPANCY_REPORT)" tab="discrepancies" href="/tabs/discrepancies">
           <ion-icon :icon="alertCircleOutline" />
           <ion-label data-testid="tabs-discrepancies-btn">{{ translate("Discrepancies") }}</ion-label>
@@ -22,7 +26,7 @@
 
 <script setup lang="ts">
 import { IonIcon, IonLabel, IonPage, IonRouterOutlet, IonTabBar, IonTabButton, IonTabs } from "@ionic/vue";
-import { alertCircleOutline, businessOutline, settingsOutline } from "ionicons/icons";
+import { alertCircleOutline, businessOutline, settingsOutline, swapHorizontalOutline } from "ionicons/icons";
 import router from "../router";
 import { translate } from "@common";
 import { useUserStore } from "@/store/user";
@@ -31,7 +35,7 @@ import Actions from "@/authorization/actions";
 const userStore = useUserStore();
 
 function showFooter() {
-  if (['/tabs/transfers', '/tabs/discrepancies', '/tabs/settings'].includes(router.currentRoute.value.path)) return true
+  if (['/tabs/transfers', '/tabs/inventory-transfers', '/tabs/discrepancies', '/tabs/settings'].includes(router.currentRoute.value.path)) return true
   return false
 }
 </script>

@@ -43,6 +43,14 @@ const routes: Array<RouteRecordRaw> = [
         component: () => import("@/views/Transfers.vue")
       },
       {
+        path: "inventory-transfers",
+        name: "InventoryTransfers",
+        component: () => import("@/views/InventoryTransfers.vue"),
+        meta: {
+          permissionId: Actions.APP_INVENTORY_TRANSFER_VIEW
+        }
+      },
+      {
         path: "discrepancies",
         name: "Discrepancies",
         component: () => import("@/views/Discrepancies.vue"),
