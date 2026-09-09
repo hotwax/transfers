@@ -6,6 +6,7 @@ import { useProductStore } from "@/store/productStore";
 import { useProductStore as useProduct } from "@/store/product";
 import { useOrderStore } from "@/store/order";
 import { useUtilStore } from "@/store/util";
+import { useInventoryTransferStore } from "@/store/inventoryTransfer";
 
 interface UserState {
   permissions: any[]
@@ -190,6 +191,7 @@ export const useUserStore = defineStore("user", {
     },
     async postLogout() {
       useOrderStore().$reset();
+      useInventoryTransferStore().$reset();
       useProduct().$reset();
       useProductStore().$reset();
       this.$reset();
