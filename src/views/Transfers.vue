@@ -169,7 +169,7 @@ function getFacilityName(facilityId: string) {
 
 .empty-state ion-icon {
   font-size: 72px;
-  margin-bottom: var(--spacer-md);
+  margin-bottom: var(--spacer-base);
 }
 
 .empty-state h1 {
