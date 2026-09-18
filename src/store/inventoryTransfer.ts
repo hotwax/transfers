@@ -4,7 +4,6 @@ import { api, commonUtil, logger } from '@common';
 export type InventoryTransferFilters = {
   inventoryTransferId: string;
   orderId: string;
-  orderItemSeqId: string;
   productId: string;
   facilityId: string;
   facilityIdTo: string;
@@ -14,7 +13,6 @@ export type InventoryTransferFilters = {
 const defaultFilters = (): InventoryTransferFilters => ({
   inventoryTransferId: '',
   orderId: '',
-  orderItemSeqId: '',
   productId: '',
   facilityId: '',
   facilityIdTo: '',
@@ -80,11 +78,36 @@ export const useInventoryTransferStore = defineStore('inventoryTransfer', {
       });
     },
     async cancelInventoryTransfer(inventoryTransferId: string) {
-      return api({
+      const response: any = await api({
         url: `oms/inventoryTransfers/${inventoryTransferId}/cancel`,
         method: 'POST',
         data: { inventoryTransferId, statusReasonEnumId: 'IXF_USER_CANCEL' },
       });
+      if (commonUtil.hasError(response)) throw response.data;
+
+      const transfer = this.transfers.find((item) => item.inventoryTransferId === inventoryTransferId);
+      if (transfer) transfer.statusId = 'IXF_CANCELLED';
+      return response;
+    },
+    async executeInventoryTransfers(inventoryTransferIds: string[]) {
+      const results = await Promise.allSettled(
+        inventoryTransferIds.map((inventoryTransferId) => this.executeInventoryTransfer(inventoryTransferId)),
+      );
+      return results.reduce((summary, result, index) => {
+        const bucket = result.status === 'fulfilled' ? summary.succeeded : summary.failed;
+        bucket.push(inventoryTransferIds[index]);
+        return summary;
+      }, { succeeded: [] as string[], failed: [] as string[] });
+    },
+    async cancelInventoryTransfers(inventoryTransferIds: string[]) {
+      const results = await Promise.allSettled(
+        inventoryTransferIds.map((inventoryTransferId) => this.cancelInventoryTransfer(inventoryTransferId)),
+      );
+      return results.reduce((summary, result, index) => {
+        const bucket = result.status === 'fulfilled' ? summary.succeeded : summary.failed;
+        bucket.push(inventoryTransferIds[index]);
+        return summary;
+      }, { succeeded: [] as string[], failed: [] as string[] });
     },
   },
 });
