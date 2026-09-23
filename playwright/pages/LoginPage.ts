@@ -1,3 +1,7 @@
+/**
+ * Page Object Model for the Launchpad Login flow.
+ * Handles OMS authentication across environments.
+ */
 import { Page } from '@playwright/test';
 
 export class LoginPage {

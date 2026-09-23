@@ -1,3 +1,7 @@
+/**
+ * Page Object Model for the main Transfers Listing page.
+ * Handles searching, sorting, and filtering transfer orders.
+ */
 import { Page } from '@playwright/test';
 
 export class TransfersPage {

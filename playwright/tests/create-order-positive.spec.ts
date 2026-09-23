@@ -1,88 +1,67 @@
-import { test, expect } from '@playwright/test';
-import { CreateOrderPage } from '../pages/CreateOrderPage';
-import { OrderDetailPage } from '../pages/orderDetail.page';
+/**
+ * create-order-positive.spec.ts
+ * Happy path E2E tests for successfully creating a new transfer order.
+ */
+import { test, expect } from "@playwright/test";
+import { CreateOrderPage } from "../pages/CreateOrderPage";
+import { OrderDetailPage } from "../pages/OrderDetailPage";
 
-test.describe('Create Order - Positive Scenarios', () => {
-    let createOrderPage: CreateOrderPage;
-    let orderDetailPage: OrderDetailPage;
+test.describe("Create Order - Positive Scenarios", () => {
+  let createOrderPage: CreateOrderPage;
+  let orderDetailPage: OrderDetailPage;
 
-    test.beforeEach(async ({ page }) => {
-        createOrderPage = new CreateOrderPage(page);
-        orderDetailPage = new OrderDetailPage(page);
+  test.beforeEach(async ({ page }) => {
+    createOrderPage = new CreateOrderPage(page);
+    orderDetailPage = new OrderDetailPage(page);
 
-        await createOrderPage.goto();
+    await createOrderPage.goto();
 
-        // Graceful skipping if component misses seeding/login bypass
-        const storeSelect = page.getByTestId('create-order-store-select');
-        if (await storeSelect.count() === 0) {
-            test.skip(true, 'UI not fully initialized - skipping positive specs');
-        }
-        await expect(storeSelect).toBeVisible({ timeout: 15000 });
-    });
+    // Graceful skipping if component misses seeding/login bypass
+    const storeSelect = page.getByTestId("create-order-store-select");
+    if ((await storeSelect.count()) === 0) {
+      test.skip(true, "UI not fully initialized - skipping positive specs");
+    }
+    await expect(storeSelect).toBeVisible({ timeout: 15000 });
+  });
 
-    test('Create Fulfill & Receive transfer order using Book ATP logic', async ({ page }) => {
-        // Scenario: End-to-end pathway for the default lifecycle 'Fulfill & Receive'.
-        // Tests the bulk quantity action shortcut ("Book ATP") rather than manually 
-        // typing item amounts, evaluating robust UI automation.
-        await createOrderPage.setTransferName('Fulfill-Receipt Flow Test');
+  test("Create Fulfill & Receive transfer order with customized Ship Date", async ({
+    page,
+  }) => {
+    // Scenario: End-to-end pathway for the default lifecycle 'Fulfill & Receive',
+    // while also verifying the customized Date modal functionality.
+    await createOrderPage.setTransferName("Fulfill-Receipt Flow Test");
 
-        // Setup Route
-        await createOrderPage.assignOrigin('central', 'Central Warehouse');
-        await createOrderPage.assignDestination('A221', 'A221');
+    // Setup Route
+    const assignedOrigin = await createOrderPage.assignOrigin();
+    await createOrderPage.assignDestination(undefined, assignedOrigin);
 
-        // Explicitly set default lifecycle
-        await createOrderPage.selectLifecycle('Fulfill & Receive');
+    // Explicitly set default lifecycle
+    await createOrderPage.selectLifecycle("Fulfill & Receive");
 
-        // Add Multiple Products
-        await createOrderPage.addProduct('MH09');
-        await createOrderPage.addProduct('WT09');
+    // Click the modal trigger for the Ship Date
+    const shipDateBtn = page.getByTestId("create-order-shipdate-btn");
+    await shipDateBtn.click();
 
-        // Note: Waiting for ATP fetch explicitly might be required in real execution
-        // We select the header level Bulk checkmark
-        const bulkCheckBox = page.locator('.tablet > ion-checkbox').first();
-        await bulkCheckBox.click();
+    // Simply dismiss to bind current default selection/close the Ionic Date-picker cleanly
+    await page.locator(".date-time-modal").locator("ion-button").last().click();
 
-        // Apply "Book ATP"
-        await page.getByRole('button', { name: 'Book ATP' }).click();
+    // Add Multiple Products
+    await createOrderPage.addProduct(process.env.TEST_SKU || "generic-test-sku");
+    await createOrderPage.addProduct("WT09");
 
-        // Some environments have ATP=0 for one or more items; keep the scenario stable
-        // by ensuring all quantity inputs are set to at least 1.
-        const qtyInputs = page.locator('input[type="number"]');
-        const qtyInputCount = await qtyInputs.count();
-        for (let i = 0; i < qtyInputCount; i++) {
-            const input = qtyInputs.nth(i);
-            const currentValue = await input.inputValue();
-            if (!currentValue || Number(currentValue) <= 0) {
-                await input.fill('1');
-            }
-        }
+    // Fill quantities manually to avoid overlap with Bulk Actions tests
+    const qtyInputs = page.locator('input[type="number"]');
+    const qtyInputCount = await qtyInputs.count();
+    for (let i = 0; i < qtyInputCount; i++) {
+      const input = qtyInputs.nth(i);
+      await input.fill("2");
+    }
 
-        // Submit constraints
-        await createOrderPage.clickSave();
+    // Submit constraints
+    await createOrderPage.clickSave();
 
-        // Verify we hit the detail page successfully
-        await orderDetailPage.verifyStatus('Created');
-        await orderDetailPage.verifyOrderName('Fulfill-Receipt Flow Test');
-    });
-
-    test('Create order using customized Ship Date', async ({ page }) => {
-        // Scenario: A merchant builds a future-dated order using the customized Date modal.
-        await createOrderPage.setTransferName('Date Bound Order');
-        await createOrderPage.assignOrigin('central', 'Central Warehouse');
-        await createOrderPage.assignDestination('A221', 'A221');
-
-        // Instead of typical 'next day' or today logic, click the modal trigger
-        const shipDateBtn = page.getByTestId('create-order-shipdate-btn');
-        await shipDateBtn.click();
-
-        // Simply dismiss to bind current default selection/close the Ionic Date-picker cleanly
-        await page.locator('.date-time-modal').locator('ion-button').last().click();
-
-        await createOrderPage.addProduct('MH09');
-        await createOrderPage.setQuantity(1);
-
-        await createOrderPage.clickSave();
-        await orderDetailPage.verifyOrderName('Date Bound Order');
-    });
-
+    // Verify we hit the detail page successfully
+    await orderDetailPage.verifyStatus("Created");
+    await orderDetailPage.verifyOrderName("Fulfill-Receipt Flow Test");
+  });
 });
