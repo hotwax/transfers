@@ -4,7 +4,6 @@ import router from "./router";
 import { createDxpI18n, initialiseConfig } from '@common';
 import { useUserStore } from "./store/user";
 
-
 import { IonicVue } from "@ionic/vue";
 
 /* Core CSS required for Ionic components to work properly */
@@ -65,6 +64,10 @@ initialiseConfig({
   router: router
 })
 
-router.isReady().then(() => {
+router.isReady().then(async () => {
+  if (import.meta.env.DEV) {
+    const { tryDevAutoLogin } = await import('@common/dev/autoLogin');
+    await tryDevAutoLogin();
+  }
   app.mount("#app");
 });
