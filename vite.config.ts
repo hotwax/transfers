@@ -5,6 +5,7 @@ import { defineConfig, loadEnv } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
 import { versionInfoUtil } from '../../common/utils/versionInfoUtil'
+import { commonEnvPlugin } from '../../common/vite/commonEnvPlugin'
 import pkg from './package.json'
 import manifest from './manifest.json'
 
@@ -16,6 +17,7 @@ export default defineConfig(({ mode }) => {
     // A version build (buildVersion vX.Y.Z in VITE_APP_VERSION_CONFIG) is self-contained under /vX.Y.Z/; an empty buildVersion is the root bootstrap.
     base: appBuild ? `/${appBuild}/` : '/',
     plugins: [
+      commonEnvPlugin(),
       vue(),
       legacy(),
       VitePWA({
