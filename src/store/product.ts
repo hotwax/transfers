@@ -31,16 +31,31 @@ export const useProductStore = defineStore("product", {
 
       let resp;
       try {
-        resp = await useSolrSearch().searchProducts({
-          filters: { "productId": { value: `(${productIdFilter})` } },
-          viewSize
-        });
+        const filters = { "productId": { value: `(${productIdFilter})` } };
+        const products = [] as any[];
+        let viewIndex = 0;
+        let total = 0;
 
-        if (resp.products.length) {
-          this.addProductToCachedMultiple({ products: resp.products });
-        } else {
-          throw resp;
-        }
+        do {
+          resp = await useSolrSearch().searchProducts({
+            filters,
+            viewSize,
+            viewIndex,
+            // Stable pagination puts the current PRODUCT-id after the legacy
+            // PRODUCT-id-PRODUCT-id key, so it wins when cached by product ID.
+            sort: "docType-identifier desc"
+          });
+          if(!Array.isArray(resp.products) || !resp.products.length) {
+            throw resp;
+          }
+
+          products.push(...resp.products);
+          total = resp.total;
+          viewIndex++;
+        } while(products.length < total);
+
+        this.addProductToCachedMultiple({ products });
+        resp = { ...resp, products };
       } catch (error) {
         logger.error("Failed to fetch products information", error);
       }
