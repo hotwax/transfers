@@ -56,7 +56,7 @@ onMounted(async () => {
     // Luxon timezone should be set with the user's selected timezone
     userProfile.value.timeZone && (Settings.defaultZone = userProfile.value.timeZone);
   }
-  if(isAuthenticated.value) {
+  if(isAuthenticated.value && productStore.getCurrentProductStore.productStoreId) {
     const currentProductStore : any = productStore.getCurrentProductStore;
     await Promise.all([
       productStore.fetchProductStoreSettings(currentProductStore.productStoreId).catch((error) => logger.error(error)),
