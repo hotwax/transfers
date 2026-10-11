@@ -84,6 +84,11 @@ export const useProductStore = defineStore('productStore', {
     async fetchProductStoreFacilities(productStoreId: string) {
       let facilities = [] as any[];
 
+      if (!productStoreId) {
+        this.currentProductStore.facilities = facilities;
+        return;
+      }
+
       try {
         const resp = await api({
           url: `/admin/productStores/${productStoreId}/facilities`,
@@ -188,6 +193,7 @@ export const useProductStore = defineStore('productStore', {
     },
     async fetchProductStorePreference() {
       const userStore = useUserStore();
+      let selectedStore = this.productStores[0];
       try {
         const preferredStoreResp = await api({
           url: "admin/user/preferences",
@@ -201,11 +207,15 @@ export const useProductStore = defineStore('productStore', {
         const preferredStoreId = preferredStoreResp.data?.[0]?.preferenceValue
         if (preferredStoreId) {
           const store = this.productStores?.find((store: any) => store.productStoreId === preferredStoreId);
-          store && this.setCurrentProductStore(store)
+          if (store) selectedStore = store;
         }
       } catch (err) {
         logger.error('Favourite product store not found', err)
       }
+      if (!selectedStore?.productStoreId) {
+        throw new Error(translate('No product store is available.'));
+      }
+      await this.setCurrentProductStore(selectedStore);
     },
     async fetchProductStoreDependencies(productStoreId: string) {
       await useProductStore().fetchProductStoreSettings(productStoreId)
