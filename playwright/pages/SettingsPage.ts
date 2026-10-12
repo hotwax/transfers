@@ -1,3 +1,7 @@
+/**
+ * Page Object Model for the Settings tab.
+ * Used to configure global app settings like Product Store and identifier.
+ */
 import { Page, expect } from '@playwright/test';
 
 export class SettingsPage {

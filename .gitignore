@@ -47,3 +47,9 @@ playwright/login-fail.png
 
 # Local scratch files
 tmp.png
+scratch/
+*.py
+*auth*.js
+debug-*.png
+*.html
+api-responses.json

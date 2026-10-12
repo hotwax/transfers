@@ -22,8 +22,8 @@
             <h2>{{ commonUtil.getProductIdentificationValue(useProductStore().getProductIdentificationPref.primaryId, product) || getProduct(product.productId).productName }}</h2>
             <p>{{ commonUtil.getProductIdentificationValue(useProductStore().getProductIdentificationPref.secondaryId, product) }}</p>
           </ion-label>
-          <ion-icon v-if="isProductInOrder(product.productId)" color="success" :icon="checkmarkCircle" data-testid="add-product-in-order-${product.productId}" />
-          <ion-button v-else data-testid="add-product-btn-${product.productId}" fill="outline" @click="addItemToOrder(product)" :disabled="pendingProductIds.has(product.productId)">
+          <ion-icon v-if="isProductInOrder(product.productId)" color="success" :icon="checkmarkCircle" :data-testid="`add-product-in-order-${product.productId}`" />
+          <ion-button v-else :data-testid="`add-product-btn-${product.productId}`" fill="outline" @click="addItemToOrder(product)" :disabled="pendingProductIds.has(product.productId)">
             {{ pendingProductIds.has(product.productId) ? translate("Adding...") : translate("Add to order") }}
           </ion-button>
         </ion-item>
