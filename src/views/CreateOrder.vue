@@ -530,9 +530,10 @@ async function createOrder() {
       throw resp.data;
     }
   } catch(error: any) {
-    logger.error(error)
-    emitter.emit("dismissLoader")
-    commonUtil.showToast(translate("Failed to create order."), { position: 'top' })
+    const serverError = commonUtil.getErrorMessage(error, translate("Please contact administrator."));
+    logger.error("Failed to create order", serverError);
+    emitter.emit("dismissLoader");
+    commonUtil.showToast(translate("Failed to create order. {error}", { error: serverError }), { position: 'top' });
   }
 }
 

@@ -89,7 +89,7 @@ import {
 import { addOutline, swapHorizontalOutline } from 'ionicons/icons';
 import { computed } from 'vue';
 import { DateTime } from 'luxon';
-import { commonUtil, translate } from '@common';
+import { commonUtil, logger, translate } from '@common';
 import InventoryTransferModal from '@/components/InventoryTransferModal.vue';
 import InventoryTransferOrderLookupModal from '@/components/InventoryTransferOrderLookupModal.vue';
 import { useInventoryTransferStore, type InventoryTransferFilters } from '@/store/inventoryTransfer';
@@ -175,16 +175,36 @@ async function confirmAction(header: string, message: string) {
 
 async function executeInventoryTransfer(inventoryTransferId: string) {
   if (!await confirmAction('Execute inventory transfer', 'This will adjust inventory at both facilities. Continue?')) return;
-  await transferStore.executeInventoryTransfer(inventoryTransferId);
-  commonUtil.showToast(translate('Inventory transfer executed.'), { position: 'top' });
-  await loadTransfers();
+  try {
+    const resp: any = await transferStore.executeInventoryTransfer(inventoryTransferId);
+    if (!commonUtil.hasError(resp)) {
+      commonUtil.showToast(translate('Inventory transfer executed.'), { position: 'top' });
+      await loadTransfers();
+    } else {
+      throw resp.data;
+    }
+  } catch (err) {
+    const serverError = commonUtil.getErrorMessage(err, translate("Please contact administrator."));
+    logger.error('Failed to execute inventory transfer', serverError);
+    commonUtil.showToast(translate("Failed to execute inventory transfer. {error}", { error: serverError }), { position: 'top' });
+  }
 }
 
 async function cancelInventoryTransfer(inventoryTransferId: string) {
   if (!await confirmAction('Cancel inventory transfer', 'This requested transfer will be cancelled. Continue?')) return;
-  await transferStore.cancelInventoryTransfer(inventoryTransferId);
-  commonUtil.showToast(translate('Inventory transfer cancelled.'), { position: 'top' });
-  await loadTransfers();
+  try {
+    const resp: any = await transferStore.cancelInventoryTransfer(inventoryTransferId);
+    if (!commonUtil.hasError(resp)) {
+      commonUtil.showToast(translate('Inventory transfer cancelled.'), { position: 'top' });
+      await loadTransfers();
+    } else {
+      throw resp.data;
+    }
+  } catch (err) {
+    const serverError = commonUtil.getErrorMessage(err, translate("Please contact administrator."));
+    logger.error('Failed to cancel inventory transfer', serverError);
+    commonUtil.showToast(translate("Failed to cancel inventory transfer. {error}", { error: serverError }), { position: 'top' });
+  }
 }
 
 function facilityName(facilityId: string) {

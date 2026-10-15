@@ -98,10 +98,11 @@ export const useUserStore = defineStore("user", {
 
         this.oms = cookieHelper().get("oms") || '';
       } catch (error: any) {
-        commonUtil.showToast(translate("Failed to fetch user profile information"));
-        console.error("error", error);
+        const serverError = commonUtil.getErrorMessage(error, translate("Please contact administrator."));
+        logger.error("Failed to fetch user profile information", serverError);
+        commonUtil.showToast(translate("Failed to fetch user profile information. {error}", { error: serverError }));
         useAuth().clearAuth();
-        return Promise.reject(new Error(error));
+        return Promise.reject(error);
       }
     },
     async fetchPermissions() {
@@ -153,8 +154,9 @@ export const useUserStore = defineStore("user", {
         this.updateUserInfo({ userTimeZone: tzId })
         this.current.timeZone = tzId
       } catch (error: any) {
-        console.error("Failed to set user time zone", error);
-        commonUtil.showToast(translate("Failed to set user time zone"));
+        const serverError = commonUtil.getErrorMessage(error, translate("Please contact administrator."));
+        logger.error("Failed to set user time zone", serverError);
+        commonUtil.showToast(translate("Failed to set user time zone. {error}", { error: serverError }));
       }
     },
     async getAvailableTimeZones() {

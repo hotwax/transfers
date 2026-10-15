@@ -48,7 +48,7 @@ import {
 } from '@ionic/vue';
 import { closeOutline, sendOutline } from 'ionicons/icons';
 import { computed, ref } from 'vue';
-import { translate } from '@common';
+import { commonUtil, logger, translate } from '@common';
 import { useInventoryTransferStore } from '@/store/inventoryTransfer';
 import { useProductStore } from '@/store/productStore';
 
@@ -63,13 +63,14 @@ const orderItemSeqId = ref('');
 const comments = ref('');
 const submitting = ref(false);
 const submitFailed = ref(false);
+const submitErrorMessage = ref('');
 const facilities = computed(() => productStore.getAllFacilities);
 const sameFacility = computed(() => Boolean(facilityId.value && facilityId.value === facilityIdTo.value));
 const canSubmit = computed(() => Boolean(
   facilityId.value && facilityIdTo.value && productId.value.trim() && Number(quantity.value) > 0 && !sameFacility.value
 ));
 const validationMessage = computed(() => {
-  if (submitFailed.value) return translate('Failed to create inventory transfer.');
+  if (submitFailed.value) return submitErrorMessage.value || translate('Failed to create inventory transfer.');
   if (sameFacility.value) return translate('Source and destination must be different.');
   return '';
 });
@@ -78,6 +79,7 @@ async function submit() {
   if (!canSubmit.value) return;
   submitting.value = true;
   submitFailed.value = false;
+  submitErrorMessage.value = '';
   try {
     const response: any = await transferStore.createInventoryTransfer({
       facilityId: facilityId.value,
@@ -88,8 +90,12 @@ async function submit() {
       orderItemSeqId: orderItemSeqId.value.trim() || undefined,
       comments: comments.value.trim() || undefined,
     });
+    if (commonUtil.hasError(response)) throw response.data;
     await modalController.dismiss({ inventoryTransferId: response.data?.inventoryTransferId }, 'confirm');
-  } catch {
+  } catch (err) {
+    const serverError = commonUtil.getErrorMessage(err, translate("Please contact administrator."));
+    logger.error('Failed to create inventory transfer', serverError);
+    submitErrorMessage.value = translate("Failed to create inventory transfer. {error}", { error: serverError });
     submitFailed.value = true;
   } finally {
     submitting.value = false;

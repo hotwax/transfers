@@ -75,8 +75,9 @@ async function removeOrderItem() {
           popoverController.dismiss({ isItemUpdated: true });
           commonUtil.showToast(translate("Item removed successfully."), { position: 'top' });
         } catch (error) {
-          logger.error(error);
-          commonUtil.showToast(translate("Failed to remove item."), { position: 'top' });
+          const serverError = commonUtil.getErrorMessage(error, translate("Please contact administrator."));
+          logger.error("Failed to remove item", serverError);
+          commonUtil.showToast(translate("Failed to remove item. {error}", { error: serverError }), { position: 'top' });
         }
       }
     }]
@@ -108,8 +109,9 @@ async function updateItemStatus(statusId: string, header: string) {
             throw resp.data;
           }
         } catch (error) {
-          logger.error(error);
-          commonUtil.showToast(translate("Failed to update item status."), { position: 'top' });
+          const serverError = commonUtil.getErrorMessage(error, translate("Please contact administrator."));
+          logger.error("Failed to update item status", serverError);
+          commonUtil.showToast(translate("Failed to update item status. {error}", { error: serverError }), { position: 'top' });
         }
       }
     }]
@@ -161,8 +163,9 @@ async function editOrderedQuantity() {
               throw resp.data;
             }
           } catch(error) {
-            logger.error(error);
-            commonUtil.showToast(translate("Failed to update item ordered quantity."), { position: 'top' });
+            const serverError = commonUtil.getErrorMessage(error, translate("Please contact administrator."));
+            logger.error("Failed to update item ordered quantity", serverError);
+            commonUtil.showToast(translate("Failed to update item ordered quantity. {error}", { error: serverError }), { position: 'top' });
             return false;
           } finally {
             isUpdatingQuantity = false;
@@ -208,8 +211,9 @@ async function closeFulfillment() {
             throw resp.data;
           }
         } catch (error) {
-          logger.error(error);
-          commonUtil.showToast(translate("Failed to close fulfillment."), { position: 'top' });
+          const serverError = commonUtil.getErrorMessage(error, translate("Please contact administrator."));
+          logger.error("Failed to close fulfillment", serverError);
+          commonUtil.showToast(translate("Failed to close fulfillment. {error}", { error: serverError }), { position: 'top' });
         }
       }
     }]
