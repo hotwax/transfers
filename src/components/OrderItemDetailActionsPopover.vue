@@ -77,7 +77,7 @@ async function removeOrderItem() {
         } catch (error) {
           const serverError = commonUtil.getErrorMessage(error, translate("Please contact administrator."));
           logger.error("Failed to remove item", serverError);
-          commonUtil.showToast(translate("Failed to remove item. {error}", { error: serverError }), { position: 'top' });
+          commonUtil.showToast(`${translate("Failed to remove item.")} ${serverError}`, { position: 'top' });
         }
       }
     }]
@@ -111,7 +111,7 @@ async function updateItemStatus(statusId: string, header: string) {
         } catch (error) {
           const serverError = commonUtil.getErrorMessage(error, translate("Please contact administrator."));
           logger.error("Failed to update item status", serverError);
-          commonUtil.showToast(translate("Failed to update item status. {error}", { error: serverError }), { position: 'top' });
+          commonUtil.showToast(`${translate("Failed to update item status.")} ${serverError}`, { position: 'top' });
         }
       }
     }]
@@ -165,7 +165,7 @@ async function editOrderedQuantity() {
           } catch(error) {
             const serverError = commonUtil.getErrorMessage(error, translate("Please contact administrator."));
             logger.error("Failed to update item ordered quantity", serverError);
-            commonUtil.showToast(translate("Failed to update item ordered quantity. {error}", { error: serverError }), { position: 'top' });
+            commonUtil.showToast(`${translate("Failed to update item ordered quantity.")} ${serverError}`, { position: 'top' });
             return false;
           } finally {
             isUpdatingQuantity = false;
@@ -213,7 +213,7 @@ async function closeFulfillment() {
         } catch (error) {
           const serverError = commonUtil.getErrorMessage(error, translate("Please contact administrator."));
           logger.error("Failed to close fulfillment", serverError);
-          commonUtil.showToast(translate("Failed to close fulfillment. {error}", { error: serverError }), { position: 'top' });
+          commonUtil.showToast(`${translate("Failed to close fulfillment.")} ${serverError}`, { position: 'top' });
         }
       }
     }]

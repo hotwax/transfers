@@ -186,7 +186,7 @@ async function executeInventoryTransfer(inventoryTransferId: string) {
   } catch (err) {
     const serverError = commonUtil.getErrorMessage(err, translate("Please contact administrator."));
     logger.error('Failed to execute inventory transfer', serverError);
-    commonUtil.showToast(translate("Failed to execute inventory transfer. {error}", { error: serverError }), { position: 'top' });
+    commonUtil.showToast(`${translate("Failed to execute inventory transfer.")} ${serverError}`, { position: 'top' });
   }
 }
 
@@ -203,7 +203,7 @@ async function cancelInventoryTransfer(inventoryTransferId: string) {
   } catch (err) {
     const serverError = commonUtil.getErrorMessage(err, translate("Please contact administrator."));
     logger.error('Failed to cancel inventory transfer', serverError);
-    commonUtil.showToast(translate("Failed to cancel inventory transfer. {error}", { error: serverError }), { position: 'top' });
+    commonUtil.showToast(`${translate("Failed to cancel inventory transfer.")} ${serverError}`, { position: 'top' });
   }
 }
 

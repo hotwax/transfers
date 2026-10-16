@@ -95,7 +95,7 @@ async function submit() {
   } catch (err) {
     const serverError = commonUtil.getErrorMessage(err, translate("Please contact administrator."));
     logger.error('Failed to create inventory transfer', serverError);
-    submitErrorMessage.value = translate("Failed to create inventory transfer. {error}", { error: serverError });
+    submitErrorMessage.value = `${translate('Failed to create inventory transfer.')} ${serverError}`;
     submitFailed.value = true;
   } finally {
     submitting.value = false;

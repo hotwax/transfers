@@ -631,7 +631,7 @@ async function closeSelectedItems() {
         } catch (error) {
           const serverError = commonUtil.getErrorMessage(error, translate("Please contact administrator."));
           logger.error("Failed to cancel items", serverError);
-          commonUtil.showToast(translate("Failed to cancel items. {error}", { error: serverError }), { position: 'top' });
+          commonUtil.showToast(`${translate("Failed to cancel items.")} ${serverError}`, { position: 'top' });
         }
       }
     }]
@@ -836,7 +836,7 @@ async function updateOrderStatus(updatedStatusId: string) {
   } catch(error: any) {
     const serverError = commonUtil.getErrorMessage(error, translate("Please contact administrator."));
     logger.error("Failed to update order status", serverError);
-    commonUtil.showToast(translate("Failed to update order status. {error}", { error: serverError }), { position: 'top' });
+    commonUtil.showToast(`${translate("Failed to update order status.")} ${serverError}`, { position: 'top' });
   } finally {
     isUpdatingOrderStatus.value = false;
   }
