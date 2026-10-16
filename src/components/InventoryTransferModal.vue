@@ -93,7 +93,7 @@ async function submit() {
     if (commonUtil.hasError(response)) throw response.data;
     await modalController.dismiss({ inventoryTransferId: response.data?.inventoryTransferId }, 'confirm');
   } catch (err) {
-    const serverError = commonUtil.getErrorMessage(err, translate("Please contact administrator."));
+    const serverError = commonUtil.getErrorMessage(err);
     logger.error('Failed to create inventory transfer', serverError);
     submitErrorMessage.value = `${translate('Failed to create inventory transfer.')} ${serverError}`;
     submitFailed.value = true;

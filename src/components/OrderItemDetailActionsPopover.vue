@@ -75,7 +75,7 @@ async function removeOrderItem() {
           popoverController.dismiss({ isItemUpdated: true });
           commonUtil.showToast(translate("Item removed successfully."), { position: 'top' });
         } catch (error) {
-          const serverError = commonUtil.getErrorMessage(error, translate("Please contact administrator."));
+          const serverError = commonUtil.getErrorMessage(error);
           logger.error("Failed to remove item", serverError);
           commonUtil.showToast(`${translate("Failed to remove item.")} ${serverError}`, { position: 'top' });
         }
@@ -109,7 +109,7 @@ async function updateItemStatus(statusId: string, header: string) {
             throw resp.data;
           }
         } catch (error) {
-          const serverError = commonUtil.getErrorMessage(error, translate("Please contact administrator."));
+          const serverError = commonUtil.getErrorMessage(error);
           logger.error("Failed to update item status", serverError);
           commonUtil.showToast(`${translate("Failed to update item status.")} ${serverError}`, { position: 'top' });
         }
@@ -163,7 +163,7 @@ async function editOrderedQuantity() {
               throw resp.data;
             }
           } catch(error) {
-            const serverError = commonUtil.getErrorMessage(error, translate("Please contact administrator."));
+            const serverError = commonUtil.getErrorMessage(error);
             logger.error("Failed to update item ordered quantity", serverError);
             commonUtil.showToast(`${translate("Failed to update item ordered quantity.")} ${serverError}`, { position: 'top' });
             return false;
@@ -211,7 +211,7 @@ async function closeFulfillment() {
             throw resp.data;
           }
         } catch (error) {
-          const serverError = commonUtil.getErrorMessage(error, translate("Please contact administrator."));
+          const serverError = commonUtil.getErrorMessage(error);
           logger.error("Failed to close fulfillment", serverError);
           commonUtil.showToast(`${translate("Failed to close fulfillment.")} ${serverError}`, { position: 'top' });
         }
