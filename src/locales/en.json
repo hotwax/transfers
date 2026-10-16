@@ -293,6 +293,8 @@
   "Execute": "Execute",
   "Execute inventory transfer": "Execute inventory transfer",
   "Failed to create inventory transfer.": "Failed to create inventory transfer.",
+  "Failed to cancel inventory transfer.": "Failed to cancel inventory transfer.",
+  "Failed to execute inventory transfer.": "Failed to execute inventory transfer.",
   "Fetching inventory transfers": "Fetching inventory transfers",
   "Inventory transfer cancelled.": "Inventory transfer cancelled.",
   "Inventory transfer created.": "Inventory transfer created.",
