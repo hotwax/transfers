@@ -144,7 +144,7 @@ export function useOrderQueue() {
     } catch (err) {
       const serverError = commonUtil.getErrorMessage(err);
       onError?.(product, err);
-      logger.error('Failed to add product to order:', serverError);
+      logger.error('Failed to add product to order:', err);
       commonUtil.showToast(`${translate("Failed to add product to order")}. ${serverError}`, { position: 'top' });
     } finally {
       pendingProductIds.value.delete(product.productId);

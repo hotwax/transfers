@@ -252,7 +252,7 @@ async function save() {
     } else throw resp.data;
   } catch (err) {
     const serverError = commonUtil.getErrorMessage(err);
-    logger.error("Failed to upload the file", serverError);
+    logger.error(err);
     commonUtil.showToast(`${translate("Failed to upload the file, please try again")}. ${serverError}`, { position: 'top' });
   }
 }
@@ -302,7 +302,7 @@ async function cancelUpload() {
     }
   } catch (err) {
     const serverError = commonUtil.getErrorMessage(err);
-    logger.error("Failed to cancel uploaded transfer order", serverError);
+    logger.error(err);
     commonUtil.showToast(`${translate("Failed to cancel uploaded transfer order.")} ${serverError}`, { position: 'top' });
   }
   closeUploadPopover();

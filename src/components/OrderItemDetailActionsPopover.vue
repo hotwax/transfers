@@ -76,7 +76,7 @@ async function removeOrderItem() {
           commonUtil.showToast(translate("Item removed successfully."), { position: 'top' });
         } catch (error) {
           const serverError = commonUtil.getErrorMessage(error);
-          logger.error("Failed to remove item", serverError);
+          logger.error(error);
           commonUtil.showToast(`${translate("Failed to remove item.")} ${serverError}`, { position: 'top' });
         }
       }
@@ -110,7 +110,7 @@ async function updateItemStatus(statusId: string, header: string) {
           }
         } catch (error) {
           const serverError = commonUtil.getErrorMessage(error);
-          logger.error("Failed to update item status", serverError);
+          logger.error(error);
           commonUtil.showToast(`${translate("Failed to update item status.")} ${serverError}`, { position: 'top' });
         }
       }
@@ -164,7 +164,7 @@ async function editOrderedQuantity() {
             }
           } catch(error) {
             const serverError = commonUtil.getErrorMessage(error);
-            logger.error("Failed to update item ordered quantity", serverError);
+            logger.error(error);
             commonUtil.showToast(`${translate("Failed to update item ordered quantity.")} ${serverError}`, { position: 'top' });
             return false;
           } finally {
@@ -212,7 +212,7 @@ async function closeFulfillment() {
           }
         } catch (error) {
           const serverError = commonUtil.getErrorMessage(error);
-          logger.error("Failed to close fulfillment", serverError);
+          logger.error(error);
           commonUtil.showToast(`${translate("Failed to close fulfillment.")} ${serverError}`, { position: 'top' });
         }
       }
