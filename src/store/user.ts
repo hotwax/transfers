@@ -155,7 +155,7 @@ export const useUserStore = defineStore("user", {
         this.current.timeZone = tzId
       } catch (error: any) {
         const serverError = commonUtil.getErrorMessage(error);
-        logger.error("Failed to set user time zone", serverError);
+        logger.error("Failed to set user time zone", error);
         commonUtil.showToast(`${translate("Failed to set user time zone")}. ${serverError}`);
       }
     },
