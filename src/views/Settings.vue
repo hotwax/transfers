@@ -3,6 +3,12 @@
     <ion-header :translucent="true">
       <ion-toolbar>
         <ion-title>{{ translate("Settings") }}</ion-title>
+        <ion-buttons slot="end">
+          <ion-button fill="clear" @click="openLogs()">
+            <ion-icon slot="start" :icon="documentTextOutline" />
+            {{ translate("View logs") }}
+          </ion-button>
+        </ion-buttons>
       </ion-toolbar>
     </ion-header>
     
@@ -52,10 +58,10 @@
 </template>
 
 <script setup lang="ts">
-import { IonAvatar, IonButton, IonCard, IonCardHeader, IonCardSubtitle, IonCardTitle, IonContent, IonHeader, IonIcon, IonItem, IonPage, IonTitle, IonToolbar } from "@ionic/vue";
+import { IonAvatar, IonButtons, IonButton, IonCard, IonCardHeader, IonCardSubtitle, IonCardTitle, IonContent, IonHeader, IonIcon, IonItem, IonPage, IonTitle, IonToolbar, modalController } from "@ionic/vue";
 import { computed } from "vue";
 import Image from "@/components/Image.vue";
-import { openOutline } from "ionicons/icons";
+import { openOutline, documentTextOutline } from "ionicons/icons";
 import router from "@/router";
 import { useProductStore } from "@/store/productStore";
 import { useUserStore } from "@/store/user";
@@ -64,7 +70,7 @@ import DxpAppVersionInfo from "@/components/DxpAppVersionInfo.vue";
 import DxpProductIdentifier from "@/components/DxpProductIdentifier.vue";
 import DxpOmsInstanceNavigator from "@/components/DxpOmsInstanceNavigator.vue";
 import DxpTimeZoneSwitcher from "@/components/DxpTimeZoneSwitcher.vue";
-import { logger, translate } from "@common";
+import { logger, translate, DxpLogsModal } from "@common";
 import { useAuth } from "@common/composables/useAuth";
 import Actions from "@/authorization/actions";
 
@@ -92,6 +98,13 @@ const refreshProductStoreData = async (selectedProductStore: any) => {
 
 function goToLaunchpad() {
   window.location.href = `${import.meta.env.VITE_LOGIN_URL}`
+}
+
+async function openLogs() {
+  const logsModal = await modalController.create({
+    component: DxpLogsModal
+  });
+  return logsModal.present();
 }
 
 </script>
