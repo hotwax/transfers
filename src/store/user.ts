@@ -98,9 +98,7 @@ export const useUserStore = defineStore("user", {
 
         this.oms = cookieHelper().get("oms") || '';
       } catch (error: any) {
-        const serverError = commonUtil.getErrorMessage(error);
-        logger.error(error);
-        commonUtil.showToast(`${translate("Failed to fetch user profile information")}. ${serverError}`);
+        logger.error("Failed to fetch user profile information", error);
         useAuth().clearAuth();
         return Promise.reject(error);
       }

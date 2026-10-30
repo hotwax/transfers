@@ -254,7 +254,7 @@ export const useOrderStore = defineStore("order", {
       } catch (error: any) {
         this.current = { ...this.current, isFetching: false };
         logger.error("error", error);
-        return Promise.reject(new Error(error));
+        return Promise.reject(error);
       }
     },
     updateCurrent(payload: any) {

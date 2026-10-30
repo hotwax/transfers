@@ -175,11 +175,12 @@ async function confirmAction(header: string, message: string) {
 
 async function executeInventoryTransfer(inventoryTransferId: string) {
   if (!await confirmAction('Execute inventory transfer', 'This will adjust inventory at both facilities. Continue?')) return;
+  let isExecuted = false;
   try {
     const resp: any = await transferStore.executeInventoryTransfer(inventoryTransferId);
     if (!commonUtil.hasError(resp)) {
       commonUtil.showToast(translate('Inventory transfer executed.'), { position: 'top' });
-      await loadTransfers();
+      isExecuted = true;
     } else {
       throw resp.data;
     }
@@ -188,15 +189,19 @@ async function executeInventoryTransfer(inventoryTransferId: string) {
     logger.error(err);
     commonUtil.showToast(`${translate("Failed to execute inventory transfer")}. ${serverError}`, { position: 'top' });
   }
+  if (isExecuted) {
+    await loadTransfers();
+  }
 }
 
 async function cancelInventoryTransfer(inventoryTransferId: string) {
   if (!await confirmAction('Cancel inventory transfer', 'This requested transfer will be cancelled. Continue?')) return;
+  let isCancelled = false;
   try {
     const resp: any = await transferStore.cancelInventoryTransfer(inventoryTransferId);
     if (!commonUtil.hasError(resp)) {
       commonUtil.showToast(translate('Inventory transfer cancelled.'), { position: 'top' });
-      await loadTransfers();
+      isCancelled = true;
     } else {
       throw resp.data;
     }
@@ -204,6 +209,9 @@ async function cancelInventoryTransfer(inventoryTransferId: string) {
     const serverError = commonUtil.getErrorMessage(err);
     logger.error(err);
     commonUtil.showToast(`${translate("Failed to cancel inventory transfer")}. ${serverError}`, { position: 'top' });
+  }
+  if (isCancelled) {
+    await loadTransfers();
   }
 }
 
