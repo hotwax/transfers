@@ -235,7 +235,7 @@ export const useProductStore = defineStore('productStore', {
           }
         });
       } catch (error) {
-        console.error('error', error)
+        logger.error('error', error)
       }
       this.currentProductStore = payload;
     },
@@ -333,8 +333,9 @@ export const useProductStore = defineStore('productStore', {
           throw resp
         }
       } catch (err) {
-        commonUtil.showToast(translate('Failed to update Product Store setting.'))
-        logger.error(err)
+        const serverError = commonUtil.getErrorMessage(err);
+        logger.error(err);
+        commonUtil.showToast(`${translate("Failed to update Product Store setting.")} ${serverError}`);
       }
     },
 
@@ -363,7 +364,7 @@ export const useProductStore = defineStore('productStore', {
 
         fetchedGoodIdentificationOptions = resp.data
       } catch (error) {
-        console.error('Failed to fetch good identification types', error)
+        logger.error('Failed to fetch good identification types', error)
       }
 
       // Merge the arrays and remove duplicates
@@ -384,7 +385,7 @@ export const useProductStore = defineStore('productStore', {
           throw resp
         }
       } catch (error: any) {
-        console.error(error)
+        logger.error(error)
       }
     },
     shuffleProduct() {

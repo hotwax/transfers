@@ -142,9 +142,10 @@ export function useOrderQueue() {
         throw resp.data;
       }
     } catch (err) {
+      const serverError = commonUtil.getErrorMessage(err);
       onError?.(product, err);
-      commonUtil.showToast(translate("Failed to add product to order"), { position: 'top' });
       logger.error('Failed to add product to order:', err);
+      commonUtil.showToast(`${translate("Failed to add product to order")}. ${serverError}`, { position: 'top' });
     } finally {
       pendingProductIds.value.delete(product.productId);
     }

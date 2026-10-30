@@ -92,7 +92,7 @@ import {
   chevronUpOutline,
   copyOutline
 } from 'ionicons/icons';
-import { commonUtil, translate } from '@common';
+import { commonUtil, logger, translate } from '@common';
 
 export default defineComponent({
   name: 'StreamingLoader',
@@ -161,7 +161,7 @@ export default defineComponent({
         }
         commonUtil.showToast(translate("Diagnostics copied to clipboard"));
       } catch (err) {
-        console.error('Failed to copy', err);
+        logger.error('Failed to copy', err);
       }
     }
 

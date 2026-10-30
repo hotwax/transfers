@@ -251,8 +251,9 @@ async function save() {
       commonUtil.showToast(translate("The transfer orders file uploaded successfully."), { position: 'top' });
     } else throw resp.data;
   } catch (err) {
+    const serverError = commonUtil.getErrorMessage(err);
     logger.error(err);
-    commonUtil.showToast(translate("Failed to upload the file, please try again"), { position: 'top' });
+    commonUtil.showToast(`${translate("Failed to upload the file, please try again")}. ${serverError}`, { position: 'top' });
   }
 }
 
@@ -300,8 +301,9 @@ async function cancelUpload() {
       await fetchDataManagerLogs();
     }
   } catch (err) {
-    commonUtil.showToast(translate("Failed to cancel uploaded transfer order."), { position: 'top' });
+    const serverError = commonUtil.getErrorMessage(err);
     logger.error(err);
+    commonUtil.showToast(`${translate("Failed to cancel uploaded transfer order.")} ${serverError}`, { position: 'top' });
   }
   closeUploadPopover();
 }
