@@ -65,11 +65,11 @@
                 </ion-label>
               </ion-item>
               <div>
-                <ion-chip outline v-if="order.facilityId">
+                <ion-chip outline v-if="order.facilityId" :title="getFacilityName(order.facilityId)">
                   <ion-icon :icon="sendOutline" />
                   <ion-label>{{ getFacilityName(order.facilityId) }}</ion-label>
                 </ion-chip>
-                <ion-chip outline v-if="order.orderFacilityId">
+                <ion-chip outline v-if="order.orderFacilityId" :title="getFacilityName(order.orderFacilityId)">
                   <ion-icon :icon="downloadOutline" />
                   <ion-label>{{ getFacilityName(order.orderFacilityId) }}</ion-label>
                 </ion-chip>
@@ -245,6 +245,26 @@ ion-accordion {
   --background: transparent;
 }
 
+/* Keep every cell inside its column, so long facility names can't push the order name and id out of view */
+.order > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.order ion-chip {
+  max-width: 100%;
+}
+
+.order ion-chip ion-icon {
+  flex-shrink: 0;
+}
+
+.order ion-chip ion-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .order .metadata {
   margin-inline-end: var(--spacer-sm);
 }
@@ -284,7 +304,7 @@ ion-accordion {
   }
 
   .order {
-    grid-template-columns: 1fr auto 1fr;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) minmax(0, 1fr);
   }
 }
 </style>
