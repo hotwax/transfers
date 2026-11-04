@@ -81,12 +81,11 @@ export const useProductStore = defineStore('productStore', {
       });
     },
 
-    async fetchProductStoreFacilities(productStoreId: string) {
+    async fetchFacilitiesByProductStore(productStoreId: string): Promise<any[]> {
       let facilities = [] as any[];
 
       if (!productStoreId) {
-        this.currentProductStore.facilities = facilities;
-        return;
+        return facilities;
       }
 
       try {
@@ -115,7 +114,11 @@ export const useProductStore = defineStore('productStore', {
         logger.error(error);
       }
 
-      this.currentProductStore.facilities = facilities;
+      return facilities;
+    },
+
+    async fetchProductStoreFacilities(productStoreId: string) {
+      this.currentProductStore.facilities = await this.fetchFacilitiesByProductStore(productStoreId);
     },
     async fetchProductStoreDetails(payload: any): Promise<any> {
       return api({

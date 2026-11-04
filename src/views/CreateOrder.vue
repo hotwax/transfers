@@ -279,8 +279,7 @@ const statusFlows = [
 const getProduct = computed(() => product.getProduct)
 const shipmentMethodsByCarrier = computed(() => utilStore.getShipmentMethodsByCarrier)
 const getCarrierDesc = computed(() => utilStore.getCarrierDesc)
-const facilities = computed(() => productStore.getProductStoreFacilities)
-
+const facilities = ref<any[]>([])
 // Implemented watcher to display the search spinner correctly. Mainly the watcher is needed to not make the findProduct call always and to create the debounce effect.
 // Previously we were using the `debounce` property of ion-input but it was updating the searchedString and making other related effects after the debounce effect thus the spinner is also displayed after the debounce
 // effect is completed.
@@ -311,7 +310,20 @@ onIonViewDidEnter(async () => {
   stores.value = useProductStore().productStores
   const currentProductStoreId = (useProductStore().getCurrentProductStore as any)?.productStoreId || "";
   currentOrder.value.productStoreId = currentProductStoreId
-  await Promise.allSettled([utilStore.fetchStoreCarrierAndMethods(currentProductStoreId), utilStore.fetchCarriersDetail()])
+
+  const facilityPromise = productStore.getProductStoreFacilities?.length
+    ? Promise.resolve([...productStore.getProductStoreFacilities])
+    : productStore.fetchFacilitiesByProductStore(currentProductStoreId)
+
+  const [facilitiesResp] = await Promise.allSettled([
+    facilityPromise,
+    utilStore.fetchStoreCarrierAndMethods(currentProductStoreId),
+    utilStore.fetchCarriersDetail()
+  ])
+  if (facilitiesResp.status === "fulfilled") {
+    facilities.value = facilitiesResp.value || []
+  }
+
   await fetchProductStoreDetails(currentProductStoreId);
   if(Object.keys(shipmentMethodsByCarrier.value)?.length) {
     currentOrder.value.carrierPartyId = Object.keys(shipmentMethodsByCarrier.value)[0]
@@ -361,17 +373,38 @@ async function addProductToCount(prod: any) {
 }
 
 async function productStoreUpdated() {
+  currentOrder.value.originFacilityId = "";
+  currentOrder.value.destinationFacilityId = "";
+  facilities.value = [];
 
-  const isFacilityUpdated = currentOrder.value.originFacilityId !== facilities.value[0]?.facilityId
-  if(isFacilityUpdated) {
-    currentOrder.value.originFacilityId = "";
-    currentOrder.value.destinationFacilityId = "";
-    if(currentOrder.value.items.length) refetchAllItemsStock()
-  }
-  await utilStore.fetchStoreCarrierAndMethods(currentOrder.value.productStoreId);
-  if(Object.keys(shipmentMethodsByCarrier.value)?.length) {
-    currentOrder.value.carrierPartyId = Object.keys(shipmentMethodsByCarrier.value)[0]
-    selectUpdatedMethod()
+  currentOrder.value.items.forEach((item: any) => {
+    delete item.qoh;
+    delete item.atp;
+  });
+
+  const selectedStoreId = currentOrder.value.productStoreId;
+
+  emitter.emit("presentLoader");
+  try {
+    const [facilitiesResp] = await Promise.all([
+      productStore.fetchFacilitiesByProductStore(selectedStoreId),
+      utilStore.fetchStoreCarrierAndMethods(selectedStoreId)
+    ]);
+
+    // Guard against race condition if user changed store again while request was in-flight
+    if (selectedStoreId !== currentOrder.value.productStoreId) return;
+
+    facilities.value = facilitiesResp || [];
+
+    if(Object.keys(shipmentMethodsByCarrier.value)?.length) {
+      currentOrder.value.carrierPartyId = Object.keys(shipmentMethodsByCarrier.value)[0];
+      selectUpdatedMethod();
+    } else {
+      currentOrder.value.carrierPartyId = "";
+      currentOrder.value.shipmentMethodTypeId = "";
+    }
+  } finally {
+    emitter.emit("dismissLoader");
   }
 }
 
