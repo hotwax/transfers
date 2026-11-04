@@ -30,7 +30,7 @@ import "./theme/variables.css";
 
 import { createPinia } from "pinia";
 import piniaPluginPersistedstate from "pinia-plugin-persistedstate";
-import { logger } from '@common';
+import { faroUtil, logger } from '@common';
 import VueVirtualScroller from 'vue-virtual-scroller';
 import 'vue-virtual-scroller/dist/vue-virtual-scroller.css';
 import localeMessages from '@/locales'
@@ -40,13 +40,16 @@ pinia.use(piniaPluginPersistedstate);
 
 export const i18n = createDxpI18n(localeMessages)
 
+faroUtil.initialiseFaro()
+
 const app = createApp(App)
   .use(IonicVue, {
     mode: "md",
     innerHTMLTemplatesEnabled: true
   })
   .use(logger, {
-    level: import.meta.env.VITE_DEFAULT_LOG_LEVEL
+    level: import.meta.env.VITE_DEFAULT_LOG_LEVEL,
+    afterHooks: [faroUtil.faroLoggerHook]
   })
   .use(pinia)
   .use(router)
