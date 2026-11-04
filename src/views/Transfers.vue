@@ -245,6 +245,14 @@ ion-accordion {
   --background: transparent;
 }
 
+.order ion-chip ion-label {
+  white-space: normal;
+}
+
+.order ion-chip ion-icon {
+  flex-shrink: 0;
+}
+
 .order .metadata {
   margin-inline-end: var(--spacer-sm);
 }
@@ -284,7 +292,7 @@ ion-accordion {
   }
 
   .order {
-    grid-template-columns: 1fr auto 1fr;
+    grid-template-columns: minmax(12rem, 1fr) 2fr 1fr;
   }
 }
 </style>
