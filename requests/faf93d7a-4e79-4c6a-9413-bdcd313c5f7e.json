@@ -6,8 +6,80 @@
   "action": "replace",
   "version": "v3.3.0,v3.2.0",
   "actor": "dt2patel",
-  "status": "running",
+  "status": "completed",
   "createdAt": "2026-11-15T13:39:18.813Z",
-  "steps": [],
-  "runUrl": "https://github.com/hotwax/transfers/actions/runs/43720064451"
+  "steps": [
+    {
+      "message": "Checking out v3.3.0",
+      "at": "2026-11-15T13:39:31.008Z"
+    },
+    {
+      "message": "Installing pinned dependencies for v3.3.0",
+      "at": "2026-11-15T13:39:33.854Z"
+    },
+    {
+      "message": "Building v3.3.0 version URL",
+      "at": "2026-11-15T13:39:41.390Z"
+    },
+    {
+      "message": "Checking out v3.2.0",
+      "at": "2026-11-15T13:40:07.324Z"
+    },
+    {
+      "message": "Installing pinned dependencies for v3.2.0",
+      "at": "2026-11-15T13:40:10.753Z"
+    },
+    {
+      "message": "Building v3.2.0 version URL",
+      "at": "2026-11-15T13:40:14.102Z"
+    },
+    {
+      "message": "Checking out v3.3.0 as Default",
+      "at": "2026-11-15T13:40:36.082Z"
+    },
+    {
+      "message": "Installing pinned dependencies for v3.3.0",
+      "at": "2026-11-15T13:40:38.880Z"
+    },
+    {
+      "message": "Building v3.3.0 Default",
+      "at": "2026-11-15T13:40:42.156Z"
+    },
+    {
+      "message": "Uploading 174 built files",
+      "at": "2026-11-15T13:41:12.959Z"
+    },
+    {
+      "message": "Publishing verified Firebase deployment",
+      "at": "2026-11-15T13:43:31.243Z"
+    }
+  ],
+  "runUrl": "https://github.com/hotwax/transfers/actions/runs/43720064451",
+  "deployment": {
+    "release": "sites/hotwax-transfers/channels/live/releases/1794750211256000",
+    "version": "sites/hotwax-transfers/versions/1b18ddb44d8d23e0",
+    "previousVersion": "sites/hotwax-transfers/versions/3b5e681799879a49",
+    "files": 201
+  },
+  "hosting": {
+    "available": true,
+    "target": {
+      "project": "digital-commerce-71eb8",
+      "site": "hotwax-transfers",
+      "environment": "prod",
+      "origin": "https://hotwax-transfers.web.app"
+    },
+    "versions": [
+      "v3.3.0",
+      "v3.2.0"
+    ],
+    "defaultVersion": "v3.3.0",
+    "configuredEnvironment": "AppEnvProd",
+    "defaultSource": "Hosting manifest",
+    "checkedAt": "2026-11-15T13:43:38.716Z",
+    "deployedAt": "2026-11-15T13:43:31.256Z",
+    "release": "sites/hotwax-transfers/channels/live/releases/1794750211256000",
+    "fileCount": 201
+  },
+  "finishedAt": "2026-11-15T13:43:40.599Z"
 }
