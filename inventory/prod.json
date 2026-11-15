@@ -6,12 +6,15 @@
     "environment": "prod",
     "origin": "https://hotwax-transfers.web.app"
   },
-  "versions": [],
-  "defaultVersion": "v3.2.0",
-  "configuredEnvironment": "AppEnvDev",
-  "defaultSource": "Compiled build metadata",
-  "checkedAt": "2026-11-15T13:37:42.362Z",
-  "deployedAt": "2026-08-17T12:42:16.217Z",
-  "release": "sites/hotwax-transfers/channels/live/releases/1786970536217000",
-  "fileCount": 53
+  "versions": [
+    "v3.3.0",
+    "v3.2.0"
+  ],
+  "defaultVersion": "v3.3.0",
+  "configuredEnvironment": "AppEnvProd",
+  "defaultSource": "Hosting manifest",
+  "checkedAt": "2026-11-15T13:43:38.716Z",
+  "deployedAt": "2026-11-15T13:43:31.256Z",
+  "release": "sites/hotwax-transfers/channels/live/releases/1794750211256000",
+  "fileCount": 201
 }
