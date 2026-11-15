@@ -1,0 +1,90 @@
+{
+  "schemaVersion": 1,
+  "id": "75b47069-c6d9-4b6c-bcd5-c591d79f6ae5",
+  "repo": "hotwax/transfers",
+  "actor": "dt2patel",
+  "toolsSha": "aa65bf41f5162d77eb2783f507315d59d080638f",
+  "action": "replace",
+  "environment": "prod",
+  "version": "v3.3.0,v3.2.0",
+  "targetDefault": "v3.3.0",
+  "build": [
+    "v3.3.0",
+    "v3.2.0"
+  ],
+  "added": [
+    "v3.3.0",
+    "v3.2.0"
+  ],
+  "replaced": [],
+  "removed": [],
+  "retained": [
+    "v3.3.0",
+    "v3.2.0"
+  ],
+  "previousDefault": "v3.2.0",
+  "nextDefault": "v3.3.0",
+  "rootChanges": true,
+  "confirmation": "PUBLISH TO PRODUCTION",
+  "app": {
+    "id": "transfers",
+    "repo": "hotwax/transfers",
+    "name": "transfers"
+  },
+  "target": {
+    "project": "digital-commerce-71eb8",
+    "site": "hotwax-transfers",
+    "environment": "prod",
+    "origin": "https://hotwax-transfers.web.app"
+  },
+  "baseFingerprint": "9dfa84350ecb8b27f96e0709138e933912a02e4a9e0c7f4719cd19322bd59af3",
+  "baseRelease": "sites/hotwax-transfers/channels/live/releases/1786970536217000",
+  "sources": [
+    {
+      "version": "v3.3.0",
+      "appCommit": "7c001da538427e803ac911925a84f42f8f9b2027",
+      "frameworkCommit": "2d81ce390bc5d45bf926fcea3a4ff5acbdd1254e",
+      "frameworkPin": "v1.13.3",
+      "appId": "TRANSFERS",
+      "config": {
+        "appId": "TRANSFERS",
+        "environmentTypeId": "AppEnvDev",
+        "buildVersion": ""
+      }
+    },
+    {
+      "version": "v3.2.0",
+      "appCommit": "5028ab4a48025d1a829f70e28c4a39090714a8fa",
+      "frameworkCommit": "1cd78810a727e2b92224bec247f8dc08680e5227",
+      "frameworkPin": "v1.5.0",
+      "appId": "TRANSFERS",
+      "config": {
+        "appId": "TRANSFERS",
+        "environmentTypeId": "AppEnvDev",
+        "buildVersion": ""
+      }
+    }
+  ],
+  "sourceCommits": [
+    {
+      "version": "v3.3.0",
+      "appCommit": "7c001da538427e803ac911925a84f42f8f9b2027",
+      "frameworkCommit": "2d81ce390bc5d45bf926fcea3a4ff5acbdd1254e",
+      "frameworkPin": "v1.13.3",
+      "appId": "TRANSFERS"
+    },
+    {
+      "version": "v3.2.0",
+      "appCommit": "5028ab4a48025d1a829f70e28c4a39090714a8fa",
+      "frameworkCommit": "1cd78810a727e2b92224bec247f8dc08680e5227",
+      "frameworkPin": "v1.5.0",
+      "appId": "TRANSFERS"
+    }
+  ],
+  "createdAt": "2026-11-15T13:37:45.063Z",
+  "expiresAt": "2026-11-15T14:37:45.063Z",
+  "writable": true,
+  "warnings": [
+    "Users of the main URL receive v3.3.0. The site afterwards serves only v3.3.0, v3.2.0."
+  ]
+}
