@@ -1,0 +1,17 @@
+{
+  "available": true,
+  "target": {
+    "project": "digital-commerce-71eb8",
+    "site": "hotwax-transfers",
+    "environment": "prod",
+    "origin": "https://hotwax-transfers.web.app"
+  },
+  "versions": [],
+  "defaultVersion": "v3.2.0",
+  "configuredEnvironment": "AppEnvDev",
+  "defaultSource": "Compiled build metadata",
+  "checkedAt": "2026-11-15T13:37:42.362Z",
+  "deployedAt": "2026-08-17T12:42:16.217Z",
+  "release": "sites/hotwax-transfers/channels/live/releases/1786970536217000",
+  "fileCount": 53
+}
