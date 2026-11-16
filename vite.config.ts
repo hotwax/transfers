@@ -48,6 +48,29 @@ export default defineConfig(({ mode }) => {
           drop_console: true,
           drop_debugger: true
         }
+      },
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (id.includes('node_modules')) {
+              if (id.includes('@ionic') || id.includes('ionicons')) {
+                return 'vendor-ionic';
+              }
+              if (id.includes('vue') || id.includes('pinia')) {
+                return 'vendor-vue';
+              }
+              if (id.includes('dexie') || id.includes('idb')) {
+                return 'vendor-db';
+              }
+              if (id.includes('luxon')) {
+                return 'vendor-luxon';
+              }
+            }
+            if (id.includes('/common/')) {
+              return 'common';
+            }
+          }
+        }
       }
     },
     server: {
@@ -55,7 +78,8 @@ export default defineConfig(({ mode }) => {
     },
     test: {
       globals: true,
-      environment: 'jsdom'
+      environment: 'jsdom',
+      include: ['tests/**/*.spec.ts']
     }
   }
 })
