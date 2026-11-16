@@ -264,7 +264,10 @@ export const useUtilStore = defineStore("util", {
           }
         }) as any;
 
-        if (!commonUtil.hasError(resp) && resp.data?.length) {
+        if (commonUtil.hasError(resp)) {
+          throw resp.data;
+        }
+        if (resp.data?.length) {
           const currentProductStore = useProductStore().getCurrentProductStore as any;
           let fieldName = currentProductStore?.productIdentifierEnumId || "SKU";
           if (fieldName === "SHOPIFY_BARCODE") fieldName = "UPCA";
@@ -273,8 +276,6 @@ export const useUtilStore = defineStore("util", {
             [fieldName]: product.internalName,
             quantity: 2
           }));
-        } else {
-          throw resp.data;
         }
       } catch (error) {
         logger.error(error);
