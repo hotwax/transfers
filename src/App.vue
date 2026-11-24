@@ -8,7 +8,7 @@
 <script setup lang="ts">
 import { computed, onBeforeMount, onMounted, onUnmounted, ref } from "vue";
 import { IonApp, IonRouterOutlet, loadingController } from "@ionic/vue";
-import { emitter, FastTravel, logger, translate } from "@common"
+import { emitter, FastTravel, logger, translate, useSessionChangeAlert } from "@common"
 import { Settings } from 'luxon'
 import { useAuth } from "@common/composables/useAuth";
 import { useUserStore } from "@/store/user";
@@ -16,6 +16,9 @@ import { useProductStore } from "@/store/productStore";
 
 const productStore = useProductStore();
 const { isAuthenticated } = useAuth();
+
+// A login in another tab or app replaced the shared session cookies: ask the user to reload.
+useSessionChangeAlert();
 const userProfile = computed(() => useUserStore().getUserProfile)
 
 const loader = ref(null) as any

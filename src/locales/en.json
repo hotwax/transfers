@@ -328,5 +328,9 @@
   "Source facility": "Source facility",
   "This requested transfer will be cancelled. Continue?": "This requested transfer will be cancelled. Continue?",
   "This will adjust inventory at both facilities. Continue?": "This will adjust inventory at both facilities. Continue?",
-  "Transfer ID": "Transfer ID"
+  "Transfer ID": "Transfer ID",
+  "Session changed": "Session changed",
+  "Signed in to another instance": "Signed in to another instance",
+  "This browser is now signed in to a different session from another tab or app. Reload to continue.": "This browser is now signed in to a different session from another tab or app. Reload to continue.",
+  "This browser is now signed in to {instance} from another tab or app. Reload to continue.": "This browser is now signed in to {instance} from another tab or app. Reload to continue."
 }
